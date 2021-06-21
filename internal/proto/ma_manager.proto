@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package proto;
+
+// MachineManage the service of machine mange
+service MachineManage {
+    // ReportInitMachine report Machine message to init
+    rpc ReportInitMachine (Machine) returns (Machine) {}
+}
+
+// Machine machine definition
+message Machine {
+    int32 ID = 1;
+    string UUID = 2;
+    int32 State = 3; // 1处理中，2正常，3异常
+    int32 DriverID = 4;
+    repeated string MachineTags = 5;
+    map<string, string> Info = 6;
+}

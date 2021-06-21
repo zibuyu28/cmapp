@@ -16,6 +16,8 @@
 
 package ma
 
+import "context"
+
 // create 这个命令，包含了如何调用api的流程，
 // 也就是说create这个命令是如何调用 mengine
 // 这个接口的里面的方法的，是由create这个命令
@@ -23,6 +25,13 @@ package ma
 
 type MEngine interface {
 	// create 相关
+	InitMachine(engineContext MEngineContext) (Machine, error)
+
+	CreateExec(engineContext MEngineContext) error
+
+	InstallMRobot(engineContext MEngineContext) error
+
+	MRoHealthCheck(engineContext MEngineContext) error
 
 	// delete 相关
 
@@ -33,4 +42,17 @@ type MEngine interface {
 	// shutdown 相关
 
 
+}
+
+
+type Machine struct {
+	uuid string // 由core提供
+
+}
+
+
+type MEngineContext struct {
+	context.Context
+	UUID string
+	CoreID int
 }
