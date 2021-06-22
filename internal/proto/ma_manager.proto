@@ -15,5 +15,5 @@ message Machine {
     int32 State = 3; // 1处理中，2正常，3异常
     int32 DriverID = 4;
     repeated string MachineTags = 5;
-    map<string, string> Info = 6;
+    map<string, string> CustomInfo = 6;
 }
