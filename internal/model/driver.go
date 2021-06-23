@@ -16,7 +16,10 @@
 
 package model
 
-import "time"
+import (
+	"github.com/pkg/errors"
+	"time"
+)
 
 // Driver driver definition in db
 type Driver struct {
@@ -28,4 +31,26 @@ type Driver struct {
 	Type        int8      `xorm:"tinyint(8) 'type'"`
 	Version     string    `xorm:"char(32) 'version'"`
 	Description string    `xorm:"text 'description'"`
+}
+
+// InsertDriver insert driver to db
+func InsertDriver(driver *Driver) error {
+	_, err := ormEngine.Insert(driver)
+	if err != nil {
+		return errors.Wrap(err, "driver insert to db")
+	}
+	return nil
+}
+
+// GetDriverByID get driver by id
+func GetDriverByID(id int) (*Driver, error) {
+	var drv = &Driver{}
+	has, err := ormEngine.Table(&Driver{}).Where("id = ?", id).Get(drv)
+	if err != nil {
+		return nil, errors.Wrap(err, "query driver from db")
+	}
+	if !has {
+		return nil, errors.Errorf("record not exist which id eq [%d]", id)
+	}
+	return drv, nil
 }

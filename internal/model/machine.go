@@ -16,7 +16,10 @@
 
 package model
 
-import "time"
+import (
+	"github.com/pkg/errors"
+	"time"
+)
 
 // Machine machine definition in db
 type Machine struct {
@@ -28,4 +31,13 @@ type Machine struct {
 	DriverID   int               `xorm:"int(11) 'driver_id'"`
 	Tags       []string          `xorm:"text 'tags'"`
 	CustomInfo map[string]string `xorm:"text 'custom_info'"`
+}
+
+// InsertMachine insert machine to db
+func InsertMachine(machine *Machine) error {
+	_, err := ormEngine.Insert(machine)
+	if err != nil {
+		return errors.Wrap(err, "machine insert to db")
+	}
+	return nil
 }

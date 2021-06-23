@@ -17,15 +17,11 @@
 package app
 
 import (
-	"fmt"
+	"cmapp/internal/mengine"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-// Create the create lifecycle of machine
-func Create() error {
-	fmt.Println("machine create")
-	return nil
-}
 
 
 // createCmd represents the ma command
@@ -39,10 +35,15 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := Create()
+		err := mengine.CreateMachine(args[0])
 		if err != nil {
 			return err
+		}
+		return nil
+	},
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return errors.New("args must contains uuid")
 		}
 		return nil
 	},

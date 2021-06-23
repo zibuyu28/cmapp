@@ -31,28 +31,26 @@ type MEngine interface {
 
 	InstallMRobot(engineContext MEngineContext) error
 
-	MRoHealthCheck(engineContext MEngineContext) error
+	MRoHealthCheck(engineContext MEngineContext, timeoutSecond int) error
 
 	// delete 相关
 
-
 	// startUp 相关
-
 
 	// shutdown 相关
 
-
 }
-
 
 type Machine struct {
-	uuid string // 由core提供
-
+	UUID       string // 由core提供
+	State      int
+	DriverID   int
+	Tags       []string
+	CustomInfo map[string]string
 }
-
 
 type MEngineContext struct {
 	context.Context
-	UUID string
+	UUID   string
 	CoreID int
 }
