@@ -18,7 +18,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/zibuyu28/cmapp/core/internal/api"
+	"github.com/zibuyu28/cmapp/core/internal/api_g"
 	"github.com/zibuyu28/cmapp/core/internal/log"
 	"github.com/zibuyu28/cmapp/core/proto"
 	"google.golang.org/grpc"
@@ -36,7 +36,7 @@ func grpcServerStart() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcserver = grpc.NewServer()
-	proto.RegisterMachineManageServer(grpcserver, &api.CoreMachineManager{})
+	proto.RegisterMachineManageServer(grpcserver, &api_g.CoreMachineManager{})
 	log.Infof("server listening at %v", lis.Addr())
 	if err := grpcserver.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

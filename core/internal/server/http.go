@@ -16,10 +16,26 @@
 
 package server
 
-func httpServerStart() {
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/zibuyu28/cmapp/core/internal/log"
+	"syscall"
+)
 
+var defaultHttpPort = 9008
+
+var httpserver *gin.Engine
+
+func httpServerStart() {
+	httpserver := gin.Default()
+	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	log.Infof("server listening at :%d", defaultHttpPort)
 }
 
 func httpServerStop() {
-
+	_ = syscall.Kill(syscall.Getpid(), syscall.SIGKILL)
 }
