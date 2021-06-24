@@ -1,39 +1,117 @@
-/*
- * Copyright © 2021 zibuyu28
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cmd
 
 import (
 	"bytes"
+	"cmapp/internal/log"
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
+	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
 
-// Command run command
-// shellMode 是否是shell脚本
-// timeout 设置超时时间
-// forceKill 达到超时时间，是否强制杀死进程（包括子进程和孙进程）
-// command shell脚本或二进制全路径
-// arg 二进制运行参数，shell模式无效
-func Command(shellMode bool, timeout int, forceKill bool, command string, arg ...string) (out string, res bool) {
+type ShellType int
+
+const (
+	ShellTypeNone  ShellType = 1
+	ShellTypeShell ShellType = 2
+	ShellTypeBash  ShellType = 3
+)
+
+type Ins struct {
+	shellType ShellType
+	envs      map[string]string
+	timeout   int
+	forceKill bool
+	command   string
+	args      []string
+	retry     int
+}
+type CmdOption func(info *Ins)
+
+func NewDefaultCMD(command string, args []string, opts ...CmdOption) *Ins {
+	i := Ins{
+		shellType: setShellType(),
+		timeout:   10,
+		forceKill: true,
+		command:   command,
+		args:      args,
+		retry:     1,
+	}
+	for _, opt := range opts {
+		opt(&i)
+	}
+	return &i
+}
+
+func WithRetry(retry int) CmdOption {
+	if retry < 0 {
+		retry = 1
+	}
+	return func(i *Ins) {
+		i.retry = retry
+	}
+}
+
+func WithEnvs(envs map[string]string) CmdOption {
+	return func(i *Ins) {
+		i.envs = envs
+	}
+}
+
+func WithShellType(shellType ShellType) CmdOption {
+	return func(i *Ins) {
+		i.shellType = shellType
+	}
+}
+
+func WithTimeout(timeout int) CmdOption {
+	return func(i *Ins) {
+		i.timeout = timeout
+	}
+}
+
+func WithForceKill(forceKill bool) CmdOption {
+	return func(i *Ins) {
+		i.forceKill = forceKill
+	}
+}
+
+func (i *Ins) Run() (out string, err error) {
+	for t := 0; t < i.retry; t++ {
+		out, err = i.cmd()
+		if err != nil {
+			fmt.Printf("fail to exe : %s\n", i.command)
+			fmt.Printf("output : %s\n", out)
+			fmt.Printf("err : %s\n", err.Error())
+			fmt.Printf("retry : %d\n", t+1)
+			time.Sleep(time.Second * 2)
+		} else {
+			break
+		}
+	}
+	return
+}
+
+func setShellType() ShellType {
+	var shellType ShellType
+	if exist, _ := pathExist("/bin/bash"); exist {
+		shellType = ShellTypeBash
+	} else if exist, _ = pathExist("/bin/sh"); exist {
+		shellType = ShellTypeShell
+	} else {
+		shellType = ShellTypeNone
+	}
+	return shellType
+}
+
+func (i *Ins) cmd() (out string, err error) {
 	var (
-		b           bytes.Buffer
+		stdout      bytes.Buffer
+		stderr      bytes.Buffer
 		cmd         *exec.Cmd
 		sysProcAttr *syscall.SysProcAttr
 	)
@@ -43,22 +121,32 @@ func Command(shellMode bool, timeout int, forceKill bool, command string, arg ..
 	}
 
 	// 超时控制
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.timeout)*time.Second)
 	defer cancel()
 
-	if shellMode {
-		cmd = exec.Command("/bin/bash", "-c", command)
-	} else {
-		cmd = exec.Command(command, arg...)
+	switch i.shellType {
+	case ShellTypeNone:
+		cmd = exec.Command(i.command, i.args...)
+	case ShellTypeShell:
+		cmd = exec.Command("/bin/sh", "-c", i.command)
+	case ShellTypeBash:
+		cmd = exec.Command("/bin/bash", "-c", i.command)
 	}
 
 	cmd.SysProcAttr = sysProcAttr
-	cmd.Stdout = &b
-	cmd.Stderr = &b
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// add env to cmd
+	if i.envs != nil {
+		addEnv(cmd, i.envs)
+	}
 
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("%s\n%s\n", b.String(), err.Error())
-		return
+		log.Debugf("stdout: %s", stdout.String())
+		log.Debugf("stderr: %s", stderr.String())
+		log.Debugf("err: %s", err.Error())
+		return "", err
 	}
 
 	waitChan := make(chan struct{}, 1)
@@ -68,28 +156,60 @@ func Command(shellMode bool, timeout int, forceKill bool, command string, arg ..
 	go func() {
 		select {
 		case <-ctx.Done():
-			fmt.Println("ctx timeout")
-			if forceKill {
-				fmt.Printf("ctx timeout kill job ppid:%d\n", cmd.Process.Pid)
+			//fmt.Println("ctx timeout")
+			if i.forceKill {
+				//fmt.Printf("ctx timeout kill job ppid:%d\n", cmd.Process.Pid)
 				if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
-					fmt.Println("syscall.Kill return err: ", err)
+					//fmt.Println("syscall.Kill return err: ", err)
 					return
 				}
 			}
 		case <-waitChan:
-			fmt.Printf("normal quit job ppid:%d\n", cmd.Process.Pid)
+			//fmt.Printf("normal quit job ppid:%d\n", cmd.Process.Pid)
 		}
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		fmt.Printf("timeout kill job ppid:%s\n%s\n", b.String(), err.Error())
-		return
+		//fmt.Printf("timeout kill job ppid:%s\n%s\n", b.String(), err.Error())
+		em := err.Error()
+		// 超时退出，返回调用失败
+		if strings.Contains(em, "signal: killed") {
+			return "", err
+		}
+		// 未超时，被执行程序主动退出
+		log.Debugf("stdout: %s", stdout.String())
+		log.Debugf("stderr: %s", stderr.String())
+		if len(stderr.String()) != 0 {
+			return stdout.String(), errors.New(stderr.String())
+		}
+		return stdout.String() + "\n" +stderr.String(), err
+		//return fmt.Sprintf("%s\n%v", b.String(), err), true
 	}
 
-	out = b.String()
-	res = true
+	out = stdout.String()
 	// 唤起正常退出
 	waitChan <- struct{}{}
 
 	return
+}
+
+func addEnv(cmd *exec.Cmd, envs map[string]string) {
+	if len(cmd.Env) == 0 {
+		cmd.Env = []string{}
+	}
+	for key, value := range envs {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
+}
+
+
+func pathExist(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		if err == os.ErrNotExist {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
