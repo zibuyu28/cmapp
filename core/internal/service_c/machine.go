@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package service
+package service_c
 
 import (
-	"cmapp/internal/cmd"
-	"cmapp/internal/model"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/core/internal/cmd"
+	"github.com/zibuyu28/cmapp/core/internal/model"
 	"os"
 	"path/filepath"
 )
 
 
+// Create execute driver create command to initialization machine
 func Create(driverid int) error {
 	drv, err := model.GetDriverByID(driverid)
 	if err != nil {
@@ -50,9 +51,10 @@ func CreateAction(driverRootPath, driverName string, args ...string) error {
 		return err
 	}
 	command := fmt.Sprintf("%s ro create", binaryPath)
-	out, res := cmd.Command(true, 300, true, command, args...)
-	if !res {
-		return errors.Errorf("excute driver ro create error")
+	newCmd := cmd.NewDefaultCMD(command, args)
+	out, err := newCmd.Run()
+	if err != nil {
+		return errors.Wrapf(err, "fail to execute command [%s]", command)
 	}
 	fmt.Println(out)
 	return nil

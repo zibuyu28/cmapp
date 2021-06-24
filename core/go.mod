@@ -1,4 +1,4 @@
-module cmapp
+module github.com/zibuyu28/cmapp/core
 
 go 1.13
 

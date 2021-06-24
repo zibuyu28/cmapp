@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 zibuyu28
+ * Copyright © 2021 zibuyu28
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 
 package main
 
-
 import (
-	"cmapp/cmd/mrobot/app"
+	"github.com/zibuyu28/cmapp/core/cmd/app"
 	"math/rand"
 	"time"
 )

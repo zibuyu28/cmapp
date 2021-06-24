@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bytes"
-	"cmapp/internal/log"
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/core/internal/log"
 	"os"
 	"os/exec"
 	"strings"

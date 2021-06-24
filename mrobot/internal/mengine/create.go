@@ -17,18 +17,18 @@
 package mengine
 
 import (
-	"cmapp/internal/proto"
-	"cmapp/pkg/ma"
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/core/pkg/ma"
+	"github.com/zibuyu28/cmapp/core/proto"
 	"google.golang.org/grpc"
 )
 
 
 
 // CreateMachine create machine
-func CreateMachine(uuid string) error {
+func CreateMachine(uuid string, port int) error {
 	var meIns ma.MEngine
 	meIns = getMEngineInstance()
 
@@ -42,8 +42,14 @@ func CreateMachine(uuid string) error {
 	if err != nil {
 		return errors.Wrap(err, "init machine")
 	}
+	// get grpc connect
+	// grpc.WithBlock() : use to make sure the connection is up
+	conn, err := grpc.DialContext(engineCreateContext, fmt.Sprintf("127.0.0.1:%d", port), grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return errors.Wrap(err, "conn grpc")
+	}
 
-	var cli = proto.NewMachineManageClient(&grpc.ClientConn{})
+	var cli = proto.NewMachineManageClient(conn)
 
 	pm := &proto.Machine{
 		UUID:        uuid,
