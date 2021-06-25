@@ -20,28 +20,37 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/pkg/ma"
 	"github.com/zibuyu28/cmapp/core/proto"
 	"google.golang.org/grpc"
 )
 
-
-
 // CreateMachine create machine
-func CreateMachine(uuid string, port int) error {
-	var meIns ma.MEngine
-	meIns = getMEngineInstance()
-
+func CreateMachine(ctx context.Context, uuid string, port int) error {
 	engineCreateContext := ma.MEngineContext{
-		Context: context.Background(),
+		Context: ctx,
 		UUID:    uuid,
 		CoreID:  0,
+	}
+
+	var meIns ma.MEngine
+	meIns, err := getMEngineInstance()
+	if err != nil {
+		log.Errorf(engineCreateContext, "Currently fail to new machine engine instance, param [%v]", engineCreateContext)
+		return errors.Wrap(err, "fail to new machine engine instance")
 	}
 
 	machine, err := meIns.InitMachine(engineCreateContext)
 	if err != nil {
 		return errors.Wrap(err, "init machine")
 	}
+	if machine.UUID != uuid {
+		return errors.Errorf("machine uuid not correct expect [%s], but got [%s]", uuid, machine.UUID)
+	}
+
+	log.Debugf(engineCreateContext, "Currently init machine success, info [%+v]", machine)
+
 	// get grpc connect
 	// grpc.WithBlock() : use to make sure the connection is up
 	conn, err := grpc.DialContext(engineCreateContext, fmt.Sprintf("127.0.0.1:%d", port), grpc.WithInsecure(), grpc.WithBlock())
@@ -63,7 +72,7 @@ func CreateMachine(uuid string, port int) error {
 		return errors.Wrap(err, "report init machine")
 	}
 
-	fmt.Printf("report init machine id [%d]\n", initMachine.ID)
+	log.Debugf(engineCreateContext, "Currently report init machine id [%d]", initMachine.ID)
 
 	engineCreateContext.CoreID = int(initMachine.ID)
 
@@ -71,23 +80,31 @@ func CreateMachine(uuid string, port int) error {
 	if err != nil {
 		return errors.Wrap(err, "create execute")
 	}
+	log.Debug(engineCreateContext, "Currently execute create machine action success")
 
 	err = meIns.InstallMRobot(engineCreateContext)
 	if err != nil {
 		return errors.Wrap(err, "install machine robot")
 	}
 
+	log.Debug(engineCreateContext, "Currently install machine robot success")
+
 	err = meIns.MRoHealthCheck(engineCreateContext, 10)
 	if err != nil {
 		return errors.Wrap(err, "machine robot health check")
 	}
 
+	log.Debug(engineCreateContext, "Currently install machine robot success")
+
 	engineCreateContext.Done()
 
+	// register machine to machine center
+
+	log.Debug(engineCreateContext, "Currently register machine to machine center success")
 	return nil
 }
 
 // TODO: 这个是一个很大的问题, 该怎么嵌入驱动
-func getMEngineInstance() ma.MEngine {
-	return nil
+func getMEngineInstance() (ma.MEngine, error) {
+	return nil, nil
 }

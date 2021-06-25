@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/core/internal/log"
+	"github.com/zibuyu28/cmapp/common/log"
 	"os"
 	"os/exec"
 	"strings"
@@ -143,9 +143,9 @@ func (i *Ins) cmd() (out string, err error) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Debugf("stdout: %s", stdout.String())
-		log.Debugf("stderr: %s", stderr.String())
-		log.Debugf("err: %s", err.Error())
+		log.Debugf(context.Background(), "stdout: %s", stdout.String())
+		log.Debugf(context.Background(), "stderr: %s", stderr.String())
+		log.Debugf(context.Background(), "err: %s", err.Error())
 		return "", err
 	}
 
@@ -177,12 +177,12 @@ func (i *Ins) cmd() (out string, err error) {
 			return "", err
 		}
 		// 未超时，被执行程序主动退出
-		log.Debugf("stdout: %s", stdout.String())
-		log.Debugf("stderr: %s", stderr.String())
+		log.Debugf(context.Background(), "stdout: %s", stdout.String())
+		log.Debugf(context.Background(), "stderr: %s", stderr.String())
 		if len(stderr.String()) != 0 {
 			return stdout.String(), errors.New(stderr.String())
 		}
-		return stdout.String() + "\n" +stderr.String(), err
+		return stdout.String() + "\n" + stderr.String(), err
 		//return fmt.Sprintf("%s\n%v", b.String(), err), true
 	}
 
@@ -201,7 +201,6 @@ func addEnv(cmd *exec.Cmd, envs map[string]string) {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 }
-
 
 func pathExist(path string) (bool, error) {
 	_, err := os.Stat(path)

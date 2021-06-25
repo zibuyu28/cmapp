@@ -19,6 +19,7 @@ package service_g
 import (
 	"context"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"github.com/zibuyu28/cmapp/core/proto"
 )
@@ -37,5 +38,11 @@ func StoreMachineRec(ctx context.Context, machine *proto.Machine) error {
 		return errors.Wrap(err, "insert machine")
 	}
 	machine.ID = int32(m.ID)
+	return nil
+}
+
+// RegisterMachine TODO: implement register logic
+func RegisterMachine(ctx context.Context, machine *proto.Machine) error  {
+	log.Warn(ctx, "mock register, please implement me")
 	return nil
 }

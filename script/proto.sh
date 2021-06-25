@@ -28,7 +28,7 @@ WORKPATH="${current_path}/.."
 # export grpc plugin bin to PATH
 PATH="${WORKPATH}"/tools/proto/bin:"${PATH}"
 
-for pkg in $(find internal -type f | grep "\.proto" | grep -v third | xargs -L1); do
+for pkg in $(find . -type f | grep "\.proto" | grep -v third | xargs -L3); do
   echo "generate ==> $pkg"
   cd "${WORKPATH}"
   cd "$(dirname "${pkg}")"

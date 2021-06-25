@@ -12,3 +12,5 @@ require (
 )
 
 replace github.com/zibuyu28/cmapp/core v0.0.0-incompatible => ../core
+
+replace github.com/zibuyu28/cmapp/common v0.0.0-incompatible => ../common

@@ -17,9 +17,10 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/zibuyu28/cmapp/core/internal/log"
+	"github.com/zibuyu28/cmapp/common/log"
 	"syscall"
 )
 
@@ -27,13 +28,13 @@ var defaultHttpPort = 9008
 
 var httpserver *gin.Engine
 
-func httpServerStart() {
+func httpServerStart(ctx context.Context) {
 	httpserver := gin.Default()
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf(ctx, "failed to listen: %v", err)
 	}
-	log.Infof("server listening at :%d", defaultHttpPort)
+	log.Infof(ctx, "server listening at :%d", defaultHttpPort)
 }
 
 func httpServerStop() {

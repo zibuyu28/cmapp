@@ -17,9 +17,11 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/api_g"
-	"github.com/zibuyu28/cmapp/core/internal/log"
 	"github.com/zibuyu28/cmapp/core/proto"
 	"google.golang.org/grpc"
 	"net"
@@ -30,21 +32,25 @@ var defaultGrpcPort = 9009
 var grpcserver *grpc.Server
 
 // grpcServerStart server start
-func grpcServerStart() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", defaultGrpcPort))
+func grpcServerStart(ctx context.Context) {
+	port := viper.GetInt("grpc.port")
+	if port == 0 {
+		port = defaultGrpcPort
+	}
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf(ctx, "failed to listen: %v", err)
 	}
 	grpcserver = grpc.NewServer()
 	proto.RegisterMachineManageServer(grpcserver, &api_g.CoreMachineManager{})
-	log.Infof("server listening at %v", lis.Addr())
+	log.Infof(ctx, "server listening at %v", lis.Addr())
 	if err := grpcserver.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf(ctx, "failed to serve: %v", err)
 	}
 }
 
 // grpcServerStop server stop
-func grpcServerStop()  {
+func grpcServerStop() {
 	if grpcserver != nil {
 		grpcserver.Stop()
 	}

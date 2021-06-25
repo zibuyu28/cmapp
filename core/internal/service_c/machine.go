@@ -17,36 +17,38 @@
 package service_c
 
 import (
+	"context"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/core/internal/cmd"
+	"github.com/zibuyu28/cmapp/common/cmd"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"os"
 	"path/filepath"
 )
 
-
 // Create execute driver create command to initialization machine
-func Create(driverid int) error {
+func Create(ctx context.Context, driverid int) error {
 	drv, err := model.GetDriverByID(driverid)
 	if err != nil {
 		return errors.Wrap(err, "get driver by id")
 	}
-	err = CreateAction("drv.DriverPath",drv.Name, uuid.New().String())
+	err = CreateAction(ctx, "drv.DriverPath", drv.Name, uuid.New().String())
 	if err != nil {
 		return errors.Wrap(err, "create aciton")
 	}
 	return nil
 }
+
 // CreateAction driver to create machine
-func CreateAction(driverRootPath, driverName string, args ...string) error {
+func CreateAction(ctx context.Context, driverRootPath, driverName string, args ...string) error {
 	abs, _ := filepath.Abs(filepath.Join(driverRootPath, driverName))
 	binaryPath := fmt.Sprintf("%s/exec/driver", abs)
 	_, err := os.Stat(binaryPath)
 	if err != nil {
-		if os.ErrNotExist == err  {
-			return errors.Wrapf(err, "driver executable file [%s]",binaryPath)
+		if os.ErrNotExist == err {
+			return errors.Wrapf(err, "driver executable file [%s]", binaryPath)
 		}
 		return err
 	}
@@ -56,6 +58,6 @@ func CreateAction(driverRootPath, driverName string, args ...string) error {
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)
 	}
-	fmt.Println(out)
+	log.Infof(ctx, "Currently ro create command execute result : %s", out)
 	return nil
 }

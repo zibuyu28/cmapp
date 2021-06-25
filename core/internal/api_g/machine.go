@@ -25,6 +25,15 @@ import (
 type CoreMachineManager struct {
 }
 
+// RegisterMachine register machine to center
+func (m *CoreMachineManager) RegisterMachine(ctx context.Context, machine *proto.Machine) (*proto.RegisterMachineRes, error) {
+	err := service_g.RegisterMachine(ctx, machine)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.RegisterMachineRes{Res: true}, nil
+}
+
 // ReportInitMachine report init machine
 func (m *CoreMachineManager) ReportInitMachine(ctx context.Context, machine *proto.Machine) (*proto.Machine, error) {
 	err := service_g.StoreMachineRec(ctx, machine)
@@ -33,5 +42,3 @@ func (m *CoreMachineManager) ReportInitMachine(ctx context.Context, machine *pro
 	}
 	return machine, nil
 }
-
-
