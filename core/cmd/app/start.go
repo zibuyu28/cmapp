@@ -16,6 +16,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/zibuyu28/cmapp/core/internal/server"
 
@@ -34,7 +35,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("start called")
-		server.Serve()
+		server.Serve(context.Background())
 	},
 }
 

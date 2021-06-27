@@ -17,29 +17,28 @@
 package server
 
 import (
+	"context"
 	"fmt"
-	"github.com/zibuyu28/cmapp/core/internal/log"
+	"github.com/zibuyu28/cmapp/common/log"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 // Serve all grpc and http
-func Serve() {
-	log.Info("start grpc and http server")
-	go httpServerStart()
-	go grpcServerStart()
+func Serve(ctx context.Context) {
+	log.Info(ctx, "start grpc and http server")
+	go httpServerStart(context.Background())
+	go grpcServerStart(context.Background())
 	signalHandler()
 }
 
 // Stop stop serve both grpc and http
 func Stop() {
-	log.Info("stop both grpc and http server")
+	log.Info(context.Background(), "stop both grpc and http server")
 	httpServerStop()
 	grpcServerStop()
 }
-
-
 
 func signalHandler() {
 	// signal handler
