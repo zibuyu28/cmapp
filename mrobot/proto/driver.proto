@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option go_package = "../proto";
+
+// MachineDriver machine driver service
+service MachineDriver {
+    // InitMachine create a machine to store
+    rpc InitMachine (Empty) returns (Machine) {
+    }
+
+    // CreateExec driver to execute really create action for a machine
+    rpc CreateExec (Empty) returns (Empty) {
+    }
+
+    // InstallMRobot install machine robot in this new machine
+    rpc InstallMRobot (Empty) returns (Empty) {
+    }
+
+    // MRoHealthCheck check machine robot install successfully or not
+    rpc MRoHealthCheck (Empty) returns (Empty) {
+    }
+
+    // Exit driver exit
+    rpc Exit(Empty) returns (Empty) {}
+}
+
+message Empty {
+}
+
+message Machine {
+    string UUID = 1;
+    int32 State = 2;
+    int32 DriverID = 3;
+    repeated string Tags = 4;
+    map<string, string> CustomInfo = 5;
+}

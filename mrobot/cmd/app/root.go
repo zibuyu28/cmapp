@@ -18,7 +18,10 @@ package app
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zibuyu28/cmapp/mrobot/drivers"
+	"github.com/zibuyu28/cmapp/mrobot/internal/plugin"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -26,6 +29,11 @@ import (
 )
 
 var cfgFile string
+
+const (
+	PluginEnvDriverName = "MACHINE_PLUGIN_DRIVER_NAME"
+	PluginBuildIn       = "MACHINE_PLUGIN_BUILD_IN"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -39,9 +47,31 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return RunAsPlugin()
+		}
 		fmt.Println("this is mrobot command")
+		return nil
 	},
+}
+
+// RunAsPlugin run as plugin
+func RunAsPlugin() error {
+	pbi := os.Getenv(PluginBuildIn)
+	if len(pbi) == 0 {
+		return errors.New("not plugin mode")
+	}
+	driverName := os.Getenv(PluginEnvDriverName)
+	if len(driverName) == 0 {
+		return errors.New("set to plugin mode, driver name not found")
+	}
+	driver, err := drivers.ParseDriver(driverName)
+	if err != nil {
+		return errors.Wrap(err, "parse build driver")
+	}
+	plugin.RegisterDriver(*driver)
+	return nil
 }
 
 
