@@ -147,5 +147,8 @@ func getMEnginePluginInstance(ctx context.Context, driverID string) (machineprot
 	}
 
 	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, errors.Wrap(err, "create grpc connection")
+	}
 	return machineproto.NewMachineDriverClient(conn), nil
 }

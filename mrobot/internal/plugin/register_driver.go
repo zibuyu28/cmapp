@@ -21,13 +21,13 @@ func RegisterDriver(d drivers.Driver) {
 	}
 	defer listener.Close()
 
-	fmt.Println(listener.Addr())
-
 	grpcserver := grpc.NewServer()
 
 	proto.RegisterMachineDriverServer(grpcserver, d.GrpcServer)
 
 	go grpcserver.Serve(listener)
+
+	fmt.Println(listener.Addr())
 
 	// signal handler
 	c := make(chan os.Signal, 1)

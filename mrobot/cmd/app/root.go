@@ -52,7 +52,7 @@ to quickly create a Cobra application.`,
 		if len(pbi) != 0 && pbi == "true" {
 			return RunAsPlugin(args)
 		}
-		return nil
+		return errors.New("not implement")
 	},
 }
 

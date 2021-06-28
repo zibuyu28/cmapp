@@ -7,9 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -242,6 +244,10 @@ func (lbp *Plugin) Address() (string, error) {
 
 		select {
 		case lbp.Addr = <-lbp.addrCh:
+			err := addrValidate(lbp.Addr)
+			if err != nil {
+				return "", errors.Wrap(err, "addr string validate")
+			}
 			log.Debugf(lbp.Ctx, "Plugin server listening at address %s", lbp.Addr)
 			close(lbp.addrCh)
 			return lbp.Addr, nil
@@ -254,5 +260,19 @@ func (lbp *Plugin) Address() (string, error) {
 
 func (lbp *Plugin) Close() error {
 	close(lbp.stopCh)
+	return nil
+}
+
+func addrValidate(addr string) error {
+	compile := regexp.MustCompile("[0-9]{2,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{4,6}")
+	match := compile.MatchString(addr)
+	if !match {
+		return errors.Errorf("fail to match addr [%s], please check addr is valide for [0-9]{2,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{4,6}", addr)
+	}
+
+	_, err := net.DialTimeout("tcp", addr, time.Second * 3)
+	if err != nil {
+		return errors.Wrapf(err, "fail to dail addr [%s], please check addr", addr)
+	}
 	return nil
 }
