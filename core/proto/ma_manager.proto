@@ -5,18 +5,18 @@ option go_package = "../proto";
 // MachineManage the service of machine mange
 service MachineManage {
   // ReportInitMachine report Machine message to init
-  rpc ReportInitMachine (Machine) returns (Machine) {}
+  rpc ReportInitMachine (TypedMachine) returns (TypedMachine) {}
 
   // RegisterMachine register machine to core center, maybe to maintain heartbeat, check health status
-  rpc RegisterMachine (Machine) returns (RegisterMachineRes) {}
+  rpc RegisterMachine (TypedMachine) returns (RegisterMachineRes) {}
 }
 
 message RegisterMachineRes {
   bool res = 1;
 }
 
-// Machine machine definition
-message Machine {
+// TypedMachine machine definition
+message TypedMachine {
   int32 ID = 1;
   string UUID = 2;
   int32 State = 3; // 1处理中，2正常，3异常

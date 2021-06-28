@@ -25,7 +25,7 @@ import (
 )
 
 // StoreMachineRec store machine record
-func StoreMachineRec(ctx context.Context, machine *proto.Machine) error {
+func StoreMachineRec(ctx context.Context, machine *proto.TypedMachine) error {
 	m := &model.Machine{
 		UUID:       machine.UUID,
 		State:      int(machine.State),
@@ -42,7 +42,7 @@ func StoreMachineRec(ctx context.Context, machine *proto.Machine) error {
 }
 
 // RegisterMachine TODO: implement register logic
-func RegisterMachine(ctx context.Context, machine *proto.Machine) error  {
+func RegisterMachine(ctx context.Context, machine *proto.TypedMachine) error  {
 	log.Warn(ctx, "mock register, please implement me")
 	return nil
 }

@@ -28,7 +28,7 @@ import (
 )
 
 // CreateMachine create machine
-func CreateMachine(ctx context.Context, uuid string, port int, driverId string) error {
+func CreateMachine(ctx context.Context, uuid string, corePort int, driverId string) error {
 
 	ctx = context.WithValue(ctx, "UUID", uuid)
 	ctx = context.WithValue(ctx, "CoreID", 0)
@@ -53,17 +53,17 @@ func CreateMachine(ctx context.Context, uuid string, port int, driverId string) 
 
 	// get grpc connect
 	// grpc.WithBlock() : use to make sure the connection is up
-	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", port), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", corePort), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return errors.Wrap(err, "conn grpc")
 	}
 
 	var cli = coreproto.NewMachineManageClient(conn)
 
-	pm := &coreproto.Machine{
+	pm := &coreproto.TypedMachine{
 		UUID:        uuid,
-		State:       int32(machine.State),
-		DriverID:    int32(machine.DriverID),
+		State:       machine.State,
+		DriverID:    machine.DriverID,
 		MachineTags: machine.Tags,
 		CustomInfo:  machine.CustomInfo,
 	}

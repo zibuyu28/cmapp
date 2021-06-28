@@ -25,7 +25,7 @@ func TestInitORMEngine(t *testing.T) {
 	}{
 		{
 			name: "test init orm engine",
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
