@@ -3,6 +3,8 @@ package log
 import (
 	"context"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
 )
 
 var logger *zap.Logger
@@ -13,6 +15,38 @@ func init() {
 		panic(err)
 	}
 	logger = l
+}
+
+func InitCus() {
+	consoleConfig := zapcore.EncoderConfig{
+		LevelKey:       "level",
+		TimeKey:        "time",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "trace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+		EncodeName:     zapcore.FullNameEncoder,
+	}
+	// // 开启开发模式，堆栈跟踪
+	caller := zap.AddCaller()
+	skip := zap.AddCallerSkip(1)
+	// // trace
+	//trace := zap.AddStacktrace(zap.ErrorLevel)
+	// 开启文件及行号
+	development := zap.Development()
+
+	atomicLevel := zap.NewAtomicLevel()
+	var l zapcore.Level
+	_ = l.UnmarshalText([]byte("debug"))
+	atomicLevel.SetLevel(l)
+
+	cc := zapcore.NewCore(zapcore.NewConsoleEncoder(consoleConfig), zapcore.AddSync(os.Stdout), atomicLevel)
+	logger = zap.New(cc, caller,skip, development)
 }
 
 func Debug(ctx context.Context, msg string, fields ...zap.Field) {

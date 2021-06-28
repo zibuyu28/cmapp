@@ -18,6 +18,7 @@ package main
 
 
 import (
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/cmd/app"
 	"math/rand"
 	"time"
@@ -25,6 +26,6 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-
+	log.InitCus()
 	app.Execute()
 }

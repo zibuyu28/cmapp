@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zibuyu28/cmapp/mrobot/internal/mengine"
-	"strconv"
 )
 
 // createCmd represents the ma command
@@ -36,18 +35,14 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		port, err := strconv.Atoi(args[2])
-		if err != nil {
-			return errors.Wrap(err, "parse arg 2")
-		}
-		err = mengine.CreateMachine(context.Background(), uuid.New().String(), port, args[3])
+		err := mengine.CreateMachine(context.Background(), uuid.New().String())
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 3 {
+		if len(args) != 1 {
 			return errors.New("args must contains uuid")
 		}
 		return nil

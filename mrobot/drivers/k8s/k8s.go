@@ -18,11 +18,16 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"github.com/zibuyu28/cmapp/mrobot/proto"
+	"time"
 )
 
 type DriverK8s struct {
+}
 
+func NewDriverK8s()  {
+	
 }
 
 func (d DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
@@ -30,7 +35,10 @@ func (d DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, 
 }
 
 func (d DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto.Machine, error) {
+	fmt.Sprintf("start to sleep k8s")
+	time.Sleep(10 * time.Second)
 	panic("implement me")
+	return nil, nil
 }
 
 func (d DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {

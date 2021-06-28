@@ -26,6 +26,16 @@ import (
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"os"
 	"path/filepath"
+	"strconv"
+)
+
+const (
+	DefaultGrpcPort int = 9009
+)
+
+const (
+	MachineEngineCoreGRPCPORT = "MACHINE_ENGINE_CORE_GRPC_PORT"
+	MachineEngineDriverID     = "MACHINE_ENGINE_DRIVER_ID"
 )
 
 // Create execute driver create command to initialization machine
@@ -53,7 +63,10 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, args .
 		return err
 	}
 	command := fmt.Sprintf("%s ro create", binaryPath)
-	newCmd := cmd.NewDefaultCMD(command, args)
+	newCmd := cmd.NewDefaultCMD(command, args, cmd.WithEnvs(map[string]string{
+		MachineEngineCoreGRPCPORT: strconv.Itoa(DefaultGrpcPort),
+		MachineEngineDriverID:     driverName,
+	}))
 	out, err := newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)

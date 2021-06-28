@@ -48,20 +48,16 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return RunAsPlugin()
+		pbi := os.Getenv(PluginBuildIn)
+		if len(pbi) != 0 && pbi == "true" {
+			return RunAsPlugin(args)
 		}
-		fmt.Println("this is mrobot command")
 		return nil
 	},
 }
 
 // RunAsPlugin run as plugin
-func RunAsPlugin() error {
-	pbi := os.Getenv(PluginBuildIn)
-	if len(pbi) == 0 {
-		return errors.New("not plugin mode")
-	}
+func RunAsPlugin(args []string) error {
 	driverName := os.Getenv(PluginEnvDriverName)
 	if len(driverName) == 0 {
 		return errors.New("set to plugin mode, driver name not found")
