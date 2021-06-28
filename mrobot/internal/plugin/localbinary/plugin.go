@@ -148,14 +148,17 @@ func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("Error getting cmd stderr pipe: %s", err)
 	}
-
+	for _, v := range os.Environ() {
+		lbe.cmd.Env = append(lbe.cmd.Env, v)
+	}
 	outScanner := bufio.NewScanner(lbe.pluginStdout)
 	errScanner := bufio.NewScanner(lbe.pluginStderr)
 
-	os.Setenv(PluginEnvKey, PluginEnvVal)
-	os.Setenv(PluginEnvDriverName, lbe.DriverName)
-	if os.Args[0] == lbe.binaryPath {
-		os.Setenv(PluginBuildIn, "true")
+	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginEnvKey, PluginEnvVal))
+	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginEnvDriverName, lbe.DriverName))
+	abs, _ := filepath.Abs(os.Args[0])
+	if abs == lbe.binaryPath {
+		lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginBuildIn, "true"))
 	}
 
 	if err := lbe.cmd.Start(); err != nil {

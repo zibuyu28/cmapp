@@ -145,7 +145,6 @@ func getMEnginePluginInstance(ctx context.Context, driverID string) (machineprot
 	if err != nil {
 		return nil, errors.Wrap(err, "get plugin serve address")
 	}
-	log.Debugf(ctx, "Currently plugin get serve address [%s]", address)
 
 	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
 	return machineproto.NewMachineDriverClient(conn), nil

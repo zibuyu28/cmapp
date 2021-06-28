@@ -36,7 +36,7 @@ func (d DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, 
 
 func (d DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto.Machine, error) {
 	fmt.Sprintf("start to sleep k8s")
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 	panic("implement me")
 	return nil, nil
 }
