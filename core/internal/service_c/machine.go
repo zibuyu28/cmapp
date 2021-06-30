@@ -36,6 +36,7 @@ const (
 const (
 	MachineEngineCoreGRPCPORT = "MACHINE_ENGINE_CORE_GRPC_PORT"
 	MachineEngineDriverID     = "MACHINE_ENGINE_DRIVER_ID"
+	MachineEngineDriverName   = "MACHINE_ENGINE_DRIVER_NAME"
 )
 
 // Create execute driver create command to initialization machine
@@ -44,7 +45,7 @@ func Create(ctx context.Context, driverid int) error {
 	if err != nil {
 		return errors.Wrap(err, "get driver by id")
 	}
-	err = CreateAction(ctx, "drv.DriverPath", drv.Name, uuid.New().String())
+	err = CreateAction(ctx, "drv.DriverPath", drv.Name, driverid, uuid.New().String())
 	if err != nil {
 		return errors.Wrap(err, "create aciton")
 	}
@@ -52,7 +53,7 @@ func Create(ctx context.Context, driverid int) error {
 }
 
 // CreateAction driver to create machine
-func CreateAction(ctx context.Context, driverRootPath, driverName string, args ...string) error {
+func CreateAction(ctx context.Context, driverRootPath, driverName string, driverId int, args ...string) error {
 	abs, _ := filepath.Abs(filepath.Join(driverRootPath, driverName))
 	binaryPath := fmt.Sprintf("%s/exec/driver", abs)
 	_, err := os.Stat(binaryPath)
@@ -65,7 +66,8 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, args .
 	command := fmt.Sprintf("%s ro create", binaryPath)
 	newCmd := cmd.NewDefaultCMD(command, args, cmd.WithEnvs(map[string]string{
 		MachineEngineCoreGRPCPORT: strconv.Itoa(DefaultGrpcPort),
-		MachineEngineDriverID:     driverName,
+		MachineEngineDriverName:   driverName,
+		MachineEngineDriverID:     strconv.Itoa(driverId),
 	}))
 	out, err := newCmd.Run()
 	if err != nil {

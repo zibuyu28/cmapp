@@ -29,7 +29,7 @@ var defaultHttpPort = 9008
 var httpserver *gin.Engine
 
 func httpServerStart(ctx context.Context) {
-	httpserver := gin.Default()
+	httpserver = gin.Default()
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
 		log.Fatalf(ctx, "failed to listen: %v", err)
