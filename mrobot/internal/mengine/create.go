@@ -25,22 +25,35 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/internal/plugin/localbinary"
 	machineproto "github.com/zibuyu28/cmapp/mrobot/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
 	MachineEngineCoreGRPCPORT = "MACHINE_ENGINE_CORE_GRPC_PORT"
-	MachineEngineDriverID = "MACHINE_ENGINE_DRIVER_ID"
+	MachineEngineDriverName   = "MACHINE_ENGINE_DRIVER_NAME"
+	MachineEngineDriverID     = "MACHINE_ENGINE_DRIVER_ID"
 )
 
 // CreateMachine create machine
 func CreateMachine(ctx context.Context, uuid string) error {
 	log.Debugf(ctx, "Currently create machine logic, uuid [%v]", uuid)
 
-	driverID := os.Getenv(MachineEngineDriverID)
-	if len(driverID) == 0 {
+	driverName := os.Getenv(MachineEngineDriverName)
+	if len(driverName) == 0 {
+		return errors.Errorf("fail to get driver name from env, please check env [%s]", MachineEngineDriverName)
+	}
+
+	driverIDStr := os.Getenv(MachineEngineDriverID)
+	if len(driverIDStr) == 0 {
 		return errors.Errorf("fail to get driver id from env, please check env [%s]", MachineEngineDriverID)
+	}
+
+	driverID, err := strconv.Atoi(driverIDStr)
+	if err != nil {
+		return errors.Errorf("fail to parse driver id by driverStr [%s], please check env [%s]", driverIDStr, MachineEngineDriverID)
 	}
 
 	grpcPortStr := os.Getenv(MachineEngineCoreGRPCPORT)
@@ -52,14 +65,15 @@ func CreateMachine(ctx context.Context, uuid string) error {
 		return errors.Wrapf(err, "parse grpc port str [%s] to number", grpcPortStr)
 	}
 
-	ctx = context.WithValue(ctx, "UUID", uuid)
-	ctx = context.WithValue(ctx, "CoreID", 0)
+	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+		"UUID": uuid,
+	}))
 
 	var meIns machineproto.MachineDriverClient
 	//var meIns ma.MEngine
-	meIns, err = getMEnginePluginInstance(ctx, driverID)
+	meIns, err = getMEnginePluginInstance(ctx, driverName)
 	if err != nil {
-		log.Errorf(ctx, "Currently fail to new machine engine instance, driverId [%s]", driverID)
+		log.Errorf(ctx, "Currently fail to new machine engine instance, driverName [%s]", driverName)
 		return errors.Wrap(err, "fail to new machine engine instance")
 	}
 
@@ -67,6 +81,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	if err != nil {
 		return errors.Wrap(err, "init machine")
 	}
+	machine.DriverID = int32(driverID)
 	if machine.UUID != uuid {
 		return errors.Errorf("machine uuid not correct expect [%s], but got [%s]", uuid, machine.UUID)
 	}
@@ -74,6 +89,8 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	log.Debugf(ctx, "Currently init machine success, info [%+v]", machine)
 
 	// get grpc connect
+	ctx, cancel := context.WithTimeout(ctx, time.Second * time.Duration(10))
+	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
 	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -96,7 +113,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	log.Debugf(ctx, "Currently report init machine id [%d]", initMachine.ID)
 
-	ctx = context.WithValue(ctx, "CoreID", int(initMachine.ID))
+	ctx = metadata.AppendToOutgoingContext(ctx, "CoreID", fmt.Sprintf("%d", initMachine.ID))
 
 	_, err = meIns.CreateExec(ctx, &machineproto.Empty{})
 	if err != nil {

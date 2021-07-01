@@ -17,9 +17,10 @@
 package app
 
 import (
-	"fmt"
+	"context"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
 	"github.com/zibuyu28/cmapp/mrobot/internal/plugin"
 	"os"
@@ -101,7 +102,7 @@ func initConfig() {
 		home, err := homedir.Dir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".main" (without extension).
+		// Search config in home directory with name "roc" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName("roc")
 	}
@@ -110,6 +111,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		log.Infof(context.Background(),"Using config file:%s", viper.ConfigFileUsed())
 	}
 }
