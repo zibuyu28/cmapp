@@ -30,7 +30,7 @@ func NewDriverK8s()  {
 	
 }
 
-func (d DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+func (d DriverK8s) DriverVersion(ctx context.Context, empty *proto.Empty) (*proto.Version, error) {
 	panic("implement me")
 }
 
@@ -39,6 +39,10 @@ func (d DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto.
 	time.Sleep(20 * time.Second)
 	panic("implement me")
 	return nil, nil
+}
+
+func (d DriverK8s) GetCreateFlags(ctx context.Context, empty *proto.Empty) (*proto.Flags, error) {
+	panic("implement me")
 }
 
 func (d DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
@@ -54,4 +58,7 @@ func (d DriverK8s) MRoHealthCheck(ctx context.Context, empty *proto.Empty) (*pro
 }
 
 
+func (d DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+	panic("implement me")
+}
 

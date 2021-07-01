@@ -152,3 +152,12 @@ func getMEnginePluginInstance(ctx context.Context, driverID string) (machineprot
 	}
 	return machineproto.NewMachineDriverClient(conn), nil
 }
+
+func Health(ctx context.Context, cli machineproto.MachineDriverClient)error {
+	_, err := cli.Health(ctx, &machineproto.Empty{})
+	if err != nil {
+
+	}
+	// TODO:
+	panic("implement me")
+}

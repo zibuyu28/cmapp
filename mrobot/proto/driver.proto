@@ -4,8 +4,17 @@ option go_package = "../proto";
 
 // MachineDriver machine driver service
 service MachineDriver {
+
+    // DriverVersion plugin version
+    rpc DriverVersion(Empty) returns(Version) {
+    }
+
     // InitMachine create a machine to store
     rpc InitMachine (Empty) returns (Machine) {
+    }
+
+    // GetCreateFlags get create flags
+    rpc GetCreateFlags(Empty) returns (Flags) {
     }
 
     // CreateExec driver to execute really create action for a machine
@@ -27,10 +36,25 @@ service MachineDriver {
 message Empty {
 }
 
+message Version {
+    string version = 1;
+}
+
 message Machine {
     string UUID = 1;
     int32 State = 2;
     int32 DriverID = 3;
     repeated string Tags = 4;
     map<string, string> CustomInfo = 5;
+}
+
+message Flags {
+    repeated Flag Flags = 1;
+}
+
+message Flag {
+    string Name = 1;
+    string Usage = 2;
+    string EnvVar = 3;
+    repeated string Values = 4;
 }
