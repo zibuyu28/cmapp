@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	coreproto "github.com/zibuyu28/cmapp/core/proto"
-	"github.com/zibuyu28/cmapp/mrobot/internal/plugin/localbinary"
+	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin/localbinary"
 	machineproto "github.com/zibuyu28/cmapp/mrobot/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

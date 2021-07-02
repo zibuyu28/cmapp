@@ -4,17 +4,16 @@ option go_package = "../proto";
 
 // MachineDriver machine driver service
 service MachineDriver {
+    // GetCreateFlags get create flags
+    rpc GetCreateFlags (Empty) returns (Flags) {
+    }
 
-    // DriverVersion plugin version
-    rpc DriverVersion(Empty) returns(Version) {
+    // SetConfigFromFlags set driver config from flags
+    rpc SetConfigFromFlags (Flags) returns (Empty) {
     }
 
     // InitMachine create a machine to store
     rpc InitMachine (Empty) returns (Machine) {
-    }
-
-    // GetCreateFlags get create flags
-    rpc GetCreateFlags(Empty) returns (Flags) {
     }
 
     // CreateExec driver to execute really create action for a machine
@@ -30,22 +29,8 @@ service MachineDriver {
     }
 
     // Exit driver exit
-    rpc Exit(Empty) returns (Empty) {}
-}
-
-message Empty {
-}
-
-message Version {
-    string version = 1;
-}
-
-message Machine {
-    string UUID = 1;
-    int32 State = 2;
-    int32 DriverID = 3;
-    repeated string Tags = 4;
-    map<string, string> CustomInfo = 5;
+    rpc Exit (Empty) returns (Empty) {
+    }
 }
 
 message Flags {
@@ -56,5 +41,16 @@ message Flag {
     string Name = 1;
     string Usage = 2;
     string EnvVar = 3;
-    repeated string Values = 4;
+    repeated string value = 4;
+}
+
+message Empty {
+}
+
+message Machine {
+    string UUID = 1;
+    int32 State = 2;
+    int32 DriverID = 3;
+    repeated string Tags = 4;
+    map<string, string> CustomInfo = 5;
 }

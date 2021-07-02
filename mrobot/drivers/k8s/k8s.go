@@ -21,18 +21,81 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
+	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/mrobot/proto"
 	"google.golang.org/grpc/metadata"
 )
 
 type DriverK8s struct {
+	pkg.BaseDriver
+	KubeConfig string
+
+	Token       string
+	Certificate string
+	ClusterURL  string
+	Namespace   string
+
+	StorageClassName string
+	Labels           map[string]string
 }
 
 func NewDriverK8s() {
 
 }
 
-func (d DriverK8s) DriverVersion(ctx context.Context, empty *proto.Empty) (*proto.Version, error) {
+// GetCreateFlags get create flags
+func (d DriverK8s) GetCreateFlags(ctx context.Context, empty *proto.Empty) (*proto.Flags, error) {
+	baseFlags := &proto.Flags{Flags: d.GetFlags()}
+	flags := []*proto.Flag{
+		{
+			Name:   "KubeConfig",
+			Usage:  "kubernetes cluster config for connection, if set this flag, the token,certificate,url can not be set",
+			EnvVar: "KUBE_CONFIG",
+			Value:  []string{defaultConfig},
+		},
+		{
+			Name:   "Token",
+			Usage:  "kubernetes cluster token for connection",
+			EnvVar: "KUBE_TOKEN",
+			Value:  nil,
+		},
+		{
+			Name:   "Certificate",
+			Usage:  "kubernetes cluster certificate for connection",
+			EnvVar: "KUBE_CERTIFICATE",
+			Value:  nil,
+		},
+		{
+			Name:   "Url",
+			Usage:  "kubernetes cluster url for connection",
+			EnvVar: "KUBE_URL",
+			Value:  nil,
+		},
+		{
+			Name:   "Namespace",
+			Usage:  "kubernetes cluster namespace for machine work",
+			EnvVar: "KUBE_NAMESPACE",
+			Value:  nil,
+		},
+		{
+			Name:   "StorageClassName",
+			Usage:  "storageClass for create pvc and pv",
+			EnvVar: "KUBE_STORAGECLASS",
+			Value:  nil,
+		},
+		{
+			Name:   "Labels",
+			Usage:  "union labels for resources, format like [\"key1=value1\",\"key2=value2\"]",
+			EnvVar: "KUBE_LABELS",
+			Value:  nil,
+		},
+	}
+	baseFlags.Flags = append(baseFlags.Flags, flags...)
+	return baseFlags, nil
+}
+
+// SetConfigFromFlags set config from flags
+func (d DriverK8s) SetConfigFromFlags(ctx context.Context, flags *proto.Flags) (*proto.Empty, error) {
 	panic("implement me")
 }
 
@@ -61,10 +124,6 @@ func (d DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto.
 	}
 
 	return machine, nil
-}
-
-func (d DriverK8s) GetCreateFlags(ctx context.Context, empty *proto.Empty) (*proto.Flags, error) {
-	panic("implement me")
 }
 
 func (d DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
@@ -99,5 +158,3 @@ var defaultConfig = `
 var mRobotDep = `---
 
 `
-
-

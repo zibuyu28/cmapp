@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
-	"github.com/zibuyu28/cmapp/mrobot/internal/plugin"
+	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin"
 	"os"
 
 	"github.com/mitchellh/go-homedir"

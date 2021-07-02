@@ -26,12 +26,12 @@ import (
 
 var buildInDrivers = []string{"k8s"}
 
-type Driver struct {
+type BuildInDriver struct {
 	GrpcServer proto.MachineDriverServer
 }
 
 // Exit exit driver called by self
-func (d Driver) Exit() {
+func (d BuildInDriver) Exit() {
 	ctx := context.Background()
 	_, err := d.GrpcServer.Exit(ctx, &proto.Empty{})
 	if err != nil {
@@ -40,11 +40,11 @@ func (d Driver) Exit() {
 }
 
 // ParseDriver parse driver by name
-func ParseDriver(driverName string) (*Driver, error) {
+func ParseDriver(driverName string) (*BuildInDriver, error) {
 	switch driverName {
 	case "k8s":
 		// TODO: handle args plugin need
-		return &Driver{k8s.DriverK8s{}}, nil
+		return &BuildInDriver{k8s.DriverK8s{}}, nil
 	default:
 		return nil, errors.Errorf("fail to parse driver named [%s], build in drivers [%v], please check config or param",driverName, buildInDrivers)
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 // RegisterDriver register driver build in
-func RegisterDriver(d drivers.Driver) {
+func RegisterDriver(d drivers.BuildInDriver) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading RPC server: %s\n", err)
