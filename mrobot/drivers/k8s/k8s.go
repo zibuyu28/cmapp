@@ -20,7 +20,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
-	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_engine"
+	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
 	"github.com/zibuyu28/cmapp/mrobot/proto"
 	"google.golang.org/grpc/metadata"
 )
@@ -73,7 +73,7 @@ func (d DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.E
 }
 
 func (d DriverK8s) InstallMRobot(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
-	client, err := kube_engine.NewClient(ctx, defaultConfig)
+	client, err := base.NewClient(ctx, defaultConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "new kubernetes client")
 	}

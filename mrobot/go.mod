@@ -13,6 +13,8 @@ require (
 	github.com/zibuyu28/cmapp/core v0.0.0-incompatible
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
+	k8s.io/api v0.21.2
+	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
 )
 

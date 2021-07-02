@@ -1,4 +1,4 @@
-package kubeclient
+package base
 
 import (
 	"github.com/pkg/errors"

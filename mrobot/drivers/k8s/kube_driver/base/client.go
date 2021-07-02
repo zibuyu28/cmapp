@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package kubeclient
+package base
 
 import (
 	"context"
