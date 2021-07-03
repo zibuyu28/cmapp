@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 
-package base
+package tmp
 
 import (
-	"github.com/pkg/errors"
+	"bytes"
+	"github.com/Masterminds/sprig"
+	"text/template"
 )
 
-// CheckEnv check env
-func (c *Client) CheckEnv() error {
-	_, err := c.k.Discovery().ServerVersion()
+// AdvanceTemplate advance go template
+func AdvanceTemplate(data interface{}, tplT []byte) ([]byte, error) {
+	t := template.New("temp").Funcs(sprig.TxtFuncMap())
+	t, err := t.Parse(string(tplT))
 	if err != nil {
-		return errors.Wrap(err, "discover server version")
+		return nil, err
 	}
-	return nil
+	var buf = new(bytes.Buffer)
+	err = t.Execute(buf, data)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), err
 }

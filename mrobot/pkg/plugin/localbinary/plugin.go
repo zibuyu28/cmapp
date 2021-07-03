@@ -24,12 +24,14 @@ var (
 )
 
 const (
-	pluginOut           = "(%s) %s"
-	pluginErr           = "(%s) DBG | %s"
-	PluginEnvKey        = "MACHINE_PLUGIN_TOKEN"
-	PluginEnvVal        = "42"
-	PluginEnvDriverName = "MACHINE_PLUGIN_DRIVER_NAME"
-	PluginBuildIn       = "MACHINE_PLUGIN_BUILD_IN"
+	pluginOut              = "(%s) %s"
+	pluginErr              = "(%s) DBG | %s"
+	PluginEnvKey           = "MACHINE_PLUGIN_TOKEN"
+	PluginEnvVal           = "42"
+	PluginEnvDriverName    = "MACHINE_PLUGIN_DRIVER_NAME"
+	PluginEnvDriverVersion = "MACHINE_PLUGIN_DRIVER_VERSION"
+	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
+	PluginBuildIn          = "MACHINE_PLUGIN_BUILD_IN"
 )
 
 type PluginStreamer interface {
@@ -82,6 +84,7 @@ type Executor struct {
 	ctx                        context.Context
 	pluginStdout, pluginStderr io.ReadCloser
 	DriverName                 string
+	DriverID                   int
 	DriverVersion              string
 	cmd                        *exec.Cmd
 	binaryPath                 string
@@ -97,18 +100,18 @@ func (e ErrPluginBinaryNotFound) Error() string {
 }
 
 // driverPath finds the path of a driver binary by its name.
-func driverPath(driverName string) string {
+func driverPath(driverName, driverVersion string) string {
 	for _, coreDriver := range CoreDrivers {
 		if coreDriver == driverName {
 			return os.Args[0]
 		}
 	}
-	return fmt.Sprintf("plugins/%s/%s/plugin", driverName, "v1_0_0")
+	return fmt.Sprintf("plugins/%s/%s/plugin", driverName, driverVersion)
 }
 
 // NewPlugin new plugin by driver name
-func NewPlugin(ctx context.Context, driverName string) (*Plugin, error) {
-	dp := driverPath(driverName)
+func NewPlugin(ctx context.Context, driverID int, driverName, driverVersion string) (*Plugin, error) {
+	dp := driverPath(driverName, driverVersion)
 	dpabs, _ := filepath.Abs(dp)
 	_, err := os.Stat(dpabs)
 	if err != nil {
@@ -127,8 +130,9 @@ func NewPlugin(ctx context.Context, driverName string) (*Plugin, error) {
 		addrCh: make(chan string, 1),
 		Executor: &Executor{
 			ctx:           ctx,
-			DriverVersion: "v1_0_0",
+			DriverVersion: driverVersion,
 			DriverName:    driverName,
+			DriverID:      driverID,
 			binaryPath:    dpabs,
 		},
 	}, nil
@@ -158,6 +162,8 @@ func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 
 	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginEnvKey, PluginEnvVal))
 	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginEnvDriverName, lbe.DriverName))
+	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginEnvDriverVersion, lbe.DriverVersion))
+	lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%d", PluginEnvDriverID, lbe.DriverID))
 	abs, _ := filepath.Abs(os.Args[0])
 	if abs == lbe.binaryPath {
 		lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginBuildIn, "true"))
@@ -270,7 +276,7 @@ func addrValidate(addr string) error {
 		return errors.Errorf("fail to match addr [%s], please check addr is valide for [0-9]{2,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{4,6}", addr)
 	}
 
-	_, err := net.DialTimeout("tcp", addr, time.Second * 3)
+	_, err := net.DialTimeout("tcp", addr, time.Second*3)
 	if err != nil {
 		return errors.Wrapf(err, "fail to dail addr [%s], please check addr", addr)
 	}

@@ -20,16 +20,18 @@ import "github.com/zibuyu28/cmapp/mrobot/proto"
 
 // BaseDriver base driver
 type BaseDriver struct {
-	MachineName string
-	UUID        string
+	UUID          string
+	DriverName    string
+	DriverVersion string
+	DriverID      int
 
-	CoreAddr        string
-	ImageRepository ImageRepository
+	CoreAddr        string          `validate:"required"`
+	ImageRepository ImageRepository `validate:"required"`
 }
 
 type ImageRepository struct {
-	Repository string
-	StorePath  string
+	Repository string `validate:"required"`
+	StorePath  string `validate:"required"`
 }
 
 func (b *BaseDriver) GetFlags() []*proto.Flag {
@@ -41,19 +43,13 @@ func (b *BaseDriver) GetFlags() []*proto.Flag {
 			Value:  nil,
 		},
 		{
-			Name:   "CoreAddr",
-			Usage:  "core http addr",
-			EnvVar: "BASE_CORE_ADDR",
-			Value:  nil,
-		},
-		{
-			Name:   "ImageRepository",
+			Name:   "Repository",
 			Usage:  "image repository",
 			EnvVar: "BASE_IMAGE_REPOSITORY",
 			Value:  nil,
 		},
 		{
-			Name:   "ImageStorePath",
+			Name:   "StorePath",
 			Usage:  "image repository",
 			EnvVar: "BASE_IMAGE_STORE_PATH",
 			Value:  nil,

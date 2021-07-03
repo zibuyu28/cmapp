@@ -18,13 +18,19 @@ package drivers
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s"
+	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/mrobot/proto"
 )
 
 var buildInDrivers = []string{"k8s"}
+var buildInDriversVersion = map[string]string{
+	"k8s": "1.0.0",
+}
 
 type BuildInDriver struct {
 	GrpcServer proto.MachineDriverServer
@@ -43,9 +49,14 @@ func (d BuildInDriver) Exit() {
 func ParseDriver(driverName string) (*BuildInDriver, error) {
 	switch driverName {
 	case "k8s":
-		// TODO: handle args plugin need
-		return &BuildInDriver{k8s.DriverK8s{}}, nil
+		return &BuildInDriver{GrpcServer: &k8s.DriverK8s{
+			BaseDriver: pkg.BaseDriver{
+				UUID:          md5.MD5(fmt.Sprintf("%s:%s", driverName, buildInDriversVersion[driverName])),
+				DriverName:    driverName,
+				DriverVersion: buildInDriversVersion[driverName],
+			},
+		}}, nil
 	default:
-		return nil, errors.Errorf("fail to parse driver named [%s], build in drivers [%v], please check config or param",driverName, buildInDrivers)
+		return nil, errors.Errorf("fail to parse driver named [%s], build in drivers [%v], please check config or param", driverName, buildInDrivers)
 	}
 }

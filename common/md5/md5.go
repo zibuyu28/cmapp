@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package base
+package md5
 
 import (
-	"github.com/pkg/errors"
+	"crypto/md5"
+	"fmt"
 )
 
-// CheckEnv check env
-func (c *Client) CheckEnv() error {
-	_, err := c.k.Discovery().ServerVersion()
-	if err != nil {
-		return errors.Wrap(err, "discover server version")
+func MD5(source string) string {
+	if len(source) == 0 {
+		return ""
 	}
-	return nil
+	data := []byte(source)
+	has := md5.Sum(data)
+	return fmt.Sprintf("%x", has)
 }

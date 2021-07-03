@@ -32,9 +32,10 @@ import (
 )
 
 const (
-	MachineEngineCoreGRPCPORT = "MACHINE_ENGINE_CORE_GRPC_PORT"
-	MachineEngineDriverName   = "MACHINE_ENGINE_DRIVER_NAME"
-	MachineEngineDriverID     = "MACHINE_ENGINE_DRIVER_ID"
+	MachineEngineCoreGRPCPORT  = "MACHINE_ENGINE_CORE_GRPC_PORT"
+	MachineEngineDriverName    = "MACHINE_ENGINE_DRIVER_NAME"
+	MachineEngineDriverID      = "MACHINE_ENGINE_DRIVER_ID"
+	MachineEngineDriverVersion = "MACHINE_ENGINE_DRIVER_VERSION"
 )
 
 // CreateMachine create machine
@@ -44,6 +45,11 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	driverName := os.Getenv(MachineEngineDriverName)
 	if len(driverName) == 0 {
 		return errors.Errorf("fail to get driver name from env, please check env [%s]", MachineEngineDriverName)
+	}
+
+	driverVersion := os.Getenv(MachineEngineDriverVersion)
+	if len(driverVersion) == 0 {
+		return errors.Errorf("fail to get driver version from env, please check env [%s]", MachineEngineDriverVersion)
 	}
 
 	driverIDStr := os.Getenv(MachineEngineDriverID)
@@ -71,7 +77,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	var meIns machineproto.MachineDriverClient
 	//var meIns ma.MEngine
-	meIns, err = getMEnginePluginInstance(ctx, driverName)
+	meIns, err = getMEnginePluginInstance(ctx, driverID, driverName, driverVersion)
 	if err != nil {
 		log.Errorf(ctx, "Currently fail to new machine engine instance, driverName [%s]", driverName)
 		return errors.Wrap(err, "fail to new machine engine instance")
@@ -89,7 +95,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	log.Debugf(ctx, "Currently init machine success, info [%+v]", machine)
 
 	// get grpc connect
-	ctx, cancel := context.WithTimeout(ctx, time.Second * time.Duration(10))
+	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(10))
 	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
 	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithInsecure(), grpc.WithBlock())
@@ -144,9 +150,9 @@ func CreateMachine(ctx context.Context, uuid string) error {
 }
 
 // TODODone: 这个是一个很大的问题, 该怎么嵌入驱动 ----> 使用grpc嵌入
-func getMEnginePluginInstance(ctx context.Context, driverID string) (machineproto.MachineDriverClient, error) {
+func getMEnginePluginInstance(ctx context.Context, driverID int, driverName, driverVersion string) (machineproto.MachineDriverClient, error) {
 	// 启动 plugin
-	plugin, err := localbinary.NewPlugin(ctx, driverID)
+	plugin, err := localbinary.NewPlugin(ctx, driverID, driverName, driverVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "new plugin")
 	}
@@ -168,13 +174,4 @@ func getMEnginePluginInstance(ctx context.Context, driverID string) (machineprot
 		return nil, errors.Wrap(err, "create grpc connection")
 	}
 	return machineproto.NewMachineDriverClient(conn), nil
-}
-
-func Health(ctx context.Context, cli machineproto.MachineDriverClient)error {
-	_, err := cli.Health(ctx, &machineproto.Empty{})
-	if err != nil {
-
-	}
-	// TODO:
-	panic("implement me")
 }
