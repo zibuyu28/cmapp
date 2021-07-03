@@ -24,6 +24,124 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Flags struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Flags []*Flag `protobuf:"bytes,1,rep,name=Flags,proto3" json:"Flags,omitempty"`
+}
+
+func (x *Flags) Reset() {
+	*x = Flags{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_driver_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Flags) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Flags) ProtoMessage() {}
+
+func (x *Flags) ProtoReflect() protoreflect.Message {
+	mi := &file_driver_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Flags.ProtoReflect.Descriptor instead.
+func (*Flags) Descriptor() ([]byte, []int) {
+	return file_driver_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Flags) GetFlags() []*Flag {
+	if x != nil {
+		return x.Flags
+	}
+	return nil
+}
+
+type Flag struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name   string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
+	Usage  string   `protobuf:"bytes,2,opt,name=Usage,proto3" json:"Usage,omitempty"`
+	EnvVar string   `protobuf:"bytes,3,opt,name=EnvVar,proto3" json:"EnvVar,omitempty"`
+	Value  []string `protobuf:"bytes,4,rep,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *Flag) Reset() {
+	*x = Flag{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_driver_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Flag) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Flag) ProtoMessage() {}
+
+func (x *Flag) ProtoReflect() protoreflect.Message {
+	mi := &file_driver_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Flag.ProtoReflect.Descriptor instead.
+func (*Flag) Descriptor() ([]byte, []int) {
+	return file_driver_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Flag) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Flag) GetUsage() string {
+	if x != nil {
+		return x.Usage
+	}
+	return ""
+}
+
+func (x *Flag) GetEnvVar() string {
+	if x != nil {
+		return x.EnvVar
+	}
+	return ""
+}
+
+func (x *Flag) GetValue() []string {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 type Empty struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -33,7 +151,7 @@ type Empty struct {
 func (x *Empty) Reset() {
 	*x = Empty{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_driver_proto_msgTypes[0]
+		mi := &file_driver_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -46,7 +164,7 @@ func (x *Empty) String() string {
 func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_driver_proto_msgTypes[0]
+	mi := &file_driver_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,54 +177,7 @@ func (x *Empty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Empty.ProtoReflect.Descriptor instead.
 func (*Empty) Descriptor() ([]byte, []int) {
-	return file_driver_proto_rawDescGZIP(), []int{0}
-}
-
-type Version struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Version string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-}
-
-func (x *Version) Reset() {
-	*x = Version{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_driver_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Version) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Version) ProtoMessage() {}
-
-func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_driver_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Version.ProtoReflect.Descriptor instead.
-func (*Version) Descriptor() ([]byte, []int) {
-	return file_driver_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *Version) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
+	return file_driver_proto_rawDescGZIP(), []int{2}
 }
 
 type Machine struct {
@@ -124,7 +195,7 @@ type Machine struct {
 func (x *Machine) Reset() {
 	*x = Machine{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_driver_proto_msgTypes[2]
+		mi := &file_driver_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -137,7 +208,7 @@ func (x *Machine) String() string {
 func (*Machine) ProtoMessage() {}
 
 func (x *Machine) ProtoReflect() protoreflect.Message {
-	mi := &file_driver_proto_msgTypes[2]
+	mi := &file_driver_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -150,7 +221,7 @@ func (x *Machine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Machine.ProtoReflect.Descriptor instead.
 func (*Machine) Descriptor() ([]byte, []int) {
-	return file_driver_proto_rawDescGZIP(), []int{2}
+	return file_driver_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Machine) GetUUID() string {
@@ -188,171 +259,51 @@ func (x *Machine) GetCustomInfo() map[string]string {
 	return nil
 }
 
-type Flags struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Flags []*Flag `protobuf:"bytes,1,rep,name=Flags,proto3" json:"Flags,omitempty"`
-}
-
-func (x *Flags) Reset() {
-	*x = Flags{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_driver_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Flags) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Flags) ProtoMessage() {}
-
-func (x *Flags) ProtoReflect() protoreflect.Message {
-	mi := &file_driver_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Flags.ProtoReflect.Descriptor instead.
-func (*Flags) Descriptor() ([]byte, []int) {
-	return file_driver_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *Flags) GetFlags() []*Flag {
-	if x != nil {
-		return x.Flags
-	}
-	return nil
-}
-
-type Flag struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name   string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
-	Usage  string   `protobuf:"bytes,2,opt,name=Usage,proto3" json:"Usage,omitempty"`
-	EnvVar string   `protobuf:"bytes,3,opt,name=EnvVar,proto3" json:"EnvVar,omitempty"`
-	Values []string `protobuf:"bytes,4,rep,name=Values,proto3" json:"Values,omitempty"`
-}
-
-func (x *Flag) Reset() {
-	*x = Flag{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_driver_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Flag) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Flag) ProtoMessage() {}
-
-func (x *Flag) ProtoReflect() protoreflect.Message {
-	mi := &file_driver_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Flag.ProtoReflect.Descriptor instead.
-func (*Flag) Descriptor() ([]byte, []int) {
-	return file_driver_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *Flag) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Flag) GetUsage() string {
-	if x != nil {
-		return x.Usage
-	}
-	return ""
-}
-
-func (x *Flag) GetEnvVar() string {
-	if x != nil {
-		return x.EnvVar
-	}
-	return ""
-}
-
-func (x *Flag) GetValues() []string {
-	if x != nil {
-		return x.Values
-	}
-	return nil
-}
-
 var File_driver_proto protoreflect.FileDescriptor
 
 var file_driver_proto_rawDesc = []byte{
-	0x0a, 0x0c, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x07,
-	0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x23, 0x0a, 0x07, 0x56, 0x65, 0x72, 0x73, 0x69,
-	0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0xdc, 0x01, 0x0a,
-	0x07, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x55, 0x55, 0x49, 0x44,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x55, 0x55, 0x49, 0x44, 0x12, 0x14, 0x0a, 0x05,
-	0x53, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x53, 0x74, 0x61,
-	0x74, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x12, 0x12,
-	0x0a, 0x04, 0x54, 0x61, 0x67, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x54, 0x61,
-	0x67, 0x73, 0x12, 0x38, 0x0a, 0x0a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f,
-	0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65,
-	0x2e, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79,
-	0x52, 0x0a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x3d, 0x0a, 0x0f,
-	0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12,
-	0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65,
-	0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x24, 0x0a, 0x05, 0x46,
-	0x6c, 0x61, 0x67, 0x73, 0x12, 0x1b, 0x0a, 0x05, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x18, 0x01, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x52, 0x05, 0x46, 0x6c, 0x61, 0x67,
-	0x73, 0x22, 0x60, 0x0a, 0x04, 0x46, 0x6c, 0x61, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x4e, 0x61, 0x6d,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a,
-	0x05, 0x55, 0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x55, 0x73,
-	0x61, 0x67, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x45, 0x6e, 0x76, 0x56, 0x61, 0x72, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x06, 0x45, 0x6e, 0x76, 0x56, 0x61, 0x72, 0x12, 0x16, 0x0a, 0x06, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x56, 0x61, 0x6c,
-	0x75, 0x65, 0x73, 0x32, 0xfc, 0x01, 0x0a, 0x0d, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x44,
-	0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x23, 0x0a, 0x0d, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x56,
-	0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x08,
-	0x2e, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x00, 0x12, 0x21, 0x0a, 0x0b, 0x49, 0x6e,
+	0x0a, 0x0c, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x24,
+	0x0a, 0x05, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x12, 0x1b, 0x0a, 0x05, 0x46, 0x6c, 0x61, 0x67, 0x73,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x05, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x52, 0x05, 0x46,
+	0x6c, 0x61, 0x67, 0x73, 0x22, 0x5e, 0x0a, 0x04, 0x46, 0x6c, 0x61, 0x67, 0x12, 0x12, 0x0a, 0x04,
+	0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x14, 0x0a, 0x05, 0x55, 0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x55, 0x73, 0x61, 0x67, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x45, 0x6e, 0x76, 0x56, 0x61, 0x72,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x45, 0x6e, 0x76, 0x56, 0x61, 0x72, 0x12, 0x14,
+	0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x22, 0x07, 0x0a, 0x05, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0xdc, 0x01,
+	0x0a, 0x07, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x55, 0x55, 0x49,
+	0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x55, 0x55, 0x49, 0x44, 0x12, 0x14, 0x0a,
+	0x05, 0x53, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x53, 0x74,
+	0x61, 0x74, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x12,
+	0x12, 0x0a, 0x04, 0x54, 0x61, 0x67, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x54,
+	0x61, 0x67, 0x73, 0x12, 0x38, 0x0a, 0x0a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66,
+	0x6f, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e,
+	0x65, 0x2e, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72,
+	0x79, 0x52, 0x0a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x3d, 0x0a,
+	0x0f, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b,
+	0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0xff, 0x01, 0x0a,
+	0x0d, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x22,
+	0x0a, 0x0e, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x46, 0x6c, 0x61, 0x67, 0x73,
+	0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x73,
+	0x22, 0x00, 0x12, 0x26, 0x0a, 0x12, 0x53, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x46,
+	0x72, 0x6f, 0x6d, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x12, 0x06, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x73,
+	0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x12, 0x21, 0x0a, 0x0b, 0x49, 0x6e,
 	0x69, 0x74, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74,
-	0x79, 0x1a, 0x08, 0x2e, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x22, 0x00, 0x12, 0x22, 0x0a,
-	0x0e, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x12,
-	0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x22,
-	0x00, 0x12, 0x1e, 0x0a, 0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x45, 0x78, 0x65, 0x63, 0x12,
-	0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22,
-	0x00, 0x12, 0x21, 0x0a, 0x0d, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x4d, 0x52, 0x6f, 0x62,
-	0x6f, 0x74, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x22, 0x00, 0x12, 0x22, 0x0a, 0x0e, 0x4d, 0x52, 0x6f, 0x48, 0x65, 0x61, 0x6c, 0x74,
-	0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06,
-	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x12, 0x18, 0x0a, 0x04, 0x45, 0x78, 0x69, 0x74,
-	0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
-	0x22, 0x00, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x1a, 0x08, 0x2e, 0x4d, 0x61, 0x63, 0x68, 0x69, 0x6e, 0x65, 0x22, 0x00, 0x12, 0x1e, 0x0a,
+	0x0a, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x45, 0x78, 0x65, 0x63, 0x12, 0x06, 0x2e, 0x45, 0x6d,
+	0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x12, 0x21, 0x0a,
+	0x0d, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x4d, 0x52, 0x6f, 0x62, 0x6f, 0x74, 0x12, 0x06,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00,
+	0x12, 0x22, 0x0a, 0x0e, 0x4d, 0x52, 0x6f, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x12, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70,
+	0x74, 0x79, 0x22, 0x00, 0x12, 0x18, 0x0a, 0x04, 0x45, 0x78, 0x69, 0x74, 0x12, 0x06, 0x2e, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x1a, 0x06, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x42, 0x0a,
+	0x5a, 0x08, 0x2e, 0x2e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -367,32 +318,31 @@ func file_driver_proto_rawDescGZIP() []byte {
 	return file_driver_proto_rawDescData
 }
 
-var file_driver_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_driver_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_driver_proto_goTypes = []interface{}{
-	(*Empty)(nil),   // 0: Empty
-	(*Version)(nil), // 1: Version
-	(*Machine)(nil), // 2: Machine
-	(*Flags)(nil),   // 3: Flags
-	(*Flag)(nil),    // 4: Flag
-	nil,             // 5: Machine.CustomInfoEntry
+	(*Flags)(nil),   // 0: Flags
+	(*Flag)(nil),    // 1: Flag
+	(*Empty)(nil),   // 2: Empty
+	(*Machine)(nil), // 3: Machine
+	nil,             // 4: Machine.CustomInfoEntry
 }
 var file_driver_proto_depIdxs = []int32{
-	5, // 0: Machine.CustomInfo:type_name -> Machine.CustomInfoEntry
-	4, // 1: Flags.Flags:type_name -> Flag
-	0, // 2: MachineDriver.DriverVersion:input_type -> Empty
-	0, // 3: MachineDriver.InitMachine:input_type -> Empty
-	0, // 4: MachineDriver.GetCreateFlags:input_type -> Empty
-	0, // 5: MachineDriver.CreateExec:input_type -> Empty
-	0, // 6: MachineDriver.InstallMRobot:input_type -> Empty
-	0, // 7: MachineDriver.MRoHealthCheck:input_type -> Empty
-	0, // 8: MachineDriver.Exit:input_type -> Empty
-	1, // 9: MachineDriver.DriverVersion:output_type -> Version
-	2, // 10: MachineDriver.InitMachine:output_type -> Machine
-	3, // 11: MachineDriver.GetCreateFlags:output_type -> Flags
-	0, // 12: MachineDriver.CreateExec:output_type -> Empty
-	0, // 13: MachineDriver.InstallMRobot:output_type -> Empty
-	0, // 14: MachineDriver.MRoHealthCheck:output_type -> Empty
-	0, // 15: MachineDriver.Exit:output_type -> Empty
+	1, // 0: Flags.Flags:type_name -> Flag
+	4, // 1: Machine.CustomInfo:type_name -> Machine.CustomInfoEntry
+	2, // 2: MachineDriver.GetCreateFlags:input_type -> Empty
+	0, // 3: MachineDriver.SetConfigFromFlags:input_type -> Flags
+	2, // 4: MachineDriver.InitMachine:input_type -> Empty
+	2, // 5: MachineDriver.CreateExec:input_type -> Empty
+	2, // 6: MachineDriver.InstallMRobot:input_type -> Empty
+	2, // 7: MachineDriver.MRoHealthCheck:input_type -> Empty
+	2, // 8: MachineDriver.Exit:input_type -> Empty
+	0, // 9: MachineDriver.GetCreateFlags:output_type -> Flags
+	2, // 10: MachineDriver.SetConfigFromFlags:output_type -> Empty
+	3, // 11: MachineDriver.InitMachine:output_type -> Machine
+	2, // 12: MachineDriver.CreateExec:output_type -> Empty
+	2, // 13: MachineDriver.InstallMRobot:output_type -> Empty
+	2, // 14: MachineDriver.MRoHealthCheck:output_type -> Empty
+	2, // 15: MachineDriver.Exit:output_type -> Empty
 	9, // [9:16] is the sub-list for method output_type
 	2, // [2:9] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -407,42 +357,6 @@ func file_driver_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_driver_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Empty); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_driver_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Version); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_driver_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Machine); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_driver_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Flags); i {
 			case 0:
 				return &v.state
@@ -454,8 +368,32 @@ func file_driver_proto_init() {
 				return nil
 			}
 		}
-		file_driver_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_driver_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Flag); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_driver_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Empty); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_driver_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Machine); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -473,7 +411,7 @@ func file_driver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_driver_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -499,12 +437,12 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MachineDriverClient interface {
-	// DriverVersion plugin version
-	DriverVersion(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Version, error)
-	// InitMachine create a machine to store
-	InitMachine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Machine, error)
 	// GetCreateFlags get create flags
 	GetCreateFlags(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Flags, error)
+	// SetConfigFromFlags set driver config from flags
+	SetConfigFromFlags(ctx context.Context, in *Flags, opts ...grpc.CallOption) (*Empty, error)
+	// InitMachine create a machine to store
+	InitMachine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Machine, error)
 	// CreateExec driver to execute really create action for a machine
 	CreateExec(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	// InstallMRobot install machine robot in this new machine
@@ -523,9 +461,18 @@ func NewMachineDriverClient(cc grpc.ClientConnInterface) MachineDriverClient {
 	return &machineDriverClient{cc}
 }
 
-func (c *machineDriverClient) DriverVersion(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Version, error) {
-	out := new(Version)
-	err := c.cc.Invoke(ctx, "/MachineDriver/DriverVersion", in, out, opts...)
+func (c *machineDriverClient) GetCreateFlags(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Flags, error) {
+	out := new(Flags)
+	err := c.cc.Invoke(ctx, "/MachineDriver/GetCreateFlags", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *machineDriverClient) SetConfigFromFlags(ctx context.Context, in *Flags, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/MachineDriver/SetConfigFromFlags", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -535,15 +482,6 @@ func (c *machineDriverClient) DriverVersion(ctx context.Context, in *Empty, opts
 func (c *machineDriverClient) InitMachine(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Machine, error) {
 	out := new(Machine)
 	err := c.cc.Invoke(ctx, "/MachineDriver/InitMachine", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *machineDriverClient) GetCreateFlags(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Flags, error) {
-	out := new(Flags)
-	err := c.cc.Invoke(ctx, "/MachineDriver/GetCreateFlags", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -588,12 +526,12 @@ func (c *machineDriverClient) Exit(ctx context.Context, in *Empty, opts ...grpc.
 
 // MachineDriverServer is the server API for MachineDriver service.
 type MachineDriverServer interface {
-	// DriverVersion plugin version
-	DriverVersion(context.Context, *Empty) (*Version, error)
-	// InitMachine create a machine to store
-	InitMachine(context.Context, *Empty) (*Machine, error)
 	// GetCreateFlags get create flags
 	GetCreateFlags(context.Context, *Empty) (*Flags, error)
+	// SetConfigFromFlags set driver config from flags
+	SetConfigFromFlags(context.Context, *Flags) (*Empty, error)
+	// InitMachine create a machine to store
+	InitMachine(context.Context, *Empty) (*Machine, error)
 	// CreateExec driver to execute really create action for a machine
 	CreateExec(context.Context, *Empty) (*Empty, error)
 	// InstallMRobot install machine robot in this new machine
@@ -608,14 +546,14 @@ type MachineDriverServer interface {
 type UnimplementedMachineDriverServer struct {
 }
 
-func (*UnimplementedMachineDriverServer) DriverVersion(context.Context, *Empty) (*Version, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DriverVersion not implemented")
+func (*UnimplementedMachineDriverServer) GetCreateFlags(context.Context, *Empty) (*Flags, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCreateFlags not implemented")
+}
+func (*UnimplementedMachineDriverServer) SetConfigFromFlags(context.Context, *Flags) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfigFromFlags not implemented")
 }
 func (*UnimplementedMachineDriverServer) InitMachine(context.Context, *Empty) (*Machine, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitMachine not implemented")
-}
-func (*UnimplementedMachineDriverServer) GetCreateFlags(context.Context, *Empty) (*Flags, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCreateFlags not implemented")
 }
 func (*UnimplementedMachineDriverServer) CreateExec(context.Context, *Empty) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateExec not implemented")
@@ -634,20 +572,38 @@ func RegisterMachineDriverServer(s *grpc.Server, srv MachineDriverServer) {
 	s.RegisterService(&_MachineDriver_serviceDesc, srv)
 }
 
-func _MachineDriver_DriverVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MachineDriver_GetCreateFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MachineDriverServer).DriverVersion(ctx, in)
+		return srv.(MachineDriverServer).GetCreateFlags(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/MachineDriver/DriverVersion",
+		FullMethod: "/MachineDriver/GetCreateFlags",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MachineDriverServer).DriverVersion(ctx, req.(*Empty))
+		return srv.(MachineDriverServer).GetCreateFlags(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MachineDriver_SetConfigFromFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Flags)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MachineDriverServer).SetConfigFromFlags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/MachineDriver/SetConfigFromFlags",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MachineDriverServer).SetConfigFromFlags(ctx, req.(*Flags))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -666,24 +622,6 @@ func _MachineDriver_InitMachine_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MachineDriverServer).InitMachine(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MachineDriver_GetCreateFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MachineDriverServer).GetCreateFlags(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/MachineDriver/GetCreateFlags",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MachineDriverServer).GetCreateFlags(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -765,16 +703,16 @@ var _MachineDriver_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MachineDriverServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "DriverVersion",
-			Handler:    _MachineDriver_DriverVersion_Handler,
+			MethodName: "GetCreateFlags",
+			Handler:    _MachineDriver_GetCreateFlags_Handler,
+		},
+		{
+			MethodName: "SetConfigFromFlags",
+			Handler:    _MachineDriver_SetConfigFromFlags_Handler,
 		},
 		{
 			MethodName: "InitMachine",
 			Handler:    _MachineDriver_InitMachine_Handler,
-		},
-		{
-			MethodName: "GetCreateFlags",
-			Handler:    _MachineDriver_GetCreateFlags_Handler,
 		},
 		{
 			MethodName: "CreateExec",

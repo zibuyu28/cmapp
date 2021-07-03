@@ -132,12 +132,10 @@ func (d DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.E
 }
 
 func (d DriverK8s) InstallMRobot(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
-	client, err := base.NewClient(ctx, defaultConfig)
+	_, err := base.NewClient(ctx, defaultConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "new kubernetes client")
 	}
-
-
 
 	panic("implement me")
 }
