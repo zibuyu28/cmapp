@@ -16,7 +16,7 @@
 
 package ag
 
-import "context"
+import "github.com/zibuyu28/cmapp/core/pkg/context"
 
 // MachineAPI machine api for plugin. TODO: add other api and optimization exist api
 type MachineAPI interface {
