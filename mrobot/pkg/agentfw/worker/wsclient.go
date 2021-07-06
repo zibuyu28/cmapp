@@ -30,7 +30,7 @@ type Flag struct {
 
 var Flags = make(map[string]Flag)
 
-func SetFlags() {
+func init() {
 	environ := os.Environ()
 	for _, s := range environ {
 		if strings.HasPrefix(s, DriverPrefix) {
@@ -47,6 +47,5 @@ func SetFlags() {
 }
 
 func wsClient() {
-	SetFlags()
 	NewDriverWorker()
 }
