@@ -23,7 +23,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/log"
 	coreproto "github.com/zibuyu28/cmapp/core/proto"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin/localbinary"
-	machineproto "github.com/zibuyu28/cmapp/mrobot/proto"
+	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"os"
@@ -75,7 +75,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 		"UUID": uuid,
 	}))
 
-	var meIns machineproto.MachineDriverClient
+	var meIns driver.MachineDriverClient
 	//var meIns ma.MEngine
 	meIns, err = getMEnginePluginInstance(ctx, driverID, driverName, driverVersion)
 	if err != nil {
@@ -83,7 +83,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 		return errors.Wrap(err, "fail to new machine engine instance")
 	}
 
-	machine, err := meIns.InitMachine(ctx, &machineproto.Empty{})
+	machine, err := meIns.InitMachine(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "init machine")
 	}
@@ -121,20 +121,20 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "CoreID", fmt.Sprintf("%d", initMachine.ID))
 
-	_, err = meIns.CreateExec(ctx, &machineproto.Empty{})
+	_, err = meIns.CreateExec(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "create execute")
 	}
 	log.Debug(ctx, "Currently execute create machine action success")
 
-	_, err = meIns.InstallMRobot(ctx, &machineproto.Empty{})
+	_, err = meIns.InstallMRobot(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "install machine robot")
 	}
 
 	log.Debug(ctx, "Currently install machine robot success")
 
-	_, err = meIns.MRoHealthCheck(ctx, &machineproto.Empty{})
+	_, err = meIns.MRoHealthCheck(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "machine robot health check")
 	}
@@ -150,7 +150,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 }
 
 // TODODone: 这个是一个很大的问题, 该怎么嵌入驱动 ----> 使用grpc嵌入
-func getMEnginePluginInstance(ctx context.Context, driverID int, driverName, driverVersion string) (machineproto.MachineDriverClient, error) {
+func getMEnginePluginInstance(ctx context.Context, driverID int, driverName, driverVersion string) (driver.MachineDriverClient, error) {
 	// 启动 plugin
 	plugin, err := localbinary.NewPlugin(ctx, driverID, driverName, driverVersion)
 	if err != nil {
@@ -173,5 +173,5 @@ func getMEnginePluginInstance(ctx context.Context, driverID int, driverName, dri
 	if err != nil {
 		return nil, errors.Wrap(err, "create grpc connection")
 	}
-	return machineproto.NewMachineDriverClient(conn), nil
+	return driver.NewMachineDriverClient(conn), nil
 }

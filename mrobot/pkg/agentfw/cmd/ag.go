@@ -25,7 +25,7 @@ import (
 
 // agCmd represents the ag command
 var agCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "startag",
 	Short: "ag machine agent",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -36,6 +36,9 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		timeout, cancelFunc := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancelFunc()
+		// 有很多信息在环境变量中
+		// 启动 wsclient 链接到 core，开始接收信息
+		// 调用自身二进制，启动ag
 		worker.Start(timeout)
 	},
 }

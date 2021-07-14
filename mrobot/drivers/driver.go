@@ -24,7 +24,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
-	"github.com/zibuyu28/cmapp/mrobot/proto"
+	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
 )
 
 var buildInDrivers = []string{"k8s"}
@@ -33,13 +33,13 @@ var buildInDriversVersion = map[string]string{
 }
 
 type BuildInDriver struct {
-	GrpcServer proto.MachineDriverServer
+	GrpcServer driver.MachineDriverServer
 }
 
 // Exit exit driver called by self
 func (d BuildInDriver) Exit() {
 	ctx := context.Background()
-	_, err := d.GrpcServer.Exit(ctx, &proto.Empty{})
+	_, err := d.GrpcServer.Exit(ctx, &driver.Empty{})
 	if err != nil {
 		log.Errorf(ctx, "Manage err when exit driver server, Err: [%v]", err)
 	}

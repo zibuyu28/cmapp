@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "../proto";
+option go_package = "./driver";
 
 // MachineDriver machine driver service
 service MachineDriver {

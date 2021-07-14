@@ -56,7 +56,7 @@ func (a AgentK8s) Copy(ctx context.Context, source, targetPath string) error {
 	panic("implement me")
 }
 
-func (a AgentK8s) UpgradeFileContent(ctx context.Context, targetFile string, newContent []byte) error {
+func (a AgentK8s) UpdateFileContent(ctx context.Context, targetFile string, newContent []byte) error {
 	panic("implement me")
 }
 
@@ -88,11 +88,11 @@ func (a AgentK8s) SetupApp(ctx context.Context, env, appLabels map[string]string
 	panic("implement me")
 }
 
-func (a AgentK8s) Done(ctx context.Context) {
+func (a AgentK8s) Done(ctx context.Context) error {
 	panic("implement me")
 }
 
-func (a AgentK8s) ShutdownApp(ctx context.Context, appUniqueName string) {
+func (a AgentK8s) ShutdownApp(ctx context.Context, appUniqueName string) error {
 	panic("implement me")
 }
 

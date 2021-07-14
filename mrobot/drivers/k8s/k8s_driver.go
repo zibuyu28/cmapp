@@ -25,7 +25,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/tmp"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
-	"github.com/zibuyu28/cmapp/mrobot/proto"
+	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -58,9 +58,9 @@ func NewDriverK8s() {
 }
 
 // GetCreateFlags get create flags
-func (d *DriverK8s) GetCreateFlags(ctx context.Context, empty *proto.Empty) (*proto.Flags, error) {
-	baseFlags := &proto.Flags{Flags: d.GetFlags()}
-	flags := []*proto.Flag{
+func (d *DriverK8s) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*driver.Flags, error) {
+	baseFlags := &driver.Flags{Flags: d.GetFlags()}
+	flags := []*driver.Flag{
 		{
 			Name:   "KubeConfig",
 			Usage:  "kubernetes cluster config for connection, if set this flag, the token,certificate,url can not be set",
@@ -109,7 +109,7 @@ func (d *DriverK8s) GetCreateFlags(ctx context.Context, empty *proto.Empty) (*pr
 }
 
 // SetConfigFromFlags set config from flags
-func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *proto.Flags) (*proto.Empty, error) {
+func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) (*driver.Empty, error) {
 	m := convertFlags(flags)
 	d.CoreAddr = m["CoreAddr"]
 	d.ImageRepository.Repository = m["Repository"]
@@ -163,7 +163,7 @@ func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *proto.Flags) 
 	return nil, nil
 }
 
-func convertFlags(flags *proto.Flags) map[string]string {
+func convertFlags(flags *driver.Flags) map[string]string {
 	var fls = make(map[string]string)
 	for _, flag := range flags.Flags {
 		if len(flag.Value) != 0 {
@@ -178,7 +178,7 @@ func convertFlags(flags *proto.Flags) map[string]string {
 	return fls
 }
 
-func (d *DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto.Machine, error) {
+func (d *DriverK8s) InitMachine(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to init machine")
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -194,7 +194,7 @@ func (d *DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto
 		"config":    d.KubeConfig,
 		"namespace": d.Namespace,
 	}
-	machine := &proto.Machine{
+	machine := &driver.Machine{
 		UUID:       datas[0],
 		State:      1,
 		Tags:       []string{"k8s"},
@@ -204,12 +204,12 @@ func (d *DriverK8s) InitMachine(ctx context.Context, empty *proto.Empty) (*proto
 	return machine, nil
 }
 
-func (d *DriverK8s) CreateExec(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+func (d *DriverK8s) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to create machine")
 	return nil, nil
 }
 
-func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to install mrobot")
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -261,13 +261,13 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *proto.Empty) (*pro
 	return nil, nil
 }
 
-func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
 	// TODO: how to check mrobot health ?
 	log.Info(ctx, "Currently k8s machine plugin start to check robot health")
 	return nil, nil
 }
 
-func (d *DriverK8s) Exit(ctx context.Context, empty *proto.Empty) (*proto.Empty, error) {
+func (d *DriverK8s) Exit(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
 	log.Info(ctx, "Currently k8s machine plugin exit")
 	return nil, nil
 }

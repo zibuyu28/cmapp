@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
-	"github.com/zibuyu28/cmapp/mrobot/proto"
+	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
 	"google.golang.org/grpc"
 	"net"
 	"os"
@@ -23,7 +23,7 @@ func RegisterDriver(d drivers.BuildInDriver) {
 
 	grpcserver := grpc.NewServer()
 
-	proto.RegisterMachineDriverServer(grpcserver, d.GrpcServer)
+	driver.RegisterMachineDriverServer(grpcserver, d.GrpcServer)
 
 	go grpcserver.Serve(listener)
 

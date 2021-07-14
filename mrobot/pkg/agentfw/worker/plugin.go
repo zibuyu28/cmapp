@@ -16,13 +16,12 @@
 
 package worker
 
-import (
-	"github.com/zibuyu28/cmapp/core/pkg/context"
-)
+import "github.com/zibuyu28/cmapp/core/pkg/context"
 
 type DriverWorker struct {
 
 }
+
 
 func NewDriverWorker() *DriverWorker {
 	//var m = make(map[string]string)
@@ -52,7 +51,7 @@ func (d DriverWorker) DownloadToPath(ctx context.Context, downloadLink string, t
 	panic("implement me")
 }
 
-func (d DriverWorker) Upload(ctx context.Context, source string, targetLink string) error {
+func (d DriverWorker) Upload(ctx context.Context, source, targetLink string) error {
 	panic("implement me")
 }
 
@@ -68,7 +67,7 @@ func (d DriverWorker) Copy(ctx context.Context, source, targetPath string) error
 	panic("implement me")
 }
 
-func (d DriverWorker) UpgradeFileContent(ctx context.Context, targetFile string, newContent []byte) error {
+func (d DriverWorker) UpdateFileContent(ctx context.Context, targetFile string, newContent []byte) error {
 	panic("implement me")
 }
 
@@ -100,11 +99,11 @@ func (d DriverWorker) SetupApp(ctx context.Context, env, appLabels map[string]st
 	panic("implement me")
 }
 
-func (d DriverWorker) Done(ctx context.Context) {
+func (d DriverWorker) Done(ctx context.Context) error {
 	panic("implement me")
 }
 
-func (d DriverWorker) ShutdownApp(ctx context.Context, appUniqueName string) {
+func (d DriverWorker) ShutdownApp(ctx context.Context, appUniqueName string) error {
 	panic("implement me")
 }
 
@@ -119,5 +118,6 @@ func (d DriverWorker) TargetPortIntranetRoute(ctx context.Context, port int) (st
 func (d DriverWorker) TargetPortExternalRoute(ctx context.Context, port int) (string, error) {
 	panic("implement me")
 }
+
 
 

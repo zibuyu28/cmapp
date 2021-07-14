@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+option go_package = "./worker";
+
+
+service Worker {
+  // GetWorkspace require workspace from driver,
+  // please make sure this workspace exist and
+  // has permission. context have unique uuid
+  // for a series of operations
+  rpc GetWorkspace(Empty) returns (WorkspaceInfo) {}
+
+  // DestroyWorkspace destroy workspace from driver
+  rpc DestroyWorkspace(WorkspaceInfo) returns (Empty) {}
+
+  // DownloadToPath download something by download link
+  // download link maybe http or other, this is up on
+  // driver, target path base on root path of driver,
+  // and this target path must exist, driver may not
+  // create it
+  rpc DownloadToPath(DownloadInfo) returns (Empty) {}
+
+  // Upload upload something to target, source file
+  // must exist, target link is the remote addr to upload
+  rpc Upload(UploadInfo) returns (Empty) {}
+
+  // Compress compress dir to ~.tar.gz, file name
+  // is same with dir name, file will be generated
+  // at same level as file dir
+  rpc Compress(CompressInfo) returns (Empty) {}
+
+  // Decompress decompress file be provided, make sure tar file exist
+  // return the father dir path that create by driver, maybe random name
+  rpc Decompress(DeCompressInfo) returns (Empty) {}
+
+  // Copy copy file to target path, make sure source and target exist
+  rpc Copy(CopyInfo) returns (Empty) {}
+
+  // UpdateFileContent update target file content
+  rpc UpdateFileContent(UpdateFileContentInfo) returns (Empty) {}
+
+  // DeleteFile delete target file
+  rpc DeleteFile(DeleteFileInfo) returns (Empty) {}
+
+  // CreateFile create file with content, make sure the file is not
+  // exit and will be created
+  rpc CreateFile(CreateFileInfo) returns (Empty) {}
+
+  // CreateDir create dir, base on workspace
+  rpc CreateDir(CreateDirInfo) returns (Empty) {}
+
+  // RemoveDir remove dir, base on workspace
+  rpc RemoveDir(RemoveDirInfo) returns (Empty) {}
+
+  // FetchFileContent fetch file content, return []byte channel. TODO: check the return
+  rpc FetchFileContent(FetchFileContentInfo) returns (stream ContentLine) {}
+
+  // CheckTargetPortUseful check target port is occupied or not
+  rpc CheckTargetPortUseful(CheckTargetPortInfo) returns (Empty) {}
+
+  // SetupApp setup app with env and labels
+  // return app's unique name, maybe uuid or other
+  rpc SetupApp(SetupAppInfo) returns (App) {}
+
+  // Done this context has been done
+  rpc Done(Empty) returns (Empty) {}
+
+  // ShutdownApp shutdown app with unique name
+  rpc ShutdownApp(App) returns (Empty) {}
+
+  // AppHealth judge app health or not
+  rpc AppHealth(App) returns (Empty) {}
+
+  // TargetPortIntranetRoute create a intranet route for given port
+  rpc TargetPortIntranetRoute(TargetPortIntranetInfo) returns (PortIntranetInfo) {}
+
+  // TargetPortExternalRoute create a external route for given port
+  rpc TargetPortExternalRoute(TargetPortExternalInfo) returns (PortExternalInfo) {}
+}
+
+message PortExternalInfo {
+  int32 Port = 1;
+  string ExternalRoute = 2;
+}
+
+message TargetPortExternalInfo {
+  int32 Port = 1;
+}
+
+message PortIntranetInfo {
+  int32 Port = 1;
+  string IntranetRoute = 2;
+}
+
+message TargetPortIntranetInfo {
+  int32 Port = 1;
+}
+
+message SetupAppInfo {
+  map<string, string> Envs = 1;
+  map<string, string> Labels = 2;
+}
+
+message App {
+  string UUID = 1;
+  string Name = 2;
+}
+
+message CheckTargetPortInfo {
+  int32 Port = 1;
+}
+
+message ContentLine {
+  bytes Line = 1;
+}
+
+message FetchFileContentInfo {
+  string File = 1;
+}
+
+message RemoveDirInfo {
+  string Dir = 1;
+}
+
+message CreateDirInfo {
+  string Dir = 1;
+}
+
+message CreateFileInfo {
+  string File = 1;
+  bytes Content = 2;
+}
+
+message DeleteFileInfo {
+  string TargetFile = 1;
+}
+
+message UpdateFileContentInfo {
+  string TargetFile = 1;
+  bytes newContent = 2;
+}
+
+message CopyInfo {
+  string SourceFile = 1;
+  string TargetPath = 2;
+}
+
+message WorkspaceInfo {
+  string workspace = 1;
+}
+
+message DownloadInfo {
+  string DownloadLink = 1;
+  string targetPath = 2;
+}
+
+message UploadInfo {
+  string SourceFile = 1;
+  string TargetLink = 2;
+}
+
+message CompressInfo {
+  string DirPath = 1;
+}
+
+message DeCompressInfo {
+  string TarFile = 1;
+}
+
+message Empty {
+}

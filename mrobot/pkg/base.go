@@ -16,7 +16,9 @@
 
 package pkg
 
-import "github.com/zibuyu28/cmapp/mrobot/proto"
+import (
+	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+)
 
 // BaseDriver base driver
 type BaseDriver struct {
@@ -34,8 +36,8 @@ type ImageRepository struct {
 	StorePath  string `validate:"required"`
 }
 
-func (b *BaseDriver) GetFlags() []*proto.Flag {
-	return []*proto.Flag{
+func (b *BaseDriver) GetFlags() []*driver.Flag {
+	return []*driver.Flag{
 		{
 			Name:   "CoreAddr",
 			Usage:  "core http addr",

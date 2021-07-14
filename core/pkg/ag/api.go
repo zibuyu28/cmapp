@@ -38,7 +38,7 @@ type MachineAPI interface {
 
 	// Upload upload something to target, source file
 	// must exist, target link is the remote addr to upload
-	Upload(ctx context.Context, source string, targetLink string) error
+	Upload(ctx context.Context, source, targetLink string) error
 
 	// Compress compress dir to ~.tar.gz, file name
 	// is same with dir name, file will be generated
@@ -52,8 +52,8 @@ type MachineAPI interface {
 	// Copy copy file to target path, make sure source and target exist
 	Copy(ctx context.Context, source, targetPath string) error
 
-	// UpgradeFileContent upgrade target file content
-	UpgradeFileContent(ctx context.Context, targetFile string, newContent []byte) error
+	// UpdateFileContent update target file content
+	UpdateFileContent(ctx context.Context, targetFile string, newContent []byte) error
 
 	// DeleteFile delete target file
 	DeleteFile(ctx context.Context, targetFile string) error
@@ -79,10 +79,10 @@ type MachineAPI interface {
 	SetupApp(ctx context.Context, env, appLabels map[string]string) (string, error)
 
 	// Done this context has been done
-	Done(ctx context.Context)
+	Done(ctx context.Context) error
 
 	// ShutdownApp shutdown app with unique name
-	ShutdownApp(ctx context.Context, appUniqueName string)
+	ShutdownApp(ctx context.Context, appUniqueName string) error
 
 	// AppHealth judge app health or not
 	AppHealth(ctx context.Context, appUniqueName string) error
