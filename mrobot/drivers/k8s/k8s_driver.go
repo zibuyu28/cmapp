@@ -25,7 +25,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/tmp"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
-	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"

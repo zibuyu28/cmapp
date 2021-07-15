@@ -1,6 +1,6 @@
 module github.com/zibuyu28/cmapp/common
 
-go 1.16
+go 1.15
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect

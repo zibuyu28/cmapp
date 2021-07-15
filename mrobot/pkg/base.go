@@ -17,7 +17,7 @@
 package pkg
 
 import (
-	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 )
 
 // BaseDriver base driver

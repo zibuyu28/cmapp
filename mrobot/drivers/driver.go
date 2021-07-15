@@ -24,7 +24,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
-	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 )
 
 var buildInDrivers = []string{"k8s"}

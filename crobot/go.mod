@@ -1,3 +1,3 @@
 module github.com/zibuyu28/cmapp/crobot
 
-go 1.16
+go 1.15

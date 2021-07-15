@@ -23,7 +23,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/log"
 	coreproto "github.com/zibuyu28/cmapp/core/proto"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin/localbinary"
-	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"os"

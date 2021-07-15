@@ -18,8 +18,10 @@ package ws
 
 import (
 	"bytes"
+	"context"
 	"github.com/gorilla/websocket"
-	"log"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/md5"
 	"net/http"
 	"time"
 )
@@ -40,7 +42,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	maxMessageSize = 5120
 )
 
 var upgrader = websocket.Upgrader{
@@ -48,16 +50,20 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+// ConnIns is a middleman between the websocket connection and the hub.
+type ConnIns struct {
+	ctx context.Context
 
-// Client is a middleman between the websocket connection and the hub.
-type Client struct {
-	hub *Hub
+	uniqueMd5 string
 
 	// The websocket connection.
 	conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+
+	// Buffered channel of inbound messages.
+	receive chan []byte
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -65,9 +71,9 @@ type Client struct {
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
+func (c *ConnIns) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		hub.unregister <- c
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
@@ -77,12 +83,12 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				log.Debug(c.ctx, "Currently conn is closed")
 			}
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+		c.receive <- message
 	}
 }
 
@@ -91,7 +97,7 @@ func (c *Client) readPump() {
 // A goroutine running writePump is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *Client) writePump() {
+func (c *ConnIns) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -133,20 +139,28 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func serveWs(ctx context.Context, hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
+
 	if err != nil {
-		log.Println(err)
+		log.Errorf(ctx, "Manage err when upgrade http protocol to websocket, Err: [%v]", err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
+
+	unique := r.Form.Get("unique")
+
+	if len(unique) == 0 {
+		log.Warn(ctx, "Currently get empty unique param from url, now to return")
+		return
+	}
+
+	uniqueMd5 := md5.MD5(unique)
+
+	client := &ConnIns{ctx: ctx, uniqueMd5: uniqueMd5, conn: conn, send: make(chan []byte, 128), receive: make(chan []byte, 128)}
+	hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
 	go client.writePump()
 	go client.readPump()
 }
-
-
-

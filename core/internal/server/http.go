@@ -30,6 +30,7 @@ var httpserver *gin.Engine
 
 func httpServerStart(ctx context.Context) {
 	httpserver = gin.Default()
+	httpserver.POST("/ws", )
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
 		log.Fatalf(ctx, "failed to listen: %v", err)

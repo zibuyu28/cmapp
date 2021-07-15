@@ -1,6 +1,6 @@
 module github.com/zibuyu28/cmapp/mrobot
 
-go 1.16
+go 1.15
 
 require (
 	github.com/go-playground/validator/v10 v10.4.1
@@ -12,8 +12,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/zibuyu28/cmapp/common v0.0.0-incompatible
 	github.com/zibuyu28/cmapp/core v0.0.0-incompatible
+	github.com/zibuyu28/cmapp/plugin v0.0.0-incompatible
 	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
@@ -22,3 +22,5 @@ require (
 replace github.com/zibuyu28/cmapp/core v0.0.0-incompatible => ../core
 
 replace github.com/zibuyu28/cmapp/common v0.0.0-incompatible => ../common
+
+replace github.com/zibuyu28/cmapp/plugin v0.0.0-incompatible => ../plugin

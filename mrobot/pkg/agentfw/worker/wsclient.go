@@ -17,6 +17,10 @@
 package worker
 
 import (
+	"context"
+	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/ws"
 	"os"
 	"strings"
 )
@@ -46,6 +50,25 @@ func init() {
 	}
 }
 
-func wsClient() {
-	NewDriverWorker()
+const (
+	CoreWSAddr string = "CORE_WS_ADDR"
+)
+
+func wsClient(ctx context.Context) error {
+	// 获取到core的地址，链接
+	flag, ok := Flags[CoreWSAddr]
+	if !ok {
+		return errors.New("fail to get [CORE_WS_ADDR] from env")
+	}
+	wsaddr := flag.Value
+	if len(wsaddr) == 0 {
+		return errors.New("env value of [CORE_WS_ADDR] is empty")
+	}
+	_, err := ws.Connect(wsaddr)
+	if err != nil {
+		return errors.Wrapf(err, "connect to core, addr is [%s]", wsaddr)
+	}
+	log.Infof(ctx, "connect to core [%s] success", wsaddr)
+
+	return nil
 }

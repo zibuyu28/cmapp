@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
-	"github.com/zibuyu28/cmapp/mrobot/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc"
 	"net"
 	"os"

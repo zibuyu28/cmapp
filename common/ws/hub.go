@@ -16,51 +16,57 @@
 
 package ws
 
+import (
+	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/md5"
+	"sync"
+)
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
-	// Registered clients.
-	clients map[*Client]bool
-
-	// Inbound messages from the clients.
-	broadcast chan []byte
-
-	// Register requests from the clients.
-	register chan *Client
-
-	// Unregister requests from clients.
-	unregister chan *Client
+	clients sync.Map
+	register chan *ConnIns
+	unregister chan *ConnIns
 }
 
-func newHub() *Hub {
-	return &Hub{
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
-	}
+var hub = &Hub{
+	register:   make(chan *ConnIns),
+	unregister: make(chan *ConnIns),
+	clients:    sync.Map{},
 }
 
 func (h *Hub) run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.clients[client] = true
+			h.clients.Store(client.uniqueMd5, client)
 		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
+			if _, ok := h.clients.Load(client.uniqueMd5); ok {
+				h.clients.Delete(client.uniqueMd5)
 				close(client.send)
-			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
-				}
 			}
 		}
 	}
+}
+
+func SendToClient(unique, msg string) error {
+	uuid := md5.MD5(unique)
+
+	load, ok := hub.clients.Load(uuid)
+	if !ok {
+		return errors.Errorf("fail to found ws conn by unique [%s]", unique)
+	}
+	load.(*ConnIns).send <- []byte(msg)
+	return nil
+}
+
+func ReceiveFromClient(unique string) (chan []byte, error) {
+	uuid := md5.MD5(unique)
+
+	load, ok := hub.clients.Load(uuid)
+	if !ok {
+		return nil, errors.Errorf("fail to found ws conn by unique [%s]", unique)
+	}
+	return load.(*ConnIns).receive, nil
 }
