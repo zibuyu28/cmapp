@@ -25,6 +25,7 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+	"github.com/zibuyu28/cmapp/plugin/proto/worker"
 )
 
 var buildInDrivers = []string{"k8s"}
@@ -58,5 +59,20 @@ func ParseDriver(driverName string) (*BuildInDriver, error) {
 		}}, nil
 	default:
 		return nil, errors.Errorf("fail to parse driver named [%s], build in drivers [%v], please check config or param", driverName, buildInDrivers)
+	}
+}
+
+type BuildInPlugin struct {
+	GrpcPluginServer worker.WorkerServer
+}
+
+func ParsePlugin(pluginName string) (*BuildInPlugin, error) {
+	switch pluginName {
+	case "k8s":
+		return &BuildInPlugin{
+			GrpcPluginServer: k8s.K8SWorker{},
+		}, nil
+	default:
+		return nil, errors.Errorf("fail to parse plugin named [%s], build in drivers [%v], please check config or param", pluginName, buildInDrivers)
 	}
 }

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 option go_package = "./driver";
 
+package driver;
+
 // MachineDriver machine driver service
 service MachineDriver {
     // GetCreateFlags get create flags

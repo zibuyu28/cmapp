@@ -19,8 +19,18 @@ package app
 
 
 import (
+	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zibuyu28/cmapp/mrobot/drivers"
+	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
+	"os"
+)
+
+const (
+	AgentPluginName    = "AGENT_PLUGIN_DRIVER_NAME"
+	AgentPluginBuildIn = "AGENT_PLUGIN_BUILD_IN"
 )
 
 // agCmd represents the ag command
@@ -33,9 +43,33 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		pbi := os.Getenv(AgentPluginBuildIn)
+		if len(pbi) != 0 && pbi == "true" {
+			return RunAsAgentPlugin(args)
+		}
+
 		fmt.Println("this is ag server")
+		panic("implement me")
+
+		return nil
 	},
+}
+
+// RunAsAgentPlugin run as agent plugin
+func RunAsAgentPlugin(args []string) error {
+	pluginName := os.Getenv(AgentPluginName)
+	if len(pluginName) == 0 {
+		return errors.New("set to plugin mode, driver name not found")
+	}
+	parsePlugin, err := drivers.ParsePlugin(pluginName)
+	if err != nil {
+		return errors.Wrap(err, "parse build in plugin")
+	}
+	agfw.RegisterWorker(parsePlugin.GrpcPluginServer)
+	agfw.Start(context.Background())
+	return nil
 }
 
 func init() {

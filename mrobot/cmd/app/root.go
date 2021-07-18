@@ -32,8 +32,8 @@ import (
 var cfgFile string
 
 const (
-	PluginEnvDriverName = "MACHINE_PLUGIN_DRIVER_NAME"
-	PluginBuildIn       = "MACHINE_PLUGIN_BUILD_IN"
+	MachinePluginEnvDriverName = "MACHINE_PLUGIN_DRIVER_NAME"
+	MachinePluginBuildIn       = "MACHINE_PLUGIN_BUILD_IN"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -49,17 +49,17 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pbi := os.Getenv(PluginBuildIn)
+		pbi := os.Getenv(MachinePluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
-			return RunAsPlugin(args)
+			return RunAsMachinePlugin(args)
 		}
 		return errors.New("not implement")
 	},
 }
 
-// RunAsPlugin run as plugin
-func RunAsPlugin(args []string) error {
-	driverName := os.Getenv(PluginEnvDriverName)
+// RunAsMachinePlugin run as machine plugin
+func RunAsMachinePlugin(args []string) error {
+	driverName := os.Getenv(MachinePluginEnvDriverName)
 	if len(driverName) == 0 {
 		return errors.New("set to plugin mode, driver name not found")
 	}
@@ -70,7 +70,6 @@ func RunAsPlugin(args []string) error {
 	plugin.RegisterDriver(*driver)
 	return nil
 }
-
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -111,6 +110,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Infof(context.Background(),"Using config file:%s", viper.ConfigFileUsed())
+		log.Infof(context.Background(), "Using config file:%s", viper.ConfigFileUsed())
 	}
 }
