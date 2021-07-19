@@ -18,90 +18,96 @@ package k8s
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker"
+	"google.golang.org/grpc/metadata"
 )
 
-type K8SWorker struct {
-
+type Worker struct {
 }
 
-func (k K8SWorker) GetWorkspace(ctx context.Context, empty *worker.Empty) (*worker.WorkspaceInfo, error) {
+func (k *Worker) GetWorkspace(ctx context.Context, empty *worker.Empty) (*worker.WorkspaceInfo, error) {
+	_, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("fail to get metadata from context")
+	}
+
+
 	panic("implement me")
 }
 
-func (k K8SWorker) DestroyWorkspace(ctx context.Context, info *worker.WorkspaceInfo) (*worker.Empty, error) {
+func (k *Worker) DestroyWorkspace(ctx context.Context, info *worker.WorkspaceInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) DownloadToPath(ctx context.Context, info *worker.DownloadInfo) (*worker.Empty, error) {
+func (k *Worker) DownloadToPath(ctx context.Context, info *worker.DownloadInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) Upload(ctx context.Context, info *worker.UploadInfo) (*worker.Empty, error) {
+func (k *Worker) Upload(ctx context.Context, info *worker.UploadInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) Compress(ctx context.Context, info *worker.CompressInfo) (*worker.Empty, error) {
+func (k *Worker) Compress(ctx context.Context, info *worker.CompressInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) Decompress(ctx context.Context, info *worker.DeCompressInfo) (*worker.Empty, error) {
+func (k *Worker) Decompress(ctx context.Context, info *worker.DeCompressInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) Copy(ctx context.Context, info *worker.CopyInfo) (*worker.Empty, error) {
+func (k *Worker) Copy(ctx context.Context, info *worker.CopyInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) UpdateFileContent(ctx context.Context, info *worker.UpdateFileContentInfo) (*worker.Empty, error) {
+func (k *Worker) UpdateFileContent(ctx context.Context, info *worker.UpdateFileContentInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) DeleteFile(ctx context.Context, info *worker.DeleteFileInfo) (*worker.Empty, error) {
+func (k *Worker) DeleteFile(ctx context.Context, info *worker.DeleteFileInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) CreateFile(ctx context.Context, info *worker.CreateFileInfo) (*worker.Empty, error) {
+func (k *Worker) CreateFile(ctx context.Context, info *worker.CreateFileInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) CreateDir(ctx context.Context, info *worker.CreateDirInfo) (*worker.Empty, error) {
+func (k *Worker) CreateDir(ctx context.Context, info *worker.CreateDirInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) RemoveDir(ctx context.Context, info *worker.RemoveDirInfo) (*worker.Empty, error) {
+func (k *Worker) RemoveDir(ctx context.Context, info *worker.RemoveDirInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) FetchFileContent(info *worker.FetchFileContentInfo, server worker.Worker_FetchFileContentServer) error {
+func (k *Worker) FetchFileContent(info *worker.FetchFileContentInfo, server worker.Worker_FetchFileContentServer) error {
 	panic("implement me")
 }
 
-func (k K8SWorker) CheckTargetPortUseful(ctx context.Context, info *worker.CheckTargetPortInfo) (*worker.Empty, error) {
+func (k *Worker) CheckTargetPortUseful(ctx context.Context, info *worker.CheckTargetPortInfo) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) SetupApp(ctx context.Context, info *worker.SetupAppInfo) (*worker.App, error) {
+func (k *Worker) SetupApp(ctx context.Context, info *worker.SetupAppInfo) (*worker.App, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) Done(ctx context.Context, empty *worker.Empty) (*worker.Empty, error) {
+func (k *Worker) Done(ctx context.Context, empty *worker.Empty) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) ShutdownApp(ctx context.Context, app *worker.App) (*worker.Empty, error) {
+func (k *Worker) ShutdownApp(ctx context.Context, app *worker.App) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) AppHealth(ctx context.Context, app *worker.App) (*worker.Empty, error) {
+func (k *Worker) AppHealth(ctx context.Context, app *worker.App) (*worker.Empty, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) TargetPortIntranetRoute(ctx context.Context, info *worker.TargetPortIntranetInfo) (*worker.PortIntranetInfo, error) {
+func (k *Worker) TargetPortIntranetRoute(ctx context.Context, info *worker.TargetPortIntranetInfo) (*worker.PortIntranetInfo, error) {
 	panic("implement me")
 }
 
-func (k K8SWorker) TargetPortExternalRoute(ctx context.Context, info *worker.TargetPortExternalInfo) (*worker.PortExternalInfo, error) {
+func (k *Worker) TargetPortExternalRoute(ctx context.Context, info *worker.TargetPortExternalInfo) (*worker.PortExternalInfo, error) {
 	panic("implement me")
 }
-

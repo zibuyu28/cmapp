@@ -70,7 +70,7 @@ func ParsePlugin(pluginName string) (*BuildInPlugin, error) {
 	switch pluginName {
 	case "k8s":
 		return &BuildInPlugin{
-			GrpcPluginServer: k8s.K8SWorker{},
+			GrpcPluginServer: &k8s.Worker{},
 		}, nil
 	default:
 		return nil, errors.Errorf("fail to parse plugin named [%s], build in drivers [%v], please check config or param", pluginName, buildInDrivers)
