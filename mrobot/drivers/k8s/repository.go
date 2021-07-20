@@ -27,7 +27,7 @@ type workRepository struct {
 	rep sync.Map
 }
 
-// TODO: add other useful param
+// TODO: add other useful param, or rename struct
 type workspace struct {
 	UID        string
 	Deployment string
