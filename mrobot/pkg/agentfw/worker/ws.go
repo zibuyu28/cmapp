@@ -38,7 +38,7 @@ type wsFront struct {
 
 func wsClientIns(ctx context.Context) (*wsFront, error) {
 	// 获取到core的地址，链接
-	wsFlag, ok := flags[coreWSAddr]
+	wsFlag, ok := Flags[coreWSAddr]
 	if !ok {
 		return nil, errors.New("fail to get [CORE_WS_ADDR] from env")
 	}
@@ -47,7 +47,7 @@ func wsClientIns(ctx context.Context) (*wsFront, error) {
 		return nil, errors.New("env value of [CORE_WS_ADDR] is empty")
 	}
 
-	agFlag, ok := flags[agentUnique]
+	agFlag, ok := Flags[agentUnique]
 
 	if !ok {
 		return nil, errors.New("fail to get [AGENT_UNIQUE] from env")

@@ -25,12 +25,12 @@ import (
 
 const driverPrefix string = "DRIAGENT_"
 
-type flag struct {
+type Flag struct {
 	Name  string
 	Value string
 }
 
-var flags = make(map[string]flag)
+var Flags = make(map[string]Flag)
 
 func init() {
 	environ := os.Environ()
@@ -40,7 +40,7 @@ func init() {
 			if len(kvs) != 2 {
 				continue
 			}
-			flags[kvs[0]] = flag{
+			Flags[kvs[0]] = Flag{
 				Name:  kvs[0],
 				Value: kvs[1],
 			}
