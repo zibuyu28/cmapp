@@ -22,13 +22,12 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-
-
 type ActionPhase string
 
 const (
-	Prepare ActionPhase = "prepare"
-	Running ActionPhase = "running"
+	InstallPhase ActionPhase = "install"
+	SetupPhase   ActionPhase = "setup"
+	RunningPhase ActionPhase = "running"
 )
 
 func phaseParse(ctx context.Context) (ap ActionPhase, err error) {
@@ -44,10 +43,12 @@ func phaseParse(ctx context.Context) (ap ActionPhase, err error) {
 	}
 	p := ps[0]
 	switch p {
-	case "prepare":
-		ap = Prepare
+	case "install":
+		ap = InstallPhase
+	case "setup":
+		ap = SetupPhase
 	case "running":
-		ap = Running
+		ap = RunningPhase
 	default:
 		err = errors.Errorf("not support phase [%s] for action", p)
 	}

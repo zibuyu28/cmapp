@@ -27,14 +27,34 @@ type workRepository struct {
 	rep sync.Map
 }
 
-// TODO: add other useful param, or rename struct
-type workspace struct {
+// TODO: add other useful param
+type work struct {
 	UID        string
-	Deployment string
-	Service    string
+	init       *initcmd
+	deployment string
+	net        map[int]network
 }
 
-func (w *workRepository) load(ctx context.Context) (*workspace, error) {
+type network struct {
+	Name     string
+	Protocol string
+	Internal string
+	External string
+}
+
+type initcmd struct {
+	m    sync.Mutex
+	init []string
+}
+
+func (i *initcmd) append(cmd string) {
+	i.m.Lock()
+	defer i.m.Unlock()
+
+	i.init = append(i.init, cmd)
+}
+
+func (w *workRepository) load(ctx context.Context) (*work, error) {
 	uid, err := guid(ctx)
 	if err != nil {
 		return nil, errors.New("load uid from context")
@@ -43,10 +63,10 @@ func (w *workRepository) load(ctx context.Context) (*workspace, error) {
 	if !ok {
 		return nil, errors.Errorf("fail to get workspace from rep by uid [%s]", uid)
 	}
-	return wsp.(*workspace), nil
+	return wsp.(*work), nil
 }
 
-func (w *workRepository) new(ctx context.Context, wsp *workspace) error {
+func (w *workRepository) new(ctx context.Context, wsp *work) error {
 	uid, err := guid(ctx)
 	if err != nil {
 		return errors.New("load uid from context")

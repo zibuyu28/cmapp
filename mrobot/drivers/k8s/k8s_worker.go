@@ -18,6 +18,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
@@ -60,18 +61,19 @@ func (k *Worker) GetWorkspace(ctx context.Context, empty *worker.Empty) (*worker
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case InstallPhase:
 		// TODO: check exist
-		wsp := &workspace{
-			Deployment: "test dep",
-			Service:    "test srv",
+		wsp := &work{
+			init:       &initcmd{},
+			deployment: "",
+			net:        map[int]network{},
 		}
 		err = k.wrp.new(ctx, wsp)
 		if err != nil {
 			return nil, errors.Wrap(err, "new workspace")
 		}
 		return &worker.WorkspaceInfo{Workspace: wsp.UID}, nil
-	case Running:
+	case SetupPhase, RunningPhase:
 		wsp, err := k.wrp.load(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "load exist workspace")
@@ -100,8 +102,16 @@ func (k *Worker) DownloadToPath(ctx context.Context, info *worker.DownloadInfo) 
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
-		panic("implement me")
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
+		download := fmt.Sprintf(`wget -O "%s" -c %s`, info.TargetPath, info.DownloadLink)
+		wk, err := k.wrp.load(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get work from worker repository")
+		}
+		wk.init.append(download)
+		return nil, nil
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
 	}
@@ -113,8 +123,16 @@ func (k *Worker) Upload(ctx context.Context, info *worker.UploadInfo) (*worker.E
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
-		panic("implement me")
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
+		upload := fmt.Sprintf(`wget %s --post-file=%s`, info.TargetLink, info.SourceFile)
+		wk, err := k.wrp.load(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get work from worker repository")
+		}
+		wk.init.append(upload)
+		return nil, nil
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
 	}
@@ -126,7 +144,9 @@ func (k *Worker) Compress(ctx context.Context, info *worker.CompressInfo) (*work
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -139,7 +159,9 @@ func (k *Worker) Decompress(ctx context.Context, info *worker.DeCompressInfo) (*
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -152,7 +174,9 @@ func (k *Worker) Copy(ctx context.Context, info *worker.CopyInfo) (*worker.Empty
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -165,7 +189,9 @@ func (k *Worker) UpdateFileContent(ctx context.Context, info *worker.UpdateFileC
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -178,7 +204,9 @@ func (k *Worker) DeleteFile(ctx context.Context, info *worker.DeleteFileInfo) (*
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -191,7 +219,9 @@ func (k *Worker) CreateFile(ctx context.Context, info *worker.CreateFileInfo) (*
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -204,7 +234,9 @@ func (k *Worker) CreateDir(ctx context.Context, info *worker.CreateDirInfo) (*wo
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -217,7 +249,9 @@ func (k *Worker) RemoveDir(ctx context.Context, info *worker.RemoveDirInfo) (*wo
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case Prepare:
+	case RunningPhase, InstallPhase:
+		return nil, nil
+	case SetupPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
