@@ -21,8 +21,10 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
 	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker"
+	"strings"
 	"sync"
 )
 
@@ -102,15 +104,15 @@ func (k *Worker) DownloadToPath(ctx context.Context, info *worker.DownloadInfo) 
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
-		return nil, nil
-	case SetupPhase:
+	case InstallPhase:
 		download := fmt.Sprintf(`wget -O "%s" -c %s`, info.TargetPath, info.DownloadLink)
 		wk, err := k.wrp.load(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "get work from worker repository")
 		}
 		wk.init.append(download)
+		return nil, nil
+	case RunningPhase, SetupPhase:
 		return nil, nil
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -123,15 +125,15 @@ func (k *Worker) Upload(ctx context.Context, info *worker.UploadInfo) (*worker.E
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
-		return nil, nil
-	case SetupPhase:
+	case InstallPhase:
 		upload := fmt.Sprintf(`wget %s --post-file=%s`, info.TargetLink, info.SourceFile)
 		wk, err := k.wrp.load(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "get work from worker repository")
 		}
 		wk.init.append(upload)
+		return nil, nil
+	case RunningPhase, SetupPhase:
 		return nil, nil
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -144,9 +146,30 @@ func (k *Worker) Compress(ctx context.Context, info *worker.CompressInfo) (*work
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
+	case InstallPhase:
+		log.Infof(ctx, "Currently Compress got dir path [%s]", info.DirPath)
+		if len(info.DirPath) == 0 {
+			return nil, errors.New("fail to get dir path, got empty path")
+		}
+
+		index := strings.LastIndex(info.DirPath, "/")
+
+		dir := info.DirPath[index+1:]
+		log.Infof(ctx, "Currently get dir [%s]", dir)
+
+		if len(dir) == 0 {
+			return nil, errors.New("fail to parse dir, got empty dir")
+		}
+		fatherPath := info.DirPath[:index]
+
+		compress := fmt.Sprintf("tar -zcvf %s/%s.tar.gz %s", fatherPath, dir, info.DirPath)
+		wk, err := k.wrp.load(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get work from worker repository")
+		}
+		wk.init.append(compress)
 		return nil, nil
-	case SetupPhase:
+	case SetupPhase, RunningPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -159,9 +182,21 @@ func (k *Worker) Decompress(ctx context.Context, info *worker.DeCompressInfo) (*
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
+	case InstallPhase:
+		log.Infof(ctx, "Currently Decompress got dir path [%s]", info.TarFile)
+		if len(info.TarFile) == 0 {
+			return nil, errors.New("fail to get tar file, got empty tar file")
+		}
+
+		decompress := fmt.Sprintf("tar -zxvf %s", info.TarFile)
+
+		wk, err := k.wrp.load(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get work from worker repository")
+		}
+		wk.init.append(decompress)
 		return nil, nil
-	case SetupPhase:
+	case SetupPhase, RunningPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -174,9 +209,20 @@ func (k *Worker) Copy(ctx context.Context, info *worker.CopyInfo) (*worker.Empty
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
+	case InstallPhase:
+		log.Infof(ctx, "Currently copy, source [%s], target [%s]", info.SourceFile, info.TargetPath)
+		if len(info.SourceFile) == 0 || len(info.TargetPath) == 0 {
+			return nil, errors.Errorf("fail to get source [%s] and target [%s] file", info.SourceFile, info.TargetPath)
+		}
+
+		cp := fmt.Sprintf("cp -r %s %s", info.SourceFile, info.TargetPath)
+		wk, err := k.wrp.load(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get work from worker repository")
+		}
+		wk.init.append(cp)
 		return nil, nil
-	case SetupPhase:
+	case SetupPhase, RunningPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)
@@ -189,9 +235,15 @@ func (k *Worker) UpdateFileContent(ctx context.Context, info *worker.UpdateFileC
 		return nil, errors.Wrap(err, "get phase from context")
 	}
 	switch ap {
-	case RunningPhase, InstallPhase:
+	case InstallPhase:
+		log.Infof(ctx, "Currently update file content, target File", info.TargetFile)
+		log.Debugf(ctx, "Currently update file content, new content [%s]", string(info.NewContent))
+		if len(info.TargetFile) == 0 || len(info.NewContent) == 0 {
+			return nil, errors.Errorf("fail to get target file [%s]", info.TargetFile)
+		}
+
 		return nil, nil
-	case SetupPhase:
+	case SetupPhase, RunningPhase:
 		panic("implement me")
 	default:
 		return nil, errors.Wrapf(err, "not support phase [%s]", ap)

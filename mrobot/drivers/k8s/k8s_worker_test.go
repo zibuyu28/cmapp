@@ -18,6 +18,7 @@ package k8s
 
 import (
 	"github.com/stretchr/testify/assert"
+	"path/filepath"
 	"testing"
 )
 
@@ -34,4 +35,10 @@ func Test_main(t *testing.T) {
 	bar := m["bar"]
 	t.Logf("bar : [%v]",bar)
 	assert.NotNil(t, bar)
+
+	dir := filepath.Dir("./abc/a.tar.gz")
+	assert.Equal(t, "abc", dir)
+
+	dir = filepath.Dir("z")
+	assert.Equal(t, "z", dir)
 }
