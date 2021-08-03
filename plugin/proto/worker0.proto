@@ -5,17 +5,24 @@ package worker0;
 
 
 service Worker0 {
-    rpc GetWorkspace (Empty) returns (WorkspaceInfo) {
+
+    rpc NewApp (Empty) returns (App) {
     }
 
-    rpc NewApp (WorkspaceInfo) returns (App) {
+    rpc StartApp (App) returns (Empty) {
     }
 
+    rpc StopApp (App) returns (Empty) {
+    }
+
+    rpc DestroyApp (App) returns (Empty) {
+    }
 
 }
 
 
 message App {
+    string uuid = 1;
     message MainProcess {
         string CheckSum = 1;
         string Name = 2;
@@ -27,27 +34,27 @@ message App {
         PType Type = 4;
         string Workdir = 5;
     }
-    MainProcess MainP = 1;
+    MainProcess MainP = 2;
 
     message FileMount {
         string File = 1;
         string MountTo = 2;
     }
 
-    repeated FileMount FileMounts = 2;
+    repeated FileMount FileMounts = 3;
 
     message StorageMount {
         string Storage = 1;
         string MountTo = 2;
     }
-    repeated StorageMount StorageMounts = 3;
+    repeated StorageMount StorageMounts = 4;
 
     message EnvVar {
         string key = 1;
         string value = 2;
     }
 
-    repeated EnvVar EnvironmentVars = 4;
+    repeated EnvVar EnvironmentVars = 5;
 
     message Network {
         message PortInf {
@@ -71,14 +78,16 @@ message App {
         repeated RouteInf RouteInfo = 2;
     }
 
-    repeated Network Networks = 5;
+    repeated Network Networks = 6;
 
-    WorkspaceInfo Workspace = 6;
+    message WorkspaceInfo {
+        string workspace = 1;
+    }
+
+    WorkspaceInfo Workspace = 7;
+
+
 }
 
 message Empty {
-}
-
-message WorkspaceInfo {
-    string workspace = 1;
 }
