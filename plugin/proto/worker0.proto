@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+option go_package = "./worker0";
+package worker0;
+
+
+service Worker0 {
+    rpc GetWorkspace (Empty) returns (WorkspaceInfo) {
+    }
+
+    rpc NewApp (WorkspaceInfo) returns (App) {
+    }
+
+
+}
+
+
+message App {
+    message MainProcess {
+        string CheckSum = 1;
+        string Name = 2;
+        string Version = 3;
+        enum PType {
+            Binary = 0;
+            Image = 1;
+        }
+        PType Type = 4;
+        string Workdir = 5;
+    }
+    MainProcess MainP = 1;
+
+    message FileMount {
+        string File = 1;
+        string MountTo = 2;
+    }
+
+    repeated FileMount FileMounts = 2;
+
+    message StorageMount {
+        string Storage = 1;
+        string MountTo = 2;
+    }
+    repeated StorageMount StorageMounts = 3;
+
+    message EnvVar {
+        string key = 1;
+        string value = 2;
+    }
+
+    repeated EnvVar EnvironmentVars = 4;
+
+    message Network {
+        message PortInf {
+            int32 Port = 1;
+            string name = 2;
+            enum Protocol {
+                TCP = 0;
+                UDP = 1;
+            }
+            Protocol ProtocolType = 3;
+        }
+        message RouteInf {
+            enum Route {
+                IN = 0;
+                OUT = 1;
+            }
+            Route RouteType = 1;
+            string Router = 2;
+        }
+        PortInf PortInfo = 1;
+        repeated RouteInf RouteInfo = 2;
+    }
+
+    repeated Network Networks = 5;
+
+    WorkspaceInfo Workspace = 6;
+}
+
+message Empty {
+}
+
+message WorkspaceInfo {
+    string workspace = 1;
+}
