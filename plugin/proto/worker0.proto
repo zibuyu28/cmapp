@@ -6,7 +6,7 @@ package worker0;
 
 service Worker0 {
 
-    rpc NewApp (Empty) returns (App) {
+    rpc NewApp (NewAppReq) returns (App) {
     }
 
     rpc StartApp (App) returns (Empty) {
@@ -18,11 +18,23 @@ service Worker0 {
     rpc DestroyApp (App) returns (Empty) {
     }
 
+    // --- construct App ---
+    rpc FileMountEx (App.FileMount) returns (App) {}
+    rpc StorageMountEx (App.StorageMount) returns (App) {}
+    rpc SetEnvEx (App.EnvVar) returns (App) {}
+    rpc NetworkEx (App.Network) returns (App) {}
+    rpc FilePremiseEx (App.File) returns (App) {}
+
+}
+
+message NewAppReq {
+    string Name = 1;
+    string version = 2;
 }
 
 
 message App {
-    string uuid = 1;
+    string UUID = 1;
     message MainProcess {
         string CheckSum = 1;
         string Name = 2;
@@ -33,6 +45,7 @@ message App {
         }
         PType Type = 4;
         string Workdir = 5;
+        string StartCMD = 6;
     }
     MainProcess MainP = 2;
 
@@ -86,7 +99,14 @@ message App {
 
     WorkspaceInfo Workspace = 7;
 
+    message File {
+        string Name = 1;
+        string AcquireAddr = 2;
+        bytes Content = 3;
+        string target = 4;
+    }
 
+    repeated File FilePremise = 8;
 }
 
 message Empty {
