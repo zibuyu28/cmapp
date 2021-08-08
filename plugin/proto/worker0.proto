@@ -19,11 +19,22 @@ service Worker0 {
     }
 
     // --- construct App ---
-    rpc FileMountEx (App.FileMount) returns (App) {}
-    rpc StorageMountEx (App.StorageMount) returns (App) {}
-    rpc SetEnvEx (App.EnvVar) returns (App) {}
-    rpc NetworkEx (App.Network) returns (App) {}
-    rpc FilePremiseEx (App.File) returns (App) {}
+    rpc FileMountEx (App.FileMount) returns (App) {
+    }
+    rpc VolumeEx (App.Volume) returns (App) {
+    }
+    rpc EnvEx (App.EnvVar) returns (App) {
+    }
+    rpc NetworkEx (App.Network) returns (App) {
+    }
+    rpc FilePremiseEx (App.File) returns (App) {
+    }
+    rpc LimitEx (App.Limit) returns (App) {
+    }
+    rpc HealthEx (App.Health) returns (App) {
+    }
+    rpc LogEx (App.Log) returns (App) {
+    }
 
 }
 
@@ -45,22 +56,29 @@ message App {
         }
         PType Type = 4;
         string Workdir = 5;
-        string StartCMD = 6;
+        repeated string StartCMD = 6;
     }
     MainProcess MainP = 2;
 
+    // 将文件挂载到对应的目录
+    // File 表示要被挂载的文件
+    // MountTo 表示挂载到的地方
+    // Volume 一般不填这个字段，除非有对应的卷存在
     message FileMount {
         string File = 1;
         string MountTo = 2;
+        string Volume = 3;
     }
 
     repeated FileMount FileMounts = 3;
 
-    message StorageMount {
-        string Storage = 1;
-        string MountTo = 2;
+    // 卷声明
+    message Volume {
+        string Name = 1;
+        string Type = 2;
+        map<string, string> Param = 3;
     }
-    repeated StorageMount StorageMounts = 4;
+    repeated Volume Volumes = 4;
 
     message EnvVar {
         string key = 1;
@@ -107,6 +125,47 @@ message App {
     }
 
     repeated File FilePremise = 8;
+
+    message Limit {
+        // unit 'm'
+        int32 CPU = 1;
+        // unit 'MB'
+        int32 Memory = 2;
+    }
+
+    Limit LimitInfo = 9;
+
+    message Health {
+        message Basic {
+            // supported http method
+            enum Method {
+                GET = 0;
+                POST = 1;
+            }
+            Method MethodType = 1;
+            // path to request
+            string Path = 2;
+            // same as above
+            int32 Port = 3;
+        }
+        // url to judge app living
+        Basic Liveness = 1;
+
+        // url to judge app working
+        Basic Readness = 2;
+    }
+
+    Health HealthInfo = 10;
+
+    message Log {
+        // Real-time log file name. eg: xxx/log.log
+        string RealTimeFile = 1;
+        // path of compress log file
+        string FilePath = 2;
+    }
+
+    Log LogInfo = 11;
+
 }
 
 message Empty {

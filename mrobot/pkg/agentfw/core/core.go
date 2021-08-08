@@ -14,31 +14,16 @@
  * limitations under the License.
  */
 
-package k8s
+package core
 
-import (
-	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
-)
+import "net/http"
 
-type Foo struct {
-	Name string
+type cli struct {
+
 }
 
-func Test_main(t *testing.T) {
-	var m = make(map[string]Foo)
-	m["foo"] = Foo{
-		Name: "foo",
-	}
+var hcli http.Client
 
-	bar := m["bar"]
-	t.Logf("bar : [%v]",bar)
-	assert.NotNil(t, bar)
+func PackageInfo(name, version string)  {
 
-	dir := filepath.Dir("./abc/a.tar.gz")
-	assert.Equal(t, "abc", dir)
-
-	dir = filepath.Dir("z")
-	assert.Equal(t, ".", dir)
 }

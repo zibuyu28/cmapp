@@ -23,6 +23,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s"
+	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/loc_dri"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker"
@@ -50,7 +51,7 @@ func (d BuildInDriver) Exit() {
 func ParseDriver(driverName string) (*BuildInDriver, error) {
 	switch driverName {
 	case "k8s":
-		return &BuildInDriver{GrpcServer: &k8s.DriverK8s{
+		return &BuildInDriver{GrpcServer: &loc_dri.DriverK8s{
 			BaseDriver: pkg.BaseDriver{
 				UUID:          md5.MD5(fmt.Sprintf("%s:%s", driverName, buildInDriversVersion[driverName])),
 				DriverName:    driverName,

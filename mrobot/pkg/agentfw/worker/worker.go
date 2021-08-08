@@ -74,6 +74,7 @@ func Start(ctx context.Context) {
 		log.Fatalf(ctx, "Currently fail to new ws client. Err: [%v]", err)
 	}
 
+	// TODO: do function call to replace grpc call, just do not start the grpc server
 	plg, err := pluginIns(ctx)
 	if err != nil {
 		log.Fatalf(ctx, "Currently fail to new plugin. Err: [%v]", err)

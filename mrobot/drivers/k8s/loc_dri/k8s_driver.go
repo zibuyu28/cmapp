@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package k8s
+package loc_dri
 
 import (
 	"context"
