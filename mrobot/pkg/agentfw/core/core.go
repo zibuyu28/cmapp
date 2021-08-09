@@ -16,14 +16,41 @@
 
 package core
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+	"strings"
+)
 
-type cli struct {
+const (
+	driAgentCoreHTTPAddr string = "COREHTTPADDR"
+	driverPrefix         string = "DRIAGENT_"
+)
 
+var cli *client
+
+func init() {
+	environ := os.Environ()
+	for _, s := range environ {
+		if strings.HasPrefix(s, driverPrefix) {
+			kvs := strings.SplitN(strings.TrimPrefix(s, driverPrefix), "=", 2)
+			if len(kvs) != 2 {
+				continue
+			}
+			if kvs[0] == driAgentCoreHTTPAddr {
+				cli = &client{coreAddr: kvs[1], hc: http.Client{}}
+			}
+			break
+		}
+	}
 }
 
-var hcli http.Client
+type client struct {
+	coreAddr string
+	hc       http.Client
+}
 
-func PackageInfo(name, version string)  {
+func PackageInfo(name, version string) {
+	// "/api/v1/package"
 
 }

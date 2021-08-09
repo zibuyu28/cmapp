@@ -61,7 +61,7 @@ to quickly create a Cobra application.`,
 func RunAsAgentPlugin(args []string) error {
 	pluginName := os.Getenv(AgentPluginName)
 	if len(pluginName) == 0 {
-		return errors.New("set to plugin mode, driver name not found")
+		return errors.New("set to remote plugin mode, plugin name not found")
 	}
 	parsePlugin, err := drivers.ParsePlugin(pluginName)
 	if err != nil {
