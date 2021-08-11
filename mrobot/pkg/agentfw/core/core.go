@@ -17,7 +17,13 @@
 package core
 
 import (
-	"net/http"
+	"context"
+	"fmt"
+	v "github.com/go-playground/validator/v10"
+	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/httputil"
+	"github.com/zibuyu28/cmapp/common/log"
+	"k8s.io/apimachinery/pkg/util/json"
 	"os"
 	"strings"
 )
@@ -38,7 +44,7 @@ func init() {
 				continue
 			}
 			if kvs[0] == driAgentCoreHTTPAddr {
-				cli = &client{coreAddr: kvs[1], hc: http.Client{}}
+				cli = &client{coreAddr: kvs[1]}
 			}
 			break
 		}
@@ -47,10 +53,48 @@ func init() {
 
 type client struct {
 	coreAddr string
-	hc       http.Client
 }
 
-func PackageInfo(name, version string) {
-	// "/api/v1/package"
+// Package package info
+type Package struct {
+	Name    string `json:"name" validate:"required"`
+	Version string `json:"version" validate:"required"`
+	Image   struct {
+		ImageName     string   `json:"image_name" validate:"required"`
+		Tag           string   `json:"tag" validate:"required"`
+		WorkDir       string   `json:"work_dir" validate:"required"`
+		StartCommands []string `json:"start_command" validate:"required"`
+	}
+	Binary struct {
+		Download      string   `json:"download" validate:"required"`
+		CheckSum      string   `json:"check_sum" validate:"required"`
+		StartCommands []string `json:"start_command" validate:"required"`
+	}
+}
 
+// PackageInfo get package info from core
+func PackageInfo(ctx context.Context, name, version string) (*Package, error) {
+	if cli == nil {
+		return nil, errors.New("core client is nil")
+	}
+	// "/api/v1/package"
+	packageUrl := fmt.Sprintf("http://%s/api/v1/packege/%s/%s", cli.coreAddr, name, version)
+
+	resp, err := httputil.HTTPDoGet(packageUrl)
+	if err != nil {
+		return nil, errors.Wrap(err, "http do get")
+	}
+	log.Debugf(ctx, "Currently get package info from core. resp [%s]", string(resp))
+
+	p := Package{}
+	err = json.Unmarshal(resp, &p)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal resp to package")
+	}
+	validate := v.New()
+	err = validate.Struct(p)
+	if err != nil {
+		return nil, errors.Wrap(err, "validate param")
+	}
+	return &p, nil
 }

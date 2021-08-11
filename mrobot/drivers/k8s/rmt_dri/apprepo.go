@@ -16,12 +16,59 @@
 
 package rmt_dri
 
+import (
+	"context"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
+	"sync"
+)
 
-
-type App struct {
-
+type workRepository struct {
+	rep sync.Map
 }
 
+var repo = workRepository{rep: sync.Map{}}
+
+func (w *workRepository) load(ctx context.Context) (*App, error) {
+	uid, err := guid(ctx)
+	if err != nil {
+		return nil, errors.New("load uid from context")
+	}
+	wsp, ok := w.rep.Load(uid)
+	if !ok {
+		return nil, errors.Errorf("fail to get workspace from rep by uid [%s]", uid)
+	}
+	return wsp.(*App), nil
+}
+
+func (w *workRepository) new(ctx context.Context, wsp *App) error {
+	uid, err := guid(ctx)
+	if err != nil {
+		return errors.New("load uid from context")
+	}
+	wsp.UID = uid
+	w.rep.Store(uid, wsp)
+	return nil
+}
+
+func guid(ctx context.Context) (uid string, err error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		err = errors.New("fail to get metadata from context")
+		return
+	}
+	uuid := md.Get("MA_UUID")
+	if len(uuid) == 0 {
+		err = errors.New("fail to get uuid from metadata")
+		return
+	}
+	uid = uuid[0]
+	return
+}
+
+type App struct {
+	UID string
+}
 
 var initContainer = `initContainers:
   - name: busybox
@@ -37,7 +84,6 @@ var initContainer = `initContainers:
 	  - name: peerdata
 	    mountPath: "/work-dir"
 	    subPath: peer{{.NodeID}}.crypt`
-
 
 var defaultDeployment = `---
 apiVersion: apps/v1

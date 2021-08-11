@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 )
 
@@ -32,8 +33,31 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 	if len(req.Name) == 0 || len(req.Version) == 0 {
 		return nil, errors.Errorf("fail to get name [%s] or version [%s] info", req.Name, req.Version)
 	}
-
-	panic("implement me")
+	pkg, err := core.PackageInfo(ctx, req.Name, req.Version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get package info")
+	}
+	uid, err := guid(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get uid from ctx")
+	}
+	app := &App{UID: uid}
+	err = repo.new(ctx, app)
+	if err != nil {
+		return nil, errors.Wrap(err, "k8s repo new app")
+	}
+	wap := &worker0.App{
+		UUID: uid,
+		MainP: &worker0.App_MainProcess{
+			Name:     pkg.Name,
+			Version:  pkg.Version,
+			Type:     worker0.App_MainProcess_Image,
+			Workdir:  pkg.Image.WorkDir,
+			StartCMD: pkg.Image.StartCommands,
+		},
+		Workspace: &worker0.App_WorkspaceInfo{Workspace: "test"},
+	}
+	return wap, nil
 }
 
 func (k *K8sWorker) StartApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
