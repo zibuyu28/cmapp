@@ -19,21 +19,21 @@ service Worker0 {
     }
 
     // --- construct App ---
-    rpc FileMountEx (App.FileMount) returns (App) {
+    rpc FileMountEx (App.FileMount) returns (App.FileMount) {
     }
-    rpc VolumeEx (App.Volume) returns (App) {
+    rpc VolumeEx (App.Volume) returns (App.Volume) {
     }
-    rpc EnvEx (App.EnvVar) returns (App) {
+    rpc EnvEx (App.EnvVar) returns (App.EnvVar) {
     }
-    rpc NetworkEx (App.Network) returns (App) {
+    rpc NetworkEx (App.Network) returns (App.Network) {
     }
     rpc FilePremiseEx (App.File) returns (App) {
     }
-    rpc LimitEx (App.Limit) returns (App) {
+    rpc LimitEx (App.Limit) returns (App.Limit) {
     }
     rpc HealthEx (App.Health) returns (App) {
     }
-    rpc LogEx (App.Log) returns (App) {
+    rpc LogEx (App.Log) returns (App.Log) {
     }
 
 }

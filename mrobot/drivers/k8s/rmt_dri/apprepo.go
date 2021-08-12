@@ -67,7 +67,48 @@ func guid(ctx context.Context) (uid string, err error) {
 }
 
 type App struct {
-	UID string
+	UID          string
+	Image        string
+	WorkDir      string
+	Command      []string
+	FileMounts   map[string]FileMount
+	Volumes      map[string]Volume
+	Environments map[string]string
+	Ports        map[int]PortInfo
+	Limit        *Limit
+	Log          *Log
+}
+
+type Log struct {
+	RealTimeFile    string
+	CompressLogPath string
+}
+
+type Limit struct {
+	// unit 'm'
+	CPU int
+	// unit 'MB'
+	Memory int
+}
+
+type FileMount struct {
+	File    string
+	MountTo string
+	Volume  string
+}
+
+type Volume struct {
+	Name  string
+	Type  string
+	Param map[string]string
+}
+
+type PortInfo struct {
+	Port        int
+	Name        string
+	Protocol    string
+	ServiceName string
+	IngressName string
 }
 
 var initContainer = `initContainers:
