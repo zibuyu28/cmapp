@@ -68,14 +68,20 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 }
 
 func (k *K8sWorker) StartApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
+	// 每个部分进行template之前的一些检查
+	// template所有部分
+	// 新建k8s客户端
+	// 开始apply
 	panic("implement me")
 }
 
 func (k *K8sWorker) StopApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
+	// 将对应的app副本数量减为0
 	panic("implement me")
 }
 
 func (k *K8sWorker) DestroyApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
+	// 将对应app的所有资源删除
 	panic("implement me")
 }
 
@@ -189,9 +195,31 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	return network, nil
 }
 
+// FilePremiseEx TODO： 还需要再考虑字段及实现
 func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App, error) {
 
-	panic("implement me")
+	log.Debug(ctx, "Currently start to execute set file premise")
+	app, err := repo.load(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to load app from repo")
+	}
+
+	if len(file.Name) == 0 || len(file.AcquireAddr) == 0 || len(file.Target) == 0 {
+		return nil, errors.Errorf("file got empty name [%s] or acquire addr [%s] or target [%s]", file.Name, file.AcquireAddr, file.Target)
+	}
+	key := md5.MD5(fmt.Sprintf("%s:%s:%s", file.Name, file.AcquireAddr, file.Target))
+
+	if e, ok := app.FilePremises[key]; ok {
+		return nil, errors.Errorf("file premise exist [%#+v]", e)
+	}
+	premise := FilePremise{
+		Name:        file.Name,
+		AcquireAddr: file.AcquireAddr,
+		Content:     file.Content,
+		Target:      file.Target,
+	}
+	app.FilePremises[key] = premise
+	return nil, nil
 }
 
 func (k *K8sWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit) (*worker0.App_Limit, error) {
@@ -214,7 +242,50 @@ func (k *K8sWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit) (*wor
 }
 
 func (k *K8sWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*worker0.App, error) {
-	panic("implement me")
+	log.Debug(ctx, "Currently start to execute set health info")
+	app, err := repo.load(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to load app from repo")
+	}
+	var healthOpt HealthOption
+	if health.Readness != nil {
+		log.Debugf(ctx, "Currently get read ness health info [%#+v]", health.Readness)
+		read := &HealthBasic{
+			Path: health.Readness.Path,
+			Port: int(health.Readness.Port),
+		}
+		switch health.Readness.MethodType {
+		case worker0.App_Health_Basic_GET:
+			read.Method = HttpGet
+		case worker0.App_Health_Basic_POST:
+			read.Method = HttpPost
+		default:
+			return nil, errors.Wrapf(err, "fail to parse method [%s]", health.Readness.MethodType)
+		}
+		healthOpt.Readness = read
+	}
+	if health.Liveness != nil {
+		log.Debugf(ctx, "Currently get live ness health info [%#+v]", health.Liveness)
+		live := HealthBasic{
+			Path: health.Liveness.Path,
+			Port: int(health.Liveness.Port),
+		}
+		switch health.Liveness.MethodType {
+		case worker0.App_Health_Basic_GET:
+			live.Method = HttpGet
+		case worker0.App_Health_Basic_POST:
+			live.Method = HttpPost
+		default:
+			return nil, errors.Wrapf(err, "fail to parse method [%s]", health.Liveness.MethodType)
+		}
+		healthOpt.Liveness = &live
+	}
+	if healthOpt.Readness == nil && healthOpt.Liveness == nil {
+		log.Infof(ctx, "not set health info")
+		return nil, nil
+	}
+	app.Health = &healthOpt
+	return nil, nil
 }
 
 func (k *K8sWorker) LogEx(ctx context.Context, appLog *worker0.App_Log) (*worker0.App_Log, error) {

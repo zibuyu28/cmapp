@@ -67,9 +67,9 @@ func guid(ctx context.Context) (uid string, err error) {
 }
 
 type App struct {
-	UID          string
-	Image        string
-	WorkDir      string
+	UID          string `validate:"required"`
+	Image        string `validate:"required"`
+	WorkDir      string `validate:"required"`
 	Command      []string
 	FileMounts   map[string]FileMount
 	Volumes      map[string]Volume
@@ -77,6 +77,15 @@ type App struct {
 	Ports        map[int]PortInfo
 	Limit        *Limit
 	Log          *Log
+	Health       *HealthOption
+	FilePremises map[string]FilePremise
+}
+
+type FilePremise struct {
+	Name        string
+	AcquireAddr string
+	Content     []byte
+	Target      string
 }
 
 type Log struct {
@@ -92,23 +101,41 @@ type Limit struct {
 }
 
 type FileMount struct {
-	File    string
-	MountTo string
+	File    string `validate:"required"`
+	MountTo string `validate:"required"`
 	Volume  string
 }
 
 type Volume struct {
-	Name  string
-	Type  string
-	Param map[string]string
+	Name  string            `validate:"required"`
+	Type  string            `validate:"required"`
+	Param map[string]string `validate:"required"`
 }
 
 type PortInfo struct {
-	Port        int
-	Name        string
-	Protocol    string
-	ServiceName string
-	IngressName string
+	Port        int    `validate:"required"`
+	Name        string `validate:"required"`
+	Protocol    string `validate:"required"`
+	ServiceName string `validate:"required"`
+	IngressName string `validate:"required"`
+}
+
+type MethodType string
+
+const (
+	HttpGet  MethodType = "httpGet"
+	HttpPost MethodType = "httpPost"
+)
+
+type HealthBasic struct {
+	Method MethodType
+	Path   string `validate:"required"`
+	Port   int    `validate:"required"`
+}
+
+type HealthOption struct {
+	Liveness *HealthBasic
+	Readness *HealthBasic
 }
 
 var initContainer = `initContainers:
