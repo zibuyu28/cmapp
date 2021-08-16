@@ -19,15 +19,24 @@ package rmt_dri
 import (
 	"context"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
+	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type K8sWorker struct {
-	Name string
+	Name      string
+	Namespace string
+	Token     string
+	Cert      string
+	URL       string
+	MachineID int
 }
 
 func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker0.App, error) {
@@ -48,6 +57,7 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 		Image:   fmt.Sprintf("%s:%s", pkg.Image.ImageName, pkg.Image.Tag),
 		WorkDir: pkg.Image.WorkDir,
 		Command: pkg.Image.StartCommands,
+		Tags:    map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", k.MachineID)},
 	}
 	err = repo.new(ctx, app)
 	if err != nil {
@@ -67,8 +77,46 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 	return wap, nil
 }
 
-func (k *K8sWorker) StartApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
+func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empty, error) {
+	log.Debug(ctx, "Currently to start app")
+	app, err := repo.load(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to load app from repo")
+	}
 	// 每个部分进行template之前的一些检查
+	var rep = int32(1)
+	dep := v1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "",
+			Namespace: k.Namespace,
+			Labels:    app.Tags,
+		},
+		Spec: v1.DeploymentSpec{
+			Replicas:                &rep,
+			Selector:                &metav1.LabelSelector{MatchLabels: app.Tags},
+			Template:                corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:                     app.Tags,
+				},
+				Spec:       corev1.PodSpec{
+					Volumes:                       nil,
+					InitContainers:                nil,
+					Containers:                    nil,
+				},
+			},
+			Strategy:                v1.DeploymentStrategy{Type: v1.RecreateDeploymentStrategyType},
+			MinReadySeconds:         10,
+		},
+	}
+	marshal, err := yaml.Marshal(dep)
+	if err != nil {
+		return nil, errors.Wrap(err,"marshal dep")
+	}
+	fmt.Println(marshal)
 	// template所有部分
 	// 新建k8s客户端
 	// 开始apply
@@ -137,6 +185,22 @@ func (k *K8sWorker) VolumeEx(ctx context.Context, volume *worker0.App_Volume) (*
 		Type:  volume.Type,
 		Param: volume.Param,
 	}, nil
+}
+
+func (k *K8sWorker) TagEx(ctx context.Context, tag *worker0.App_Tag) (*worker0.App_Tag, error) {
+	log.Debug(ctx, "Currently start to execute set app tag")
+	app, err := repo.load(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to load app from repo")
+	}
+	if len(tag.Key) == 0 || len(tag.Value) == 0 {
+		return nil, errors.Errorf("tag got empty key [%s] or value [%s]", tag.Key, tag.Value)
+	}
+	if tag.Key == "uuid" || tag.Key == "machine_id" {
+		return nil, errors.New("tag named 'uid' or 'machine_id' not support to set")
+	}
+	app.Tags[tag.Key] = tag.Value
+	return tag, nil
 }
 
 func (k *K8sWorker) EnvEx(ctx context.Context, envVar *worker0.App_EnvVar) (*worker0.App_EnvVar, error) {

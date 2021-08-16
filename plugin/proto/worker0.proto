@@ -19,6 +19,8 @@ service Worker0 {
     }
 
     // --- construct App ---
+    rpc TagEx (App.Tag) returns (App.Tag) {
+    }
     rpc FileMountEx (App.FileMount) returns (App.FileMount) {
     }
     rpc VolumeEx (App.Volume) returns (App.Volume) {
@@ -165,6 +167,14 @@ message App {
     }
 
     Log LogInfo = 11;
+
+    message Tag {
+        string Key = 1;
+        string Value = 2;
+    }
+
+    repeated Tag Tags = 12;
+
 
 }
 

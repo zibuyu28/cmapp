@@ -79,6 +79,7 @@ type App struct {
 	Log          *Log
 	Health       *HealthOption
 	FilePremises map[string]FilePremise
+	Tags         map[string]string
 }
 
 type FilePremise struct {
