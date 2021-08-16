@@ -77,6 +77,7 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 	return wap, nil
 }
 
+// StartApp TODO: pvc 的处理
 func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empty, error) {
 	log.Debug(ctx, "Currently to start app")
 	app, err := repo.load(ctx)
@@ -112,6 +113,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 			MinReadySeconds:         10,
 		},
 	}
+
 	marshal, err := yaml.Marshal(dep)
 	if err != nil {
 		return nil, errors.Wrap(err,"marshal dep")
