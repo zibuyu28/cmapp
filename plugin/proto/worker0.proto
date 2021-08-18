@@ -122,8 +122,8 @@ message App {
     message File {
         string Name = 1;
         string AcquireAddr = 2;
-        bytes Content = 3;
-        string target = 4;
+        string Target = 3;
+        string Shell = 4;
     }
 
     repeated File FilePremise = 8;

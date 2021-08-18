@@ -27,16 +27,20 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
 
 type K8sWorker struct {
-	Name      string
-	Namespace string
-	Token     string
-	Cert      string
-	URL       string
-	MachineID int
+	Name         string
+	Namespace    string
+	StorageClass string
+	Token        string
+	Cert         string
+	URL          string
+	MachineID    int
 }
 
 func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker0.App, error) {
@@ -77,7 +81,7 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 	return wap, nil
 }
 
-// StartApp TODO: pvc 的处理
+// StartApp start app
 func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empty, error) {
 	log.Debug(ctx, "Currently to start app")
 	app, err := repo.load(ctx)
@@ -86,42 +90,261 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	}
 	// 每个部分进行template之前的一些检查
 	var rep = int32(1)
+
+	// ports
+	var ports []corev1.ContainerPort
+	for port, info := range app.Ports {
+		ports = append(ports, corev1.ContainerPort{
+			Name:          info.Name,
+			ContainerPort: int32(port),
+		})
+	}
+	// envs
+	var envs []corev1.EnvVar
+	for key, val := range app.Environments {
+		envs = append(envs, corev1.EnvVar{
+			Name:  key,
+			Value: val,
+		})
+	}
+
+	// volume
+	var vmes []corev1.VolumeMount
+	for _, mount := range app.FileMounts {
+		if len(mount.Volume) != 0 {
+			if _, ok := app.Volumes[mount.Volume]; !ok {
+				return nil, errors.Errorf("fail to get [%s] from app exist volume list", mount.Volume)
+			}
+			vmes = append(vmes, corev1.VolumeMount{
+				Name:      mount.Volume,
+				MountPath: mount.MountTo,
+			})
+		} else {
+			vmes = append(vmes, corev1.VolumeMount{
+				Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+				MountPath: mount.MountTo,
+				SubPath:   fmt.Sprintf("download/%s", mount.File),
+			})
+		}
+	}
+
+	// health
+	var readness *corev1.Probe
+	var liveness *corev1.Probe
+
+	if app.Health != nil {
+		if app.Health.Readness != nil {
+			readness = &corev1.Probe{
+				Handler: corev1.Handler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Path: app.Health.Readness.Path,
+						Port: intstr.FromInt(app.Health.Readness.Port),
+					},
+				},
+				InitialDelaySeconds: 3,
+				TimeoutSeconds:      5,
+				PeriodSeconds:       1,
+				SuccessThreshold:    1,
+				FailureThreshold:    5,
+			}
+		}
+		if app.Health.Liveness != nil {
+			liveness = &corev1.Probe{
+				Handler: corev1.Handler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Path: app.Health.Liveness.Path,
+						Port: intstr.FromInt(app.Health.Liveness.Port),
+					},
+				},
+				InitialDelaySeconds: 20,
+				TimeoutSeconds:      5,
+				PeriodSeconds:       1,
+				SuccessThreshold:    1,
+				FailureThreshold:    5,
+			}
+		}
+	}
+
+	// resources
+	var resourcereq corev1.ResourceRequirements
+	if app.Limit != nil {
+		resourcereq = corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%dm", app.Limit.CPU)),
+				corev1.ResourceMemory: resource.MustParse(fmt.Sprintf("%dMi", app.Limit.Memory)),
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("100Mi"),
+			},
+		}
+	}
+
+	var initc []corev1.Container
+	if len(app.FilePremises) != 0 {
+		var commands []string
+		for _, premise := range app.FilePremises {
+			commands = append(commands, fmt.Sprintf("wget -O \"/work-dir/%s/%s\" -c %s", premise.Target, premise.Name, premise.AcquireAddr))
+			if len(premise.Shell) != 0 {
+				commands = append(commands, fmt.Sprintf("%s", premise.Shell))
+			}
+		}
+		// get busy box image
+		pkg, err := core.PackageInfo(ctx, "busybox", "latest")
+		if err != nil {
+			return nil, errors.Wrapf(err, "get package info")
+		}
+		initc = append(initc, corev1.Container{
+			Name:    fmt.Sprintf("app-%s-init", app.UID),
+			Image:   fmt.Sprintf("%s:%s", pkg.Image.ImageName, pkg.Image.Tag),
+			Command: []string{"/bin/sh", "\"-c\"", strings.Join(commands, "\n")},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+					MountPath: "/work-dir",
+					SubPath:   "download",
+				},
+			},
+			ImagePullPolicy: "IfNotPresent",
+		})
+	}
+
+	var vols []corev1.Volume
+	vols = append(vols, corev1.Volume{
+		Name: fmt.Sprintf("app-%s-pvc", app.UID),
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: fmt.Sprintf("app-%s-pvc", app.UID),
+			},
+		},
+	})
+	vols = append(vols, corev1.Volume{
+		Name: "run",
+		VolumeSource: corev1.VolumeSource{
+			HostPath: &corev1.HostPathVolumeSource{
+				Path: "/var/run/",
+			},
+		},
+	})
+
 	dep := v1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "",
+			Name:      fmt.Sprintf("app-%s-dep", app.UID),
 			Namespace: k.Namespace,
 			Labels:    app.Tags,
 		},
 		Spec: v1.DeploymentSpec{
-			Replicas:                &rep,
-			Selector:                &metav1.LabelSelector{MatchLabels: app.Tags},
-			Template:                corev1.PodTemplateSpec{
+			Replicas: &rep,
+			Selector: &metav1.LabelSelector{MatchLabels: app.Tags},
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels:                     app.Tags,
+					Labels: app.Tags,
 				},
-				Spec:       corev1.PodSpec{
-					Volumes:                       nil,
-					InitContainers:                nil,
-					Containers:                    nil,
+				Spec: corev1.PodSpec{
+					Volumes:        vols,
+					InitContainers: initc,
+					Containers: []corev1.Container{
+						{
+							Name:            fmt.Sprintf("app-%s", app.UID),
+							Image:           app.Image,
+							Command:         app.Command,
+							Args:            nil,
+							WorkingDir:      app.WorkDir,
+							Ports:           ports,
+							Env:             envs,
+							VolumeMounts:    vmes,
+							LivenessProbe:   liveness,
+							ReadinessProbe:  readness,
+							Resources:       resourcereq,
+							ImagePullPolicy: "Always",
+						},
+					},
 				},
 			},
-			Strategy:                v1.DeploymentStrategy{Type: v1.RecreateDeploymentStrategyType},
-			MinReadySeconds:         10,
+			Strategy:        v1.DeploymentStrategy{Type: v1.RecreateDeploymentStrategyType},
+			MinReadySeconds: 10,
+		},
+	}
+
+	pvc := corev1.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PersistentVolumeClaim",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+			Namespace: k.Namespace,
+			Labels:    app.Tags,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+			StorageClassName: &(k.StorageClass),
+		},
+	}
+
+	var srvp []corev1.ServicePort
+	for _, info := range app.Ports {
+		s := corev1.ServicePort{
+			Name:       info.Name,
+			Port:       int32(info.Port),
+			TargetPort: intstr.FromInt(info.Port),
+		}
+		switch corev1.Protocol(strings.ToUpper(info.Protocol)) {
+		case corev1.ProtocolTCP:
+			s.Protocol = corev1.ProtocolTCP
+		case corev1.ProtocolUDP:
+			s.Protocol = corev1.ProtocolUDP
+		case corev1.ProtocolSCTP:
+			s.Protocol = corev1.ProtocolSCTP
+		default:
+			return nil, errors.Errorf("port protocol [%s] not correct", info.Protocol)
+		}
+
+		srvp = append(srvp, s)
+	}
+	srv := corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("app-%s-service", app.UID),
+			Namespace: k.Namespace,
+			Labels:    app.Tags,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports:    srvp,
+			Selector: app.Tags,
+			Type:     corev1.ServiceTypeClusterIP,
 		},
 	}
 
 	marshal, err := yaml.Marshal(dep)
 	if err != nil {
-		return nil, errors.Wrap(err,"marshal dep")
+		return nil, errors.Wrap(err, "marshal dep")
 	}
 	fmt.Println(marshal)
-	// template所有部分
-	// 新建k8s客户端
-	// 开始apply
+
+	marshal, err = yaml.Marshal(pvc)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal pvc")
+	}
+	fmt.Println(marshal)
+
+	marshal, err = yaml.Marshal(srv)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal srv")
+	}
+	fmt.Println(marshal)
 	panic("implement me")
 }
 
@@ -261,7 +484,7 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	return network, nil
 }
 
-// FilePremiseEx TODO： 还需要再考虑字段及实现
+// FilePremiseEx
 func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App, error) {
 
 	log.Debug(ctx, "Currently start to execute set file premise")
@@ -281,8 +504,8 @@ func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (
 	premise := FilePremise{
 		Name:        file.Name,
 		AcquireAddr: file.AcquireAddr,
-		Content:     file.Content,
 		Target:      file.Target,
+		Shell:       file.Shell,
 	}
 	app.FilePremises[key] = premise
 	return nil, nil

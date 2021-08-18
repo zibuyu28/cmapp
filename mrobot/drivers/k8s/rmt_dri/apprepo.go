@@ -85,8 +85,8 @@ type App struct {
 type FilePremise struct {
 	Name        string
 	AcquireAddr string
-	Content     []byte
 	Target      string
+	Shell       string
 }
 
 type Log struct {
