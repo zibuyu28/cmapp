@@ -23,8 +23,6 @@ service Worker0 {
     }
     rpc FileMountEx (App.FileMount) returns (App.FileMount) {
     }
-    rpc VolumeEx (App.Volume) returns (App.Volume) {
-    }
     rpc EnvEx (App.EnvVar) returns (App.EnvVar) {
     }
     rpc NetworkEx (App.Network) returns (App.Network) {
@@ -74,20 +72,12 @@ message App {
 
     repeated FileMount FileMounts = 3;
 
-    // 卷声明
-    message Volume {
-        string Name = 1;
-        string Type = 2;
-        map<string, string> Param = 3;
-    }
-    repeated Volume Volumes = 4;
-
     message EnvVar {
         string key = 1;
         string value = 2;
     }
 
-    repeated EnvVar EnvironmentVars = 5;
+    repeated EnvVar EnvironmentVars = 4;
 
     message Network {
         message PortInf {
@@ -111,13 +101,13 @@ message App {
         repeated RouteInf RouteInfo = 2;
     }
 
-    repeated Network Networks = 6;
+    repeated Network Networks = 5;
 
     message WorkspaceInfo {
         string workspace = 1;
     }
 
-    WorkspaceInfo Workspace = 7;
+    WorkspaceInfo Workspace = 6;
 
     message File {
         string Name = 1;
@@ -126,7 +116,7 @@ message App {
         string Shell = 4;
     }
 
-    repeated File FilePremise = 8;
+    repeated File FilePremise = 7;
 
     message Limit {
         // unit 'm'
@@ -135,7 +125,7 @@ message App {
         int32 Memory = 2;
     }
 
-    Limit LimitInfo = 9;
+    Limit LimitInfo = 8;
 
     message Health {
         message Basic {
@@ -157,7 +147,7 @@ message App {
         Basic Readness = 2;
     }
 
-    Health HealthInfo = 10;
+    Health HealthInfo = 9;
 
     message Log {
         // Real-time log file name. eg: xxx/log.log
@@ -166,14 +156,14 @@ message App {
         string FilePath = 2;
     }
 
-    Log LogInfo = 11;
+    Log LogInfo = 10;
 
     message Tag {
         string Key = 1;
         string Value = 2;
     }
 
-    repeated Tag Tags = 12;
+    repeated Tag Tags = 11;
 
 
 }

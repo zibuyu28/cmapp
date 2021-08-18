@@ -112,13 +112,18 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	var vmes []corev1.VolumeMount
 	for _, mount := range app.FileMounts {
 		if len(mount.Volume) != 0 {
-			if _, ok := app.Volumes[mount.Volume]; !ok {
-				return nil, errors.Errorf("fail to get [%s] from app exist volume list", mount.Volume)
+			if mount.File == "*" {
+				vmes = append(vmes, corev1.VolumeMount{
+					Name:      mount.Volume,
+					MountPath: mount.MountTo,
+				})
+			} else {
+				vmes = append(vmes, corev1.VolumeMount{
+					Name:      mount.Volume,
+					MountPath: mount.MountTo,
+					SubPath:   mount.File,
+				})
 			}
-			vmes = append(vmes, corev1.VolumeMount{
-				Name:      mount.Volume,
-				MountPath: mount.MountTo,
-			})
 		} else {
 			vmes = append(vmes, corev1.VolumeMount{
 				Name:      fmt.Sprintf("app-%s-pvc", app.UID),
@@ -382,33 +387,6 @@ func (k *K8sWorker) FileMountEx(ctx context.Context, mount *worker0.App_FileMoun
 		File:    mount.File,
 		MountTo: mount.MountTo,
 		Volume:  mount.Volume,
-	}, nil
-}
-
-func (k *K8sWorker) VolumeEx(ctx context.Context, volume *worker0.App_Volume) (*worker0.App_Volume, error) {
-	log.Debug(ctx, "Currently start to execute volume create")
-	app, err := repo.load(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "fail to load app from repo")
-	}
-
-	if len(volume.Name) == 0 || len(volume.Type) == 0 {
-		return nil, errors.Errorf("volume got empty Name [%s] or Type [%s]", volume.Name, volume.Type)
-	}
-
-	if e, ok := app.Volumes[volume.Name]; ok {
-		return nil, errors.Errorf("volume exist [%+#v]", e)
-	}
-
-	app.Volumes[volume.Name] = Volume{
-		Name:  volume.Name,
-		Type:  volume.Type,
-		Param: volume.Param,
-	}
-	return &worker0.App_Volume{
-		Name:  volume.Name,
-		Type:  volume.Type,
-		Param: volume.Param,
 	}, nil
 }
 

@@ -72,7 +72,6 @@ type App struct {
 	WorkDir      string `validate:"required"`
 	Command      []string
 	FileMounts   map[string]FileMount
-	Volumes      map[string]Volume
 	Environments map[string]string
 	Ports        map[int]PortInfo
 	Limit        *Limit
