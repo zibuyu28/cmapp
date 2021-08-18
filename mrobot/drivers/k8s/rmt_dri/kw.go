@@ -20,27 +20,53 @@ import (
 	"context"
 	"fmt"
 	"github.com/ghodss/yaml"
+	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
+	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strconv"
 	"strings"
 )
 
 type K8sWorker struct {
 	Name         string
-	Namespace    string
-	StorageClass string
-	Token        string
-	Cert         string
-	URL          string
+	Namespace    string `validate:"required"`
+	StorageClass string `validate:"required"`
+	Token        string `validate:"required"`
+	Certificate  string `validate:"required"`
+	ClusterURL   string `validate:"required"`
 	MachineID    int
+}
+
+func NewK8sWorker() *K8sWorker {
+	w := &K8sWorker{
+		Token:        agfw.Flags["Token"].Value,
+		Certificate:  agfw.Flags["Certificate"].Value,
+		ClusterURL:   agfw.Flags["ClusterURL"].Value,
+		Namespace:    agfw.Flags["Namespace"].Value,
+		StorageClass: agfw.Flags["StorageClassName"].Value,
+	}
+	if len(agfw.Flags["MachineID"].Value) != 0 {
+		mid, err := strconv.Atoi(agfw.Flags["MachineID"].Value)
+		if err != nil {
+			panic(err)
+		}
+		w.MachineID = mid
+	}
+	validate := v.New()
+	err := validate.Struct(*w)
+	if err != nil {
+		panic(err)
+	}
+	return w
 }
 
 func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker0.App, error) {

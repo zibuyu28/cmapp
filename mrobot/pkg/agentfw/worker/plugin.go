@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker"
+	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	"google.golang.org/grpc"
 	"net"
 	"os"
@@ -26,10 +27,10 @@ import (
 )
 
 
-var workerServer worker.WorkerServer
+var workerServer worker0.Worker0Server
 
 // RegisterWorker register a instance to agentfw
-func RegisterWorker(imp worker.WorkerServer) {
+func RegisterWorker(imp worker0.Worker0Server) {
 	workerServer = imp
 }
 
@@ -50,7 +51,7 @@ func pluginIns(ctx context.Context) (*plugin, error) {
 
 	grpcserver := grpc.NewServer()
 
-	worker.RegisterWorkerServer(grpcserver, workerServer)
+	worker0.RegisterWorker0Server(grpcserver, workerServer)
 
 	go func() {
 		err = grpcserver.Serve(listener)
