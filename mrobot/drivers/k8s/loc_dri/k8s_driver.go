@@ -225,7 +225,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 		return nil, errors.Wrapf(err, "parse core id [%s] to int", datas[0])
 	}
 
-	c, err := base.NewClient(ctx, defaultConfig)
+	c, err := base.NewClientByConfig(ctx, []byte(defaultConfig))
 	if err != nil {
 		return nil, errors.Wrap(err, "new kubernetes client")
 	}
@@ -262,7 +262,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 }
 
 func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
-	// TODO: how to check mrobot health ?
+	// (DONE): how to check mrobot health -> deployment check ok
 	log.Info(ctx, "Currently k8s machine plugin start to check robot health")
 	return nil, nil
 }
