@@ -19,19 +19,21 @@ package rmt_dri
 import (
 	"context"
 	"fmt"
-	"github.com/ghodss/yaml"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
+	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
 	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
 )
@@ -43,7 +45,8 @@ type K8sWorker struct {
 	Token        string `validate:"required"`
 	Certificate  string `validate:"required"`
 	ClusterURL   string `validate:"required"`
-	MachineID    int
+	MachineID    int    `validate:"required"`
+	Domain       string
 }
 
 func NewK8sWorker() *K8sWorker {
@@ -53,6 +56,7 @@ func NewK8sWorker() *K8sWorker {
 		ClusterURL:   agfw.Flags["ClusterURL"].Value,
 		Namespace:    agfw.Flags["Namespace"].Value,
 		StorageClass: agfw.Flags["StorageClassName"].Value,
+		Domain:       agfw.Flags["Domain"].Value,
 	}
 	if len(agfw.Flags["MachineID"].Value) != 0 {
 		mid, err := strconv.Atoi(agfw.Flags["MachineID"].Value)
@@ -151,13 +155,19 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 				})
 			}
 		} else {
-			vmes = append(vmes, corev1.VolumeMount{
-				Name:      fmt.Sprintf("app-%s-pvc", app.UID),
-				MountPath: mount.MountTo,
-				SubPath:   fmt.Sprintf("download/%s", mount.File),
-			})
+			//vmes = append(vmes, corev1.VolumeMount{
+			//	Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+			//	MountPath: mount.MountTo,
+			//	SubPath:   fmt.Sprintf("download/%s", mount.File),
+			//})
 		}
 	}
+
+	vmes = append(vmes, corev1.VolumeMount{
+		Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+		MountPath: fmt.Sprintf("/%s",app.UID),
+		SubPath:   fmt.Sprintf("download"),
+	})
 
 	// health
 	var readness *corev1.Probe
@@ -215,9 +225,9 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	if len(app.FilePremises) != 0 {
 		var commands []string
 		for _, premise := range app.FilePremises {
-			commands = append(commands, fmt.Sprintf("wget -O \"/work-dir/%s/%s\" -c %s", premise.Target, premise.Name, premise.AcquireAddr))
+			commands = append(commands, fmt.Sprintf("wget -O \"/%s/%s\" -c %s", app.UID, premise.Name, premise.AcquireAddr))
 			if len(premise.Shell) != 0 {
-				commands = append(commands, fmt.Sprintf("%s", premise.Shell))
+				commands = append(commands, premise.Shell)
 			}
 		}
 		// get busy box image
@@ -232,7 +242,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      fmt.Sprintf("app-%s-pvc", app.UID),
-					MountPath: "/work-dir",
+					MountPath: fmt.Sprintf("/%s", app.UID),
 					SubPath:   "download",
 				},
 			},
@@ -323,6 +333,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	}
 
 	var srvp []corev1.ServicePort
+	var igs []v1beta1.IngressRule
 	for _, info := range app.Ports {
 		s := corev1.ServicePort{
 			Name:       info.Name,
@@ -341,6 +352,22 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 		}
 
 		srvp = append(srvp, s)
+
+		igs = append(igs, v1beta1.IngressRule{
+			Host: info.IngressName,
+			IngressRuleValue: v1beta1.IngressRuleValue{
+				HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{
+						{
+							Backend: v1beta1.IngressBackend{
+								ServiceName: info.ServiceName,
+								ServicePort: intstr.FromInt(info.Port),
+							},
+						},
+					},
+				},
+			},
+		})
 	}
 	srv := corev1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -363,20 +390,78 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal dep")
 	}
-	fmt.Println(marshal)
+	fmt.Println(string(marshal))
 
 	marshal, err = yaml.Marshal(pvc)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal pvc")
 	}
-	fmt.Println(marshal)
+	fmt.Println(string(marshal))
 
 	marshal, err = yaml.Marshal(srv)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal srv")
 	}
-	fmt.Println(marshal)
-	panic("implement me")
+	fmt.Println(string(marshal))
+
+	log.Debug(ctx, "Currently new k8s client")
+	cli, err := base.NewClientInCluster(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "new k8s client")
+	}
+
+	log.Debug(ctx, "Currently start to create service")
+	err = cli.CreateService(&srv)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply service")
+	}
+
+	if len(k.Domain) != 0 {
+		igrs := v1beta1.Ingress{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Ingress",
+				APIVersion: "extensions/v1beta1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("app-%s-ingress", app.UID),
+				Namespace: k.Namespace,
+				Labels:    app.Tags,
+				Annotations: map[string]string{
+					"kubernetes.io/ingress.class":             "nginx",
+					"nginx.ingress.kubernetes.io/use-regex":   "true",
+					"nginx.ingress.kubernetes.io/enable-cors": "true",
+				},
+			},
+			Spec: v1beta1.IngressSpec{
+				Rules: igs,
+			},
+		}
+		log.Debug(ctx, "Currently start to create ingress")
+		err = cli.CreateIngress(&igrs)
+		if err != nil {
+			return nil, errors.Wrap(err, "apply ingress")
+		}
+
+		marshal, err = yaml.Marshal(igrs)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshal ingress")
+		}
+		fmt.Println(string(marshal))
+	}
+
+	log.Debug(ctx, "Currently start to create pvc")
+	err = cli.CreatePersistentVolumeClaim(&pvc)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply pvc")
+	}
+
+	log.Debug(ctx, "Currently start to create deployment")
+	err = cli.CreateDeployment(&dep)
+	if err != nil {
+		return nil, errors.Wrap(err, "apply deployment")
+	}
+	log.Debug(ctx, "Currently app deploy success")
+	return nil, nil
 }
 
 func (k *K8sWorker) StopApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
@@ -461,10 +546,10 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	network.PortInfo.ProtocolType = worker0.App_Network_PortInf_TCP
 
 	// 内部service
-	service := fmt.Sprintf("%s-service", app.UID)
+	service := fmt.Sprintf("app-%s-service", app.UID)
 
 	// 外部ingress
-	ingress := fmt.Sprintf("%s-%s-%d.develop.blocface.baas.hyperchain.cn", "machineinf", app.UID, network.PortInfo.Port)
+	ingress := fmt.Sprintf("m%d-%s-%d.%s", k.MachineID, app.UID, network.PortInfo.Port, k.Domain)
 	pi := PortInfo{
 		Port:        int(network.PortInfo.Port),
 		Name:        network.PortInfo.Name,
@@ -488,7 +573,7 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	return network, nil
 }
 
-// FilePremiseEx
+// FilePremiseEx file premise
 func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App, error) {
 
 	log.Debug(ctx, "Currently start to execute set file premise")
@@ -497,10 +582,10 @@ func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (
 		return nil, errors.Wrap(err, "fail to load app from repo")
 	}
 
-	if len(file.Name) == 0 || len(file.AcquireAddr) == 0 || len(file.Target) == 0 {
-		return nil, errors.Errorf("file got empty name [%s] or acquire addr [%s] or target [%s]", file.Name, file.AcquireAddr, file.Target)
+	if len(file.Name) == 0 || len(file.AcquireAddr) == 0 {
+		return nil, errors.Errorf("file got empty name [%s] or acquire addr [%s]", file.Name, file.AcquireAddr)
 	}
-	key := md5.MD5(fmt.Sprintf("%s:%s:%s", file.Name, file.AcquireAddr, file.Target))
+	key := md5.MD5(fmt.Sprintf("%s:%s", file.Name, file.AcquireAddr))
 
 	if e, ok := app.FilePremises[key]; ok {
 		return nil, errors.Errorf("file premise exist [%#+v]", e)
@@ -508,7 +593,6 @@ func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (
 	premise := FilePremise{
 		Name:        file.Name,
 		AcquireAddr: file.AcquireAddr,
-		Target:      file.Target,
 		Shell:       file.Shell,
 	}
 	app.FilePremises[key] = premise

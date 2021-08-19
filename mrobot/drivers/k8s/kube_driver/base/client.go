@@ -18,13 +18,12 @@ package base
 
 import (
 	"context"
-	"fmt"
+	"crypto/x509"
+	"encoding/pem"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"os/user"
-	"path/filepath"
 )
 
 type Client struct {
@@ -32,43 +31,107 @@ type Client struct {
 	ctx context.Context
 }
 
-//NewClient new client by config
-func NewClient(ctx context.Context, kubeconfig string) (*Client, error) {
-	// uses the current context in kubeconfig
-	config, err := loadConfig(kubeconfig)
+// NewClientInCluster new client in cluster
+func NewClientInCluster(ctx context.Context) (*Client, error)  {
+	c, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "get in cluster kube config")
+	}
+	kubeClient, err := kubernetes.NewForConfig(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "new kube client")
+	}
+	return &Client{k: kubeClient, ctx: ctx}, nil
+}
+
+// NewClientByConfig new client by config
+func NewClientByConfig(ctx context.Context,kubeConfig []byte) (*Client, error)  {
+	if len(kubeConfig) == 0 {
+		return nil, errors.New("Error Get empty kube config ")
+	}
+	config, err := clientcmd.RESTConfigFromKubeConfig(kubeConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "new config by kube config")
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "new kube client")
+	}
+	return &Client{k: kubeClient, ctx: ctx}, nil
+}
+
+// NewClientByAuth new client by auth
+func NewClientByAuth(ctx context.Context,apiURL, token, cert string) (*Client, error)  {
+	if len(apiURL) == 0 || len(token) == 0 || len(cert) == 0 {
+		return nil, errors.New("Error Get empty param config ")
+	}
+	config, err := newConfig(apiURL, token, cert)
 	if err != nil {
 		return nil, err
 	}
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "new client for config")
 	}
 	return &Client{k: kubeClient, ctx: ctx}, nil
 }
 
-// loadConfig loads a REST Config as per the rules specified in GetConfig
-func loadConfig(kubeconfig string) (*rest.Config, error) {
+func newConfig(apiURL string, token string, caCert string) (*rest.Config, error) {
 
-	var apiServerURL = ""
-	// If a flag is specified with the kubeconfig location, use that
-	if len(kubeconfig) > 0 {
-		return clientcmd.BuildConfigFromFlags(apiServerURL, kubeconfig)
+	tlsClientConfig := rest.TLSClientConfig{}
+
+	if _, err := newCertPool(caCert); err != nil {
+		return nil, err
+	} else {
+		tlsClientConfig.CAData = []byte(caCert)
 	}
-	// If an env variable is specified with the kubeconfig locaiton, use that
-	if len(os.Getenv("KUBECONFIG")) > 0 {
-		return clientcmd.BuildConfigFromFlags(apiServerURL, os.Getenv("KUBECONFIG"))
+	return &rest.Config{
+		Host:            apiURL,
+		TLSClientConfig: tlsClientConfig,
+		BearerToken:     token,
+	}, nil
+}
+
+func newCertPool(caCert string) (*x509.CertPool, error) {
+	certs, err := ParseCertsPEM([]byte(caCert))
+	if err != nil {
+		return nil, err
 	}
-	// If no explicit location, try the in-cluster kubeconfig
-	if c, err := rest.InClusterConfig(); err == nil {
-		return c, nil
+	pool := x509.NewCertPool()
+	for _, c := range certs {
+		pool.AddCert(c)
 	}
-	// If no in-cluster kubeconfig, try the default location in the user's home directory
-	if usr, err := user.Current(); err == nil {
-		if c, err := clientcmd.BuildConfigFromFlags(
-			"", filepath.Join(usr.HomeDir, ".kube", "kubeconfig")); err == nil {
-			return c, nil
+	return pool, nil
+}
+
+// ParseCertsPEM returns the x509.Certificates contained in the given PEM-encoded byte array
+// Returns an error if a certificate could not be parsed, or if the data does not contain any certificates
+func ParseCertsPEM(pemCerts []byte) ([]*x509.Certificate, error) {
+	ok := false
+	certs := []*x509.Certificate{}
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
 		}
+		// Only use PEM "CERTIFICATE" blocks without extra headers
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return certs, err
+		}
+
+		certs = append(certs, cert)
+		ok = true
 	}
 
-	return nil, fmt.Errorf("could not locate a kubeconfig")
+	if !ok {
+		return certs, errors.New("data does not contain any valid RSA or ECDSA certificates")
+	}
+	return certs, nil
 }

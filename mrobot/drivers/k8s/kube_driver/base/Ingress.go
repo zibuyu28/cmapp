@@ -26,7 +26,17 @@ import (
 	"time"
 )
 
-//GetDeployment .
+// CreateIngress create ingress
+func (c *Client) CreateIngress(ingress *v1beta1.Ingress) error {
+	ingressClient := c.k.ExtensionsV1beta1().Ingresses(ingress.Namespace)
+	_, err := ingressClient.Create(c.ctx, ingress, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrap(err, "create ingress")
+	}
+	return nil
+}
+
+//GetIngressByName .
 func (c *Client) GetIngressByName(name, namespace string, ops metav1.GetOptions) (*v1beta1.Ingress, error) {
 	ingressClient := c.k.ExtensionsV1beta1().Ingresses(namespace)
 	redep, err := ingressClient.Get(c.ctx, name, ops)

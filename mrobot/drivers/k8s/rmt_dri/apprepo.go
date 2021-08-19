@@ -84,7 +84,6 @@ type App struct {
 type FilePremise struct {
 	Name        string
 	AcquireAddr string
-	Target      string
 	Shell       string
 }
 

@@ -19,6 +19,8 @@ require (
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
+	sigs.k8s.io/yaml v1.2.0
+	github.com/agiledragon/gomonkey v2.0.1+incompatible
 )
 
 replace github.com/zibuyu28/cmapp/core v0.0.0-incompatible => ../core
