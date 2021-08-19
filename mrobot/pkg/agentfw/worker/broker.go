@@ -5,10 +5,9 @@ import (
 	"github.com/goinggo/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
-	"github.com/zibuyu28/cmapp/plugin/proto/worker"
+	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/util/json"
-	"reflect"
 )
 
 type broker struct {
@@ -28,50 +27,35 @@ func (b *broker) Execute(ctx context.Context) {
 
 type Action string
 
+// new worker0  action ======= new worker
 const (
-	GetWorkspace            Action = "GetWorkspace"
-	DestroyWorkspace        Action = "DestroyWorkspace"
-	DownloadToPath          Action = "DownloadToPath"
-	Upload                  Action = "Upload"
-	Compress                Action = "Compress"
-	Decompress              Action = "Decompress"
-	Copy                    Action = "Copy"
-	UpdateFileContent       Action = "UpdateFileContent"
-	DeleteFile              Action = "DeleteFile"
-	CreateFile              Action = "CreateFile"
-	CreateDir               Action = "CreateDir"
-	RemoveDir               Action = "RemoveDir"
-	FetchFileContent        Action = "FetchFileContent"
-	CheckTargetPortUseful   Action = "CheckTargetPortUseful"
-	SetupApp                Action = "SetupApp"
-	Done                    Action = "Done"
-	ShutdownApp             Action = "ShutdownApp"
-	AppHealth               Action = "AppHealth"
-	TargetPortIntranetRoute Action = "TargetPortIntranetRoute"
-	TargetPortExternalRoute Action = "TargetPortExternalRoute"
+	NewApp        Action = "NewApp"
+	StartApp      Action = "StartApp"
+	StopApp       Action = "StopApp"
+	DestroyApp    Action = "DestroyApp"
+	TagEx         Action = "TagEx"
+	FileMountEx   Action = "FileMountEx"
+	EnvEx         Action = "EnvEx"
+	NetworkEx     Action = "NetworkEx"
+	FilePremiseEx Action = "FilePremiseEx"
+	LimitEx       Action = "LimitEx"
+	HealthEx      Action = "HealthEx"
+	LogEx         Action = "LogEx"
 )
 
-var mmap = map[Action]reflect.Type{
-	GetWorkspace:            nil,
-	DestroyWorkspace:        reflect.TypeOf(worker.WorkspaceInfo{}),
-	DownloadToPath:          reflect.TypeOf(worker.DownloadInfo{}),
-	Upload:                  reflect.TypeOf(worker.UploadInfo{}),
-	Compress:                reflect.TypeOf(worker.CompressInfo{}),
-	Decompress:              reflect.TypeOf(worker.DeCompressInfo{}),
-	Copy:                    reflect.TypeOf(worker.CopyInfo{}),
-	UpdateFileContent:       reflect.TypeOf(worker.UpdateFileContentInfo{}),
-	DeleteFile:              reflect.TypeOf(worker.DeleteFileInfo{}),
-	CreateFile:              reflect.TypeOf(worker.CreateFileInfo{}),
-	CreateDir:               reflect.TypeOf(worker.CreateDirInfo{}),
-	RemoveDir:               reflect.TypeOf(worker.RemoveDirInfo{}),
-	FetchFileContent:        reflect.TypeOf(worker.FetchFileContentInfo{}),
-	CheckTargetPortUseful:   reflect.TypeOf(worker.CheckTargetPortInfo{}),
-	SetupApp:                reflect.TypeOf(worker.SetupAppInfo{}),
-	Done:                    nil,
-	ShutdownApp:             reflect.TypeOf(worker.App{}),
-	AppHealth:               reflect.TypeOf(worker.App{}),
-	TargetPortIntranetRoute: reflect.TypeOf(worker.TargetPortIntranetInfo{}),
-	TargetPortExternalRoute: reflect.TypeOf(worker.TargetPortExternalInfo{}),
+var mmap = map[Action]struct{}{
+	NewApp:                  {},
+	StartApp:                {},
+	StopApp:                 {},
+	DestroyApp:              {},
+	TagEx:                   {},
+	FileMountEx:             {},
+	EnvEx:                   {},
+	NetworkEx:               {},
+	FilePremiseEx:           {},
+	LimitEx:                 {},
+	HealthEx:                {},
+	LogEx:                   {},
 }
 
 type ActionREQ struct {
@@ -107,232 +91,138 @@ func (b *broker) makeAction() {
 
 func (b *broker) trans(req ActionREQ) {
 	md := metadata.New(req.Metadata)
-	md.Set("ACTION_UUID", req.UUID)
+	md.Set("MA_UUID", req.UUID)
 	outgoingContext := metadata.NewOutgoingContext(context.Background(), md)
 
 	var err error
 	var respErr error
 	var respData interface{}
 	switch req.Action {
-	case GetWorkspace:
-		respData, err = b.plg.rpcClient.GetWorkspace(outgoingContext, &worker.Empty{})
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently get workspace failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call GetWorkspace")
-		}
-	case DestroyWorkspace:
-		info := &worker.WorkspaceInfo{}
+	case NewApp:
+		info := &worker0.NewAppReq{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.DestroyWorkspace(outgoingContext, info)
+		respData, err = b.plg.rpcClient.NewApp(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently destroy workspace failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call DestroyWorkspace")
+			log.Errorf(outgoingContext, "Currently new app failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call NewApp")
 		}
-	case DownloadToPath:
-		info := &worker.DownloadInfo{}
+	case StartApp:
+		respData, err = b.plg.rpcClient.StartApp(outgoingContext, nil)
+		if err != nil {
+			log.Errorf(outgoingContext, "Currently start app failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call StartApp")
+		}
+	case StopApp:
+		respData, err = b.plg.rpcClient.StopApp(outgoingContext, nil)
+		if err != nil {
+			log.Errorf(outgoingContext, "Currently stop app failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call StopApp")
+		}
+	case DestroyApp:
+		respData, err = b.plg.rpcClient.DestroyApp(outgoingContext, nil)
+		if err != nil {
+			log.Errorf(outgoingContext, "Currently destroy app failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call DestroyApp")
+		}
+	case TagEx:
+		info := &worker0.App_Tag{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.DownloadToPath(outgoingContext, info)
+		respData, err = b.plg.rpcClient.TagEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently download to path failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call DownloadToPath")
+			log.Errorf(outgoingContext, "Currently tag ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call TagEx")
 		}
-	case Upload:
-		info := &worker.UploadInfo{}
+	case FileMountEx:
+		info := &worker0.App_FileMount{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.Upload(outgoingContext, info)
+		respData, err = b.plg.rpcClient.FileMountEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently Upload failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call Upload")
+			log.Errorf(outgoingContext, "Currently file mount ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call FileMountEx")
 		}
-	case Compress:
-		info := &worker.CompressInfo{}
+	case EnvEx:
+		info := &worker0.App_EnvVar{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.Compress(outgoingContext, info)
+		respData, err = b.plg.rpcClient.EnvEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently Compress failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call Compress")
+			log.Errorf(outgoingContext, "Currently env ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call EnvEx")
 		}
-	case Decompress:
-		info := &worker.DeCompressInfo{}
+	case NetworkEx:
+		info := &worker0.App_Network{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.Decompress(outgoingContext, info)
+		respData, err = b.plg.rpcClient.NetworkEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently Decompress failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call Decompress")
+			log.Errorf(outgoingContext, "Currently network ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call NetworkEx")
 		}
-	case Copy:
-		info := &worker.CopyInfo{}
+	case FilePremiseEx:
+		info := &worker0.App_File{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.Copy(outgoingContext, info)
+		respData, err = b.plg.rpcClient.FilePremiseEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently Copy failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call Copy")
+			log.Errorf(outgoingContext, "Currently file premise ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call FilePremiseEx")
 		}
-	case UpdateFileContent:
-		info := &worker.UpdateFileContentInfo{}
+	case LimitEx:
+		info := &worker0.App_Limit{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.UpdateFileContent(outgoingContext, info)
+		respData, err = b.plg.rpcClient.LimitEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently UpdateFileContent failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call UpdateFileContent")
+			log.Errorf(outgoingContext, "Currently limit ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call LimitEx")
 		}
-	case DeleteFile:
-		info := &worker.DeleteFileInfo{}
+	case HealthEx:
+		info := &worker0.App_Health{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.DeleteFile(outgoingContext, info)
+		respData, err = b.plg.rpcClient.HealthEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently DeleteFile failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call DeleteFile")
+			log.Errorf(outgoingContext, "Currently health ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call HealthEx")
 		}
-	case CreateFile:
-		info := &worker.CreateFileInfo{}
+	case LogEx:
+		info := &worker0.App_Log{}
 		err = mapstructure.Decode(req.Args, info)
 		if err != nil {
 			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
 			return
 		}
-		respData, err = b.plg.rpcClient.CreateFile(outgoingContext, info)
+		respData, err = b.plg.rpcClient.LogEx(outgoingContext, info)
 		if err != nil {
-			log.Errorf(outgoingContext, "Currently CreateFile failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call CreateFile")
-		}
-	case CreateDir:
-		info := &worker.CreateDirInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.CreateDir(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently CreateDir failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call CreateDir")
-		}
-	case RemoveDir:
-		info := &worker.RemoveDirInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.RemoveDir(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently RemoveDir failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call RemoveDir")
-		}
-	case FetchFileContent:
-		// TODO implement
-		log.Errorf(outgoingContext, "Currently implement me [%s]", FetchFileContent)
-		return
-	case CheckTargetPortUseful:
-		info := &worker.CheckTargetPortInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.CheckTargetPortUseful(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently CheckTargetPortUseful failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call CheckTargetPortUseful")
-		}
-	case SetupApp:
-		info := &worker.SetupAppInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.SetupApp(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently SetupApp failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call SetupApp")
-		}
-	case Done:
-		respData, err = b.plg.rpcClient.Done(outgoingContext, &worker.Empty{})
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently Done failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call Done")
-		}
-	case ShutdownApp:
-		info := &worker.App{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.ShutdownApp(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently ShutdownApp failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call ShutdownApp")
-		}
-	case AppHealth:
-		info := &worker.App{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.AppHealth(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently AppHealth failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call AppHealth")
-		}
-	case TargetPortIntranetRoute:
-		info := &worker.TargetPortIntranetInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.TargetPortIntranetRoute(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently TargetPortIntranetRoute failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call TargetPortIntranetRoute")
-		}
-	case TargetPortExternalRoute:
-		info := &worker.TargetPortExternalInfo{}
-		err = mapstructure.Decode(req.Args, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Manage err when decode action request args [%+v]. Now to continue. Err: [%v]", req.Args, err)
-			return
-		}
-		respData, err = b.plg.rpcClient.TargetPortExternalRoute(outgoingContext, info)
-		if err != nil {
-			log.Errorf(outgoingContext, "Currently TargetPortExternalRoute failed, req [%+v]. Now to continue. Err: [%v]", req, err)
-			respErr = errors.Wrap(err, "call TargetPortExternalRoute")
+			log.Errorf(outgoingContext, "Currently log ex failed, req [%+v]. Now to continue. Err: [%v]", req, err)
+			respErr = errors.Wrap(err, "call LogEx")
 		}
 	}
 

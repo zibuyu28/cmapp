@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/zibuyu28/cmapp/common/log"
-	"github.com/zibuyu28/cmapp/plugin/proto/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	"google.golang.org/grpc"
 	"net"
@@ -36,7 +35,7 @@ func RegisterWorker(imp worker0.Worker0Server) {
 
 type plugin struct {
 	addr string
-	rpcClient worker.WorkerClient
+	rpcClient worker0.Worker0Client
 }
 
 func pluginIns(ctx context.Context) (*plugin, error) {
@@ -78,7 +77,7 @@ func (p *plugin) run(ctx context.Context, sig chan bool) {
 	if err != nil {
 		log.Fatalf(ctx, "Error create grpc connection with [%s]", p.addr)
 	}
-	rpc := worker.NewWorkerClient(conn)
+	rpc := worker0.NewWorker0Client(conn)
 
 	p.rpcClient = rpc
 
