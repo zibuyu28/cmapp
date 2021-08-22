@@ -18,6 +18,7 @@ package pkg
 
 import (
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+	"os"
 )
 
 // BaseDriver base driver
@@ -57,4 +58,20 @@ func (b *BaseDriver) GetFlags() []*driver.Flag {
 			Value:  nil,
 		},
 	}
+}
+
+
+func (b *BaseDriver) ConvertFlags(flags *driver.Flags) map[string]string {
+	var fls = make(map[string]string)
+	for _, flag := range flags.Flags {
+		if len(flag.Value) != 0 {
+			fls[flag.Name] = flag.Value[0]
+			continue
+		}
+		envVal := os.Getenv(flag.EnvVar)
+		if len(envVal) != 0 {
+			fls[flag.Name] = envVal
+		}
+	}
+	return fls
 }

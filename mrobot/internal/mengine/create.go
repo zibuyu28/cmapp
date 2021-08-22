@@ -119,7 +119,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	log.Debugf(ctx, "Currently report init machine id [%d]", initMachine.ID)
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "CoreID", fmt.Sprintf("%d", initMachine.ID))
+	ctx = metadata.AppendToOutgoingContext(ctx, "CoreMachineID", fmt.Sprintf("%d", initMachine.ID))
 
 	_, err = meIns.CreateExec(ctx, &driver.Empty{})
 	if err != nil {
@@ -141,6 +141,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	log.Debug(ctx, "Currently install machine robot success")
 
+	// TODO: need stop plugin server
 	ctx.Done()
 
 	// register machine to machine center
@@ -162,6 +163,7 @@ func getMEnginePluginInstance(ctx context.Context, driverID int, driverName, dri
 			log.Warn(ctx, err.Error())
 			return
 		}
+
 	}()
 
 	address, err := plugin.Address()

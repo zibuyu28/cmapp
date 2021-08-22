@@ -68,7 +68,7 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, driver
 		MachineEngineCoreGRPCPORT: strconv.Itoa(DefaultGrpcPort),
 		MachineEngineDriverName:   driverName,
 		MachineEngineDriverID:     strconv.Itoa(driverId),
-	}))
+	}), cmd.WithTimeout(300))
 	out, err := newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)

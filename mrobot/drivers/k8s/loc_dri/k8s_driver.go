@@ -110,7 +110,7 @@ func (d *DriverK8s) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*d
 
 // SetConfigFromFlags set config from flags
 func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) (*driver.Empty, error) {
-	m := convertFlags(flags)
+	m := d.ConvertFlags(flags)
 	d.CoreAddr = m["CoreAddr"]
 	d.ImageRepository.Repository = m["Repository"]
 	d.ImageRepository.StorePath = m["StorePath"]
@@ -163,20 +163,6 @@ func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags)
 	return nil, nil
 }
 
-func convertFlags(flags *driver.Flags) map[string]string {
-	var fls = make(map[string]string)
-	for _, flag := range flags.Flags {
-		if len(flag.Value) != 0 {
-			fls[flag.Name] = flag.Value[0]
-			continue
-		}
-		envVal := os.Getenv(flag.EnvVar)
-		if len(envVal) != 0 {
-			fls[flag.Name] = envVal
-		}
-	}
-	return fls
-}
 
 func (d *DriverK8s) InitMachine(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to init machine")
@@ -216,7 +202,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 		return nil, errors.New("fail to parse metadata info from context")
 	}
 
-	datas := md.Get("CoreID")
+	datas := md.Get("CoreMachineID")
 	if len(datas) != 1 {
 		return nil, errors.New("fail to find core id from metadata")
 	}
