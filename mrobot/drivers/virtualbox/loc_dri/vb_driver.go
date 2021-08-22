@@ -128,20 +128,20 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 	}, nil
 }
 
-func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	// 1. 使用sdk请求远程的vbox webserver 创建一个主机
 	// 2. 使用远程ssh的方式，使用shell创建主机
 	panic("implement me")
 }
 
-func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	// 1. 请求远程vb webserver 安装 ha
 	// TODO: 确认是否可以安装ha
 	// 2. 远程shell的方式可以直接创建
 	panic("implement me")
 }
 
-func (d *DriverVB) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverVB) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	panic("implement me")
 }
 

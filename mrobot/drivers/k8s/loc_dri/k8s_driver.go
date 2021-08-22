@@ -190,12 +190,12 @@ func (d *DriverK8s) InitMachine(ctx context.Context, empty *driver.Empty) (*driv
 	return machine, nil
 }
 
-func (d *DriverK8s) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverK8s) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to create machine")
 	return nil, nil
 }
 
-func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to install mrobot")
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -247,7 +247,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 	return nil, nil
 }
 
-func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
+func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	// (DONE): how to check mrobot health -> deployment check ok
 	log.Info(ctx, "Currently k8s machine plugin start to check robot health")
 	return nil, nil

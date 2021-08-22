@@ -19,15 +19,15 @@ service MachineDriver {
     }
 
     // CreateExec driver to execute really create action for a machine
-    rpc CreateExec (Empty) returns (Empty) {
+    rpc CreateExec (Empty) returns (Machine) {
     }
 
     // InstallMRobot install machine robot in this new machine
-    rpc InstallMRobot (Empty) returns (Empty) {
+    rpc InstallMRobot (Empty) returns (Machine) {
     }
 
     // MRoHealthCheck check machine robot install successfully or not
-    rpc MRoHealthCheck (Empty) returns (Empty) {
+    rpc MRoHealthCheck (Empty) returns (Machine) {
     }
 
     // Exit driver exit
