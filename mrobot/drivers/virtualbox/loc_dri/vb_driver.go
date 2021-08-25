@@ -129,19 +129,21 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 }
 
 func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
-	// 1. 使用sdk请求远程的vbox webserver 创建一个主机
-	// 2. 使用远程ssh的方式，使用shell创建主机
+	// 1. 使用sdk请求远程的vbox webserver 创建一个主机 ----> 这个方式很复杂，主要vb支持的是webservice，soap协议。
+	//    go目前没有完善的配套，需要从零开发，所以放弃
+	// 2. 使用远程ssh的方式，使用shell创建主机， 直接调用 vboxManage create, 并且开启ssh端口映射
 	panic("implement me")
 }
 
 func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
-	// 1. 请求远程vb webserver 安装 ha
+	// 1. 请求远程vb webserver 安装 ha ----> 调研后发现不支持
 	// TODO: 确认是否可以安装ha
-	// 2. 远程shell的方式可以直接创建
+	// 2. 远程shell的方式可以直接创建 ----> 还是使用远程ssh的方式安装
 	panic("implement me")
 }
 
 func (d *DriverVB) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
+	// 使用远程ssh的方式调用version接口
 	panic("implement me")
 }
 

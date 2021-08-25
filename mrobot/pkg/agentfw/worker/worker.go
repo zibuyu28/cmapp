@@ -19,6 +19,8 @@ package worker
 import (
 	"context"
 	"github.com/zibuyu28/cmapp/common/log"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -68,7 +70,28 @@ func init() {
 //	},
 //}
 
-func Start(ctx context.Context) {
+func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
+	var mux *http.ServeMux
+	if len(muxs) == 0 {
+		mux = http.NewServeMux()
+	} else {
+		mux = muxs[0]
+	}
+	mux.HandleFunc("/healthz", func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = io.WriteString(writer, "ok")
+	})
+	s := &http.Server{
+		Addr:    "0.0.0.0:9009",
+		Handler: mux,
+	}
+	err := s.ListenAndServe()
+	if err != nil {
+		log.Fatalf(ctx, "Currently fail to listen on port [9009]. Err: [%v]", err)
+	}
+}
+
+func Start(ctx context.Context, muxs ...*http.ServeMux) {
+	go healthFunc(ctx, muxs)
 	wscli, err := wsClientIns(ctx)
 	if err != nil {
 		log.Fatalf(ctx, "Currently fail to new ws client. Err: [%v]", err)
