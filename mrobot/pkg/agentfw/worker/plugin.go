@@ -40,8 +40,8 @@ type plugin struct {
 
 func pluginIns(ctx context.Context) (*plugin, error) {
 	if workerServer == nil {
-		log.Fatalf(ctx, "Error verify plugin, plugin is nil. Please import 'worker' package, " +
-			"then register an instance that implements the 'worker.WorkerServer' interface through the 'worker.RegisterWorker' method")
+		log.Fatalf(ctx, "Error verify plugin, plugin is nil. Please import 'worker0' package, " +
+			"then register an instance that implements the 'worker0.Worker0Server' interface through the 'worker0.RegisterWorker0' method")
 	}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

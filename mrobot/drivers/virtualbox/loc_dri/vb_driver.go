@@ -21,6 +21,8 @@ import (
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
+	virtualbox "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
@@ -36,8 +38,10 @@ const (
 
 type DriverVB struct {
 	pkg.BaseDriver
-	ServerHost string `validate:"required"`
-	ServerPort string `validate:"required"`
+	ServerSSHHost     string `validate:"required"`
+	ServerSSHPort     int    `validate:"required"`
+	ServerSSHUsername string `validate:"required"`
+	ServerSSHPassword string `validate:"required"`
 }
 
 func NewDriverVB() *DriverVB {
@@ -48,15 +52,27 @@ func (d *DriverVB) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*dr
 	baseFlags := &driver.Flags{Flags: d.GetFlags()}
 	flags := []*driver.Flag{
 		{
-			Name:   "VBServerHost",
-			Usage:  "virtualbox server host",
-			EnvVar: "VB_SERVERHOST",
+			Name:   "VBServerSSHHost",
+			Usage:  "virtualbox server ssh host",
+			EnvVar: "VB_SERVER_SSH_HOST",
 			Value:  nil,
 		},
 		{
-			Name:   "VBServerPort",
-			Usage:  "virtualbox server port",
-			EnvVar: "VB_SERVERPORT",
+			Name:   "VBServerSSHPort",
+			Usage:  "virtualbox server ssh port",
+			EnvVar: "VB_SERVER_SSH_PORT",
+			Value:  nil,
+		},
+		{
+			Name:   "VBServerSSHUserName",
+			Usage:  "virtualbox server ssh username",
+			EnvVar: "VB_SERVER_SSH_USERNAME",
+			Value:  nil,
+		},
+		{
+			Name:   "VBServerSSHPassword",
+			Usage:  "virtualbox server ssh password",
+			EnvVar: "VB_SERVER_SSH_PASSWORD",
 			Value:  nil,
 		},
 	}
@@ -70,11 +86,19 @@ func (d *DriverVB) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) 
 	d.ImageRepository.Repository = m["Repository"]
 	d.ImageRepository.StorePath = m["StorePath"]
 
-	d.ServerHost = m["VBServerHost"]
-	d.ServerPort = m["ServerPort"]
+	d.ServerSSHHost = m["VBServerSSHHost"]
+	portStr := m["VBServerSSHPort"]
+	portInt, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parse ssh port info [%s]", portStr)
+	}
+	d.ServerSSHPort = portInt
+
+	d.ServerSSHUsername = m["VBServerSSHUserName"]
+	d.ServerSSHPassword = m["VBServerSSHPassword"]
 
 	validate := v.New()
-	err := validate.Struct(d)
+	err = validate.Struct(d)
 	if err != nil {
 		return nil, errors.Wrap(err, "validate param")
 	}
@@ -102,6 +126,13 @@ func (d *DriverVB) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) 
 	d.DriverName = driverName
 	d.DriverVersion = driverVersion
 	d.DriverID = driverID
+
+	// check params
+	cli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
+	if err != nil {
+		return nil, errors.Wrap(err, "test ssh flags")
+	}
+	_ = cli.Close()
 	return nil, nil
 }
 
@@ -117,8 +148,10 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 		return nil, errors.New("fail to find uuid from metadata")
 	}
 	var customInfo = map[string]string{
-		"server_host": d.ServerHost,
-		"server_port": d.ServerPort,
+		"server_ssh_host":     d.ServerSSHHost,
+		"server_ssh_port":     strconv.Itoa(d.ServerSSHPort),
+		"server_ssh_username": d.ServerSSHUsername,
+		"server_ssh_password": d.ServerSSHPassword,
 	}
 	return &driver.Machine{
 		UUID:       datas[0],
@@ -132,7 +165,19 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	// 1. 使用sdk请求远程的vbox webserver 创建一个主机 ----> 这个方式很复杂，主要vb支持的是webservice，soap协议。
 	//    go目前没有完善的配套，需要从零开发，所以放弃
 	// 2. 使用远程ssh的方式，使用shell创建主机， 直接调用 vboxManage create, 并且开启ssh端口映射
-	panic("implement me")
+	//
+	log.Debug(ctx, "Currently start to create machine exec")
+	cli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
+	if err != nil {
+		return nil, errors.Wrap(err, "new ssh cli")
+	}
+	vbdri := virtualbox.NewDriver(ctx, "", "", cli)
+	err = vbdri.CreateVM()
+	if err != nil {
+		return nil, errors.Wrap(err, "create vm")
+	}
+	// TODO: update machine
+	return nil, nil
 }
 
 func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
