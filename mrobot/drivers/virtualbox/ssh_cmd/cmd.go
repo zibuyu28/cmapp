@@ -34,7 +34,7 @@ type SSHCli struct {
 
 	secure  bool
 	timeout time.Duration
-	cli     *ssh.Client
+	SSHCli     *ssh.Client
 }
 
 // NewSSHCli new ssh client
@@ -69,14 +69,14 @@ func WithSecure() func(*SSHCli) {
 }
 
 func (s *SSHCli) ExecCmd(cmd string, opt ...Opt) (string, error) {
-	if s.cli == nil {
+	if s.SSHCli == nil {
 		return "", errors.New("fail to get client, because s.cli is nil. please exec InitConn first")
 	}
 	for _, op := range opt {
 		op(s)
 	}
 
-	sess, err := s.cli.NewSession()
+	sess, err := s.SSHCli.NewSession()
 	if err != nil {
 		return "", errors.Wrap(err, "new session with ssh server")
 	}
@@ -91,14 +91,14 @@ func (s *SSHCli) ExecCmd(cmd string, opt ...Opt) (string, error) {
 }
 
 func (s *SSHCli) Close() error {
-	if s.cli == nil {
+	if s.SSHCli == nil {
 		return nil
 	}
-	err := s.cli.Close()
+	err := s.SSHCli.Close()
 	if err != nil {
 		return errors.Wrap(err, "close ssh client")
 	}
-	s.cli = nil
+	s.SSHCli = nil
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (s *SSHCli) initConn() error {
 	if err != nil {
 		return errors.Wrapf(err, "dail to %s:%d", s.rmtHost, s.rmtPort)
 	}
-	s.cli = client
+	s.SSHCli = client
 	// not auto close
 	//autoClose(s)
 	return nil

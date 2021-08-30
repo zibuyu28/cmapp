@@ -18,6 +18,7 @@ package virtualbox
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
@@ -40,7 +41,7 @@ func NewVBoxRemoteCmdManager(ctx context.Context, cli *ssh_cmd.SSHCli) *VBoxRemo
 
 func (V *VBoxRemoteCmdManager) vbm(args ...string) error {
 	cmd := strings.Join(args, " ")
-	outORErr, err := V.cli.ExecCmd(cmd)
+	outORErr, err := V.cli.ExecCmd(fmt.Sprintf("/usr/local/bin/VBoxManage %s",cmd))
 	if err != nil {
 		return errors.Wrapf(err, "exe cmd [%s]", cmd)
 	}
@@ -50,7 +51,7 @@ func (V *VBoxRemoteCmdManager) vbm(args ...string) error {
 
 func (V *VBoxRemoteCmdManager) vbmOut(args ...string) (string, error) {
 	cmd := strings.Join(args, " ")
-	outORErr, err := V.cli.ExecCmd(cmd)
+	outORErr, err := V.cli.ExecCmd(fmt.Sprintf("/usr/local/bin/VBoxManage %s",cmd))
 	if err != nil {
 		return "", errors.Wrapf(err, "exe cmd [%s]", cmd)
 	}
@@ -60,7 +61,7 @@ func (V *VBoxRemoteCmdManager) vbmOut(args ...string) (string, error) {
 // vbmOutErr stdout stderr err
 func (V *VBoxRemoteCmdManager) vbmOutErr(args ...string) (string, string, error) {
 	cmd := strings.Join(args, " ")
-	outORErr, err := V.cli.ExecCmd(cmd)
+	outORErr, err := V.cli.ExecCmd(fmt.Sprintf("/usr/local/bin/VBoxManage %s",cmd))
 	if err != nil {
 		return "", "", errors.Wrapf(err, "exe cmd [%s]", cmd)
 	}

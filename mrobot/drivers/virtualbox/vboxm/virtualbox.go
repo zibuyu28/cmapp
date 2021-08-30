@@ -23,7 +23,7 @@ import (
 const (
 	defaultCPU                 = 1
 	defaultMemory              = 1024
-	defaultBoot2DockerURL      = ""
+	defaultBoot2DockerURL      = "https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso"
 	defaultBoot2DockerImportVM = ""
 	defaultHostOnlyCIDR        = "192.168.99.1/24"
 	defaultHostOnlyNictype     = "82540EM"
@@ -37,8 +37,8 @@ const (
 
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
-	ErrMustEnableVTX            = errors.New("This computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory")
-	ErrNotCompatibleWithHyperV  = errors.New("This computer is running Hyper-V. VirtualBox won't boot a 64bits VM when Hyper-V is activated. Either use Hyper-V as a driver, or disable the Hyper-V hypervisor. (To skip this check, use --virtualbox-no-vtx-check)")
+	ErrMustEnableVTX            = errors.New("this computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory")
+	ErrNotCompatibleWithHyperV  = errors.New("this computer is running Hyper-V. VirtualBox won't boot a 64bits VM when Hyper-V is activated. Either use Hyper-V as a driver, or disable the Hyper-V hypervisor. (To skip this check, use --virtualbox-no-vtx-check)")
 	ErrNetworkAddrCidr          = errors.New("host-only cidr must be specified with a host address, not a network address")
 	ErrNetworkAddrCollision     = errors.New("host-only cidr conflicts with the network address of a host interface")
 )
@@ -74,12 +74,11 @@ type Driver struct {
 	ctx context.Context
 }
 
-// NewDriver creates a new VirtualBox driver with default settings.
-func NewDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.SSHCli) *Driver {
-
+// NewRMTDriver creates a new VirtualBox remote driver with default settings.
+func NewRMTDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.SSHCli) *Driver {
 	return &Driver{
 		VBoxManager:         NewVBoxRemoteCmdManager(ctx, cli),
-		b2dUpdater:          NewB2DUpdater(),
+		b2dUpdater:          NewRMTB2DUpdater(ctx, cli.SSHCli, "/Users/wanghengfang/GolandProjects/cmapp/mrobot/bin/boot2docker.iso"),
 		sshKeyGenerator:     NewSSHKeyGenerator(),
 		diskCreator:         NewDiskCreator(ctx),
 		logsReader:          NewLogsReader(),
@@ -98,6 +97,7 @@ func NewDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.SSH
 		HostOnlyNoDHCP:      defaultHostOnlyNoDHCP,
 		DNSProxy:            defaultDNSProxy,
 		HostDNSResolver:     defaultDNSResolver,
+		Boot2DockerURL:      defaultBoot2DockerURL,
 		BaseDriver: &base.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
@@ -301,6 +301,7 @@ func (d *Driver) Create() error {
 }
 
 func (d *Driver) CreateVM() error {
+	// TODO: 这里要实现拷贝iso到远程主机
 	if err := d.b2dUpdater.CopyIsoToMachineDir(d.StorePath, d.MachineName, d.Boot2DockerURL); err != nil {
 		return err
 	}
@@ -790,20 +791,19 @@ func (d *Driver) GetIP() (string, error) {
 
 	log.Debugf(d.ctx, "Host-only MAC: %s\n", macAddress)
 
-	// TODO: check this function is necessary
-	//output, err := drivers.RunSSHCommandFromDriver(d, "ip addr show")
-	//if err != nil {
-	//	return "", err
-	//}
+	output, err := base.RunSSHCommandFromDriver(d, "ip addr show")
+	if err != nil {
+		return "", err
+	}
 
-	//log.Debugf(d.ctx, "SSH returned: %s\nEND SSH\n", output)
-	//
-	//ipAddress, err := d.parseIPForMACFromIPAddr(output, macAddress)
-	//if err != nil {
-	//	return "", err
-	//}
+	log.Debugf(d.ctx, "SSH returned: %s\nEND SSH\n", output)
 
-	return "", nil
+	ipAddress, err := d.parseIPForMACFromIPAddr(output, macAddress)
+	if err != nil {
+		return "", err
+	}
+
+	return ipAddress, nil
 }
 
 func (d *Driver) publicSSHKeyPath() string {

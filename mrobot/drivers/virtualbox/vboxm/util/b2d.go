@@ -444,6 +444,7 @@ func (b *B2dUtils) CopyIsoToMachineDir(isoURL, machineName string) error {
 
 	// TODO: This is a bit off-color.
 	machineDir := filepath.Join(b.storePath, "machines", machineName)
+	os.MkdirAll(machineDir, os.ModePerm)
 	machineIsoPath := filepath.Join(machineDir, b.filename())
 
 	// By default just copy the existing "cached" iso to the machine's directory...

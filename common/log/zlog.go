@@ -34,7 +34,7 @@ func InitCus() {
 	}
 	// // 开启开发模式，堆栈跟踪
 	caller := zap.AddCaller()
-	skip := zap.AddCallerSkip(1)
+	skip := zap.AddCallerSkip(2)
 	// // trace
 	//trace := zap.AddStacktrace(zap.ErrorLevel)
 	// 开启文件及行号
