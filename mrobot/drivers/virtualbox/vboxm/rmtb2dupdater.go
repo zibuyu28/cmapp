@@ -78,9 +78,8 @@ func (u *rmtB2DUpdater) CopyIsoToMachineDir(storePath, machineName, isoURL strin
 	rmtFile := filepath.Join(dir, "boot2docker.iso")
 
 	err = client.CopyFile(f, rmtFile, "0777")
-
 	if err != nil {
-		fmt.Println("Error while copying file ", err)
+		return errors.Wrap(err, "copying file to remote")
 	}
 
 	return nil

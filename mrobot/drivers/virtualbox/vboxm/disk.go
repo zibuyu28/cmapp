@@ -3,11 +3,16 @@ package virtualbox
 import (
 	"context"
 	"fmt"
+	"github.com/bramvdbogaerde/go-scp"
+	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	mcnutils "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/util"
+	"golang.org/x/crypto/ssh"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 type VirtualDisk struct {
@@ -16,7 +21,136 @@ type VirtualDisk struct {
 }
 
 type DiskCreator interface {
-	Create(size int, publicSSHKeyPath, diskPath string) error
+	Create(size int, publicSSHKeyPath, diskPath string, vbm ...VBoxManager) error
+}
+
+func NewFileDiskCreator(ctx context.Context, cli *ssh.Client) DiskCreator {
+	return &fileRmtDiskCreator{
+		ctx: ctx,
+		cli: cli,
+	}
+}
+
+type fileRmtDiskCreator struct {
+	ctx context.Context
+	cli *ssh.Client
+}
+
+// Create Make a boot2docker VM disk image.
+func (f *fileRmtDiskCreator) Create(size int, publicSSHKeyPath, diskPath string, vbms ...VBoxManager) error {
+	log.Debugf(f.ctx, "Creating %d MB hard disk image...", size)
+	if len(vbms) == 0 {
+		return errors.New("no vb manager found")
+	}
+	tarBuf, err := mcnutils.MakeDiskImage(publicSSHKeyPath)
+	if err != nil {
+		return err
+	}
+	log.Debug(f.ctx, "Write tmp disk image")
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	fs, err := ioutil.TempFile(dir, "diskvm.tmp")
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := removeFileIfExists(fs.Name()); err != nil {
+			log.Warnf(context.Background(), "Error removing file: %s", err)
+		}
+	}()
+
+	if _, err = io.Copy(fs, tarBuf); err != nil {
+		return err
+	}
+
+	if err = fs.Close(); err != nil {
+		return err
+	}
+	log.Infof(f.ctx, "")
+	fdir := filepath.Dir(diskPath)
+	err = f.uploadFile(fs.Name(), filepath.Join(fdir, "diskvm.tmp"))
+	if err != nil {
+		return errors.Wrap(err, "upload disk image")
+	}
+
+	out, err := f.execCmd(fmt.Sprintf("mkdir -p %s", fdir))
+	if err != nil {
+		return errors.Wrapf(err, "exec create dir [%s] command", fdir)
+	}
+	if len(out) != 0 {
+		return errors.Errorf("fail to exec create dir [%s] command, res [%s]", fdir, out)
+	}
+
+	out, err = vbms[0].vbmOut("convertfromraw",
+		filepath.Join(fdir, "diskvm.tmp"), diskPath, "--format", "VMDK")
+	if err != nil {
+		return errors.Wrap(err, "exec cmd")
+	}
+	log.Infof(f.ctx, "Currently exec convertfromraw res [%s]", out)
+	return nil
+}
+
+func (f *fileRmtDiskCreator) uploadFile(file, rmtFile string) error {
+	client, err := scp.NewClientBySSH(f.cli)
+	if err != nil {
+		log.Errorf(f.ctx, "Couldn't establish a connection to the remote server, Err: [%v]", err)
+		return errors.Wrap(err, "establish connection to remote server")
+	}
+	// Open a file
+	fs, err := os.Open(file)
+	if err != nil {
+		return errors.Wrap(err, "open boot2docker.iso")
+	}
+
+	// Close client connection after the file has been copied
+	defer client.Close()
+
+	// Close the file after it has been copied
+	defer fs.Close()
+
+	// make sure dir is created
+	rdir := filepath.Dir(rmtFile)
+	out, err := f.execCmd(fmt.Sprintf("mkdir -p %s", rdir))
+	if err != nil {
+		return errors.Wrapf(err, "exec create dir [%s] command", rdir)
+	}
+	if len(out) != 0 {
+		return errors.Errorf("fail to exec create dir [%s] command, res [%s]", rdir, out)
+	}
+
+	err = client.CopyFile(fs, rmtFile, "0777")
+	if err != nil {
+		return errors.Wrap(err, "copying file to remote")
+	}
+	return nil
+}
+
+func (f *fileRmtDiskCreator) execCmd(cmd string) (string, error) {
+	sess, err := f.cli.NewSession()
+	if err != nil {
+		return "", errors.Wrap(err, "new session with ssh server")
+	}
+	defer sess.Close()
+
+	// exe command
+	res, err := sess.CombinedOutput(cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "exec command [%s]", cmd)
+	}
+	return string(res), nil
+}
+
+func removeFileIfExists(name string) error {
+	if _, err := os.Stat(name); err == nil {
+		if err := os.Remove(name); err != nil {
+			return fmt.Errorf("Error removing temporary download file: %s", err)
+		}
+	}
+	return nil
 }
 
 func NewDiskCreator(ctx context.Context) DiskCreator {
@@ -26,7 +160,7 @@ func NewDiskCreator(ctx context.Context) DiskCreator {
 type defaultDiskCreator struct{ ctx context.Context }
 
 // Create Make a boot2docker VM disk image.
-func (c *defaultDiskCreator) Create(size int, publicSSHKeyPath, diskPath string) error {
+func (c *defaultDiskCreator) Create(size int, publicSSHKeyPath, diskPath string, vbm ...VBoxManager) error {
 	log.Debugf(c.ctx, "Creating %d MB hard disk image...", size)
 
 	tarBuf, err := mcnutils.MakeDiskImage(publicSSHKeyPath)

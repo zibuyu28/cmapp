@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"time"
-
 )
 
 // B2DUpdater describes the interactions with b2d.
@@ -33,7 +32,7 @@ func (u *b2dUtilsUpdater) UpdateISOCache(storePath, isoURL string) error {
 
 // SSHKeyGenerator describes the generation of ssh keys.
 type SSHKeyGenerator interface {
-	Generate(path string) error
+	Generate(path string) (string, error)
 }
 
 func NewSSHKeyGenerator() SSHKeyGenerator {
@@ -42,8 +41,8 @@ func NewSSHKeyGenerator() SSHKeyGenerator {
 
 type defaultSSHKeyGenerator struct{}
 
-func (g *defaultSSHKeyGenerator) Generate(path string) error {
-	return ssh.GenerateSSHKey(path)
+func (g *defaultSSHKeyGenerator) Generate(path string) (string, error) {
+	return "",ssh.GenerateSSHKey(path)
 }
 
 // LogsReader describes the reading of VBox.log

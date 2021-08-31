@@ -26,10 +26,10 @@ import (
 
 func TestDriver_CreateVM(t *testing.T) {
 	machineName := uuid.New().String()[:8]
-	cli, err := ssh_cmd.NewSSHCli("wanghenangdembp", 22, "wanghengfang", "ww1428")
+	cli, err := ssh_cmd.NewSSHCli("10.1.41.111", 22, "martin1", "zdw1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cli)
-	driver := NewRMTDriver(context.Background(), machineName, "/Users/wanghengfang/Downloads/testvb", cli)
+	driver := NewRMTDriver(context.Background(), machineName, "/Users/martin1/Downloads/testvb", cli)
 	err = driver.Create()
 	t.Logf("%v", err)
 	assert.Nil(t, err)

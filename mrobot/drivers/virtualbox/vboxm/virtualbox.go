@@ -2,13 +2,14 @@ package virtualbox
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/base"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/state"
 	mcnutils "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/util"
+	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
 	"os/exec"
@@ -33,6 +34,7 @@ const (
 	defaultDiskSize            = 20000
 	defaultDNSProxy            = true
 	defaultDNSResolver         = true
+	defaultShareFolder         = "/home:hostname"
 )
 
 var (
@@ -72,6 +74,7 @@ type Driver struct {
 	ShareFolder         string
 
 	ctx context.Context
+	cli *ssh.Client
 }
 
 // NewRMTDriver creates a new VirtualBox remote driver with default settings.
@@ -79,9 +82,9 @@ func NewRMTDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.
 	return &Driver{
 		VBoxManager:         NewVBoxRemoteCmdManager(ctx, cli),
 		b2dUpdater:          NewRMTB2DUpdater(ctx, cli.SSHCli, "/Users/wanghengfang/GolandProjects/cmapp/mrobot/bin/boot2docker.iso"),
-		sshKeyGenerator:     NewSSHKeyGenerator(),
-		diskCreator:         NewDiskCreator(ctx),
-		logsReader:          NewLogsReader(),
+		sshKeyGenerator:     NewRmtSSHKeyGenerator(ctx, cli.SSHCli),
+		diskCreator:         NewFileDiskCreator(ctx, cli.SSHCli),
+		logsReader:          NewRmtLogsReader(ctx, cli.SSHCli),
 		ipWaiter:            NewIPWaiter(),
 		randomInter:         NewRandomInter(),
 		sleeper:             NewSleeper(),
@@ -102,7 +105,9 @@ func NewRMTDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
-		ctx: ctx,
+		ctx:         ctx,
+		cli:         cli.SSHCli,
+		ShareFolder: defaultShareFolder,
 	}
 }
 
@@ -301,7 +306,7 @@ func (d *Driver) Create() error {
 }
 
 func (d *Driver) CreateVM() error {
-	// TODO: 这里要实现拷贝iso到远程主机
+	//  这里要实现拷贝iso到远程主机 --> 已完成
 	if err := d.b2dUpdater.CopyIsoToMachineDir(d.StorePath, d.MachineName, d.Boot2DockerURL); err != nil {
 		return err
 	}
@@ -344,12 +349,15 @@ func (d *Driver) CreateVM() error {
 		}
 	} else {
 		log.Infof(d.ctx, "Creating SSH key...")
-		if err := d.sshKeyGenerator.Generate(d.GetSSHKeyPath()); err != nil {
+		sshKeyPath, err := d.sshKeyGenerator.Generate(d.GetSSHKeyPath())
+		if err != nil {
 			return err
 		}
-
+		if len(sshKeyPath) == 0 {
+			sshKeyPath = d.publicSSHKeyPath()
+		}
 		log.Debugf(d.ctx, "Creating disk image...")
-		if err := d.diskCreator.Create(d.DiskSize, d.publicSSHKeyPath(), d.diskPath()); err != nil {
+		if err := d.diskCreator.Create(d.DiskSize, sshKeyPath, d.diskPath(), d); err != nil {
 			return err
 		}
 	}
@@ -463,25 +471,29 @@ func (d *Driver) CreateVM() error {
 
 	if shareDir != "" && !d.NoShare {
 		log.Debugf(d.ctx, "setting up shareDir '%s' -> '%s'", shareDir, shareName)
-		if _, err := os.Stat(shareDir); err != nil && !os.IsNotExist(err) {
+		// remote check dir exist
+		out, err := d.execCmd(fmt.Sprintf("ls %s", shareDir))
+		if err != nil {
 			return err
-		} else if !os.IsNotExist(err) {
-			if shareName == "" {
-				// parts of the VBox internal code are buggy with share names that start with "/"
-				shareName = strings.TrimLeft(shareDir, "/")
-				// TODO do some basic Windows -> MSYS path conversion
-				// ie, s!^([a-z]+):[/\\]+!\1/!; s!\\!/!g
-			}
+		}
+		if strings.Contains(out, "No such file or directory") {
+			return errors.Errorf("share dir [%s] not exist", shareDir)
+		}
+		if shareName == "" {
+			// parts of the VBox internal code are buggy with share names that start with "/"
+			shareName = strings.TrimLeft(shareDir, "/")
+			// TODO do some basic Windows -> MSYS path conversion
+			// ie, s!^([a-z]+):[/\\]+!\1/!; s!\\!/!g
+		}
 
-			// woo, shareDir exists!  let's carry on!
-			if err := d.vbm("sharedfolder", "add", d.MachineName, "--name", shareName, "--hostpath", shareDir, "--automount"); err != nil {
-				return err
-			}
+		// woo, shareDir exists!  let's carry on!
+		if err := d.vbm("sharedfolder", "add", d.MachineName, "--name", shareName, "--hostpath", shareDir, "--automount"); err != nil {
+			return err
+		}
 
-			// enable symlinks
-			if err := d.vbm("setextradata", d.MachineName, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/"+shareName, "1"); err != nil {
-				return err
-			}
+		// enable symlinks
+		if err := d.vbm("setextradata", d.MachineName, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/"+shareName, "1"); err != nil {
+			return err
 		}
 	}
 
@@ -561,6 +573,7 @@ func (d *Driver) Start() error {
 
 	log.Infof(d.ctx, "Waiting for an IP...")
 	if err := d.ipWaiter.Wait(d); err != nil {
+		log.Infof(d.ctx, "ip wait err [%v]", err)
 		return err
 	}
 
@@ -833,10 +846,11 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 		return nil, err
 	}
 
-	err = validateNoIPCollisions(d.HostInterfaces, network, nets)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: remote validate no ip collisions, may be implement 'HostInterfaces' adapter
+	//err = validateNoIPCollisions(d.HostInterfaces, network, nets)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	log.Debugf(d.ctx, "Searching for hostonly interface for IPv4: %s and Mask: %s", ip, network.Mask)
 	hostOnlyAdapter, err := getOrCreateHostOnlyNetwork(d.ctx, ip, network.Mask, nets, d.VBoxManager)
@@ -943,6 +957,24 @@ func validateNoIPCollisions(hif HostInterfaces, hostOnlyNet *net.IPNet, currHost
 	return nil
 }
 
+func getRmtAvailableTCPPort(ctx context.Context, rmtHost string) (int, error) {
+	for i := 30000; i < 65535; i++ {
+		cn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", rmtHost, i), 3*time.Second)
+		if err != nil {
+			if strings.Contains(err.Error(), "connection refused") {
+				log.Infof(ctx, "remote host [%s] port [%d] in use", rmtHost, i)
+				continue
+			}
+		}
+		if cn != nil {
+			_ = cn.Close()
+		}
+		resultPort := i
+		return resultPort, nil
+	}
+	return -1, fmt.Errorf("unable to allocate tcp port")
+}
+
 // Select an available port, trying the specified
 // port first, falling back on an OS selected port.
 func getAvailableTCPPort(port int) (int, error) {
@@ -971,6 +1003,25 @@ func getAvailableTCPPort(port int) (int, error) {
 // Setup a NAT port forwarding entry.
 func setPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, guestPort, desiredHostPort int) (int, error) {
 	actualHostPort, err := getAvailableTCPPort(desiredHostPort)
+	if err != nil {
+		return -1, err
+	}
+	if desiredHostPort != actualHostPort && desiredHostPort != 0 {
+		log.Debugf(d.ctx, "NAT forwarding host port for guest port %d (%s) changed from %d to %d",
+			guestPort, mapName, desiredHostPort, actualHostPort)
+	}
+	cmd := fmt.Sprintf("--natpf%d", interfaceNum)
+	d.vbm("modifyvm", d.MachineName, cmd, "delete", mapName)
+	if err := d.vbm("modifyvm", d.MachineName,
+		cmd, fmt.Sprintf("%s,%s,127.0.0.1,%d,,%d", mapName, protocol, actualHostPort, guestPort)); err != nil {
+		return -1, err
+	}
+	return actualHostPort, nil
+}
+
+// rmtSetPortForwarding Setup a NAT port forwarding entry.
+func rmtSetPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, guestPort, desiredHostPort int) (int, error) {
+	actualHostPort, err := getRmtAvailableTCPPort(d.ctx, desiredHostPort)
 	if err != nil {
 		return -1, err
 	}
@@ -1023,4 +1074,19 @@ func (d *Driver) readVBoxLog() ([]string, error) {
 	log.Debugf(d.ctx, "Checking vm logs: %s", logPath)
 
 	return d.logsReader.Read(logPath)
+}
+
+func (d *Driver) execCmd(cmd string) (string, error) {
+	sess, err := d.cli.NewSession()
+	if err != nil {
+		return "", errors.Wrap(err, "new session with ssh server")
+	}
+	defer sess.Close()
+
+	// exe command
+	res, err := sess.CombinedOutput(cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "exec command [%s]", cmd)
+	}
+	return string(res), nil
 }
