@@ -17,11 +17,14 @@
 package ssh_cmd
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestSSHCli_ExecCmd(t *testing.T) {
+	i := int64(20000) << 20
+	fmt.Println(i)
 	cli, err := NewSSHCli("wanghenangdembp", 22, "wanghengfang", "ww1428")
 	assert.Nil(t, err)
 	assert.NotNil(t, cli)

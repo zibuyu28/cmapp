@@ -4,3 +4,4 @@ core/core
 crobot/crobot
 mrobot/mrobot
 mrobot/bin/boot2docker.iso
+/mrobot/drivers/virtualbox/vboxm/sshkey/

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
 
 type VirtualDisk struct {
@@ -38,10 +39,11 @@ type fileRmtDiskCreator struct {
 
 // Create Make a boot2docker VM disk image.
 func (f *fileRmtDiskCreator) Create(size int, publicSSHKeyPath, diskPath string, vbms ...VBoxManager) error {
-	log.Debugf(f.ctx, "Creating %d MB hard disk image...", size)
+	log.Infof(f.ctx, "Creating %d MB hard disk image...", size)
 	if len(vbms) == 0 {
 		return errors.New("no vb manager found")
 	}
+	log.Infof(f.ctx, "public ssh key path [%s]", publicSSHKeyPath)
 	tarBuf, err := mcnutils.MakeDiskImage(publicSSHKeyPath)
 	if err != nil {
 		return err
@@ -63,19 +65,16 @@ func (f *fileRmtDiskCreator) Create(size int, publicSSHKeyPath, diskPath string,
 		}
 	}()
 
-	if _, err = io.Copy(fs, tarBuf); err != nil {
+	_, err = io.Copy(fs, tarBuf)
+	if err != nil {
 		return err
 	}
-
 	if err = fs.Close(); err != nil {
 		return err
 	}
-	log.Infof(f.ctx, "")
+
+	log.Infof(f.ctx, "fs name : %s", fs.Name())
 	fdir := filepath.Dir(diskPath)
-	err = f.uploadFile(fs.Name(), filepath.Join(fdir, "diskvm.tmp"))
-	if err != nil {
-		return errors.Wrap(err, "upload disk image")
-	}
 
 	out, err := f.execCmd(fmt.Sprintf("mkdir -p %s", fdir))
 	if err != nil {
@@ -85,12 +84,19 @@ func (f *fileRmtDiskCreator) Create(size int, publicSSHKeyPath, diskPath string,
 		return errors.Errorf("fail to exec create dir [%s] command, res [%s]", fdir, out)
 	}
 
-	out, err = vbms[0].vbmOut("convertfromraw",
-		filepath.Join(fdir, "diskvm.tmp"), diskPath, "--format", "VMDK")
+	err = f.uploadFile(fs.Name(), filepath.Join(fdir, "disk.tar"))
+	if err != nil {
+		return errors.Wrap(err, "upload disk image")
+	}
+	sizeBytes := int64(size) << 20 // usually won't fit in 32-bit int (max 2GB)
+	cmd := fmt.Sprintf("cat %s | /usr/local/bin/VBoxManage convertfromraw stdin %s %d --format VMDK",
+		filepath.Join(fdir, "disk.tar"), diskPath, sizeBytes)
+	out, err = f.execCmd(cmd)
 	if err != nil {
 		return errors.Wrap(err, "exec cmd")
 	}
 	log.Infof(f.ctx, "Currently exec convertfromraw res [%s]", out)
+	time.Sleep(time.Second*5)
 	return nil
 }
 

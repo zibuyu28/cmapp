@@ -20,16 +20,30 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
 	"testing"
 )
 
 func TestDriver_CreateVM(t *testing.T) {
+	log.InitCus()
 	machineName := uuid.New().String()[:8]
 	cli, err := ssh_cmd.NewSSHCli("10.1.41.111", 22, "martin1", "zdw1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cli)
-	driver := NewRMTDriver(context.Background(), machineName, "/Users/martin1/Downloads/testvb", cli)
+	driver := NewRMTDriver(context.Background(), machineName, "/Users/martin1/Downloads/testvb", "10.1.41.111", cli)
+	err = driver.Create()
+	t.Logf("%v", err)
+	assert.Nil(t, err)
+}
+
+func TestDriver_CreateVM2(t *testing.T) {
+	log.InitCus()
+	machineName := uuid.New().String()[:8]
+	cli, err := ssh_cmd.NewSSHCli("192.168.31.63", 22, "wanghengfang", "ww1428")
+	assert.Nil(t, err)
+	assert.NotNil(t, cli)
+	driver := NewRMTDriver(context.Background(), machineName, "/Users/wanghengfang/Downloads/testvb", "192.168.31.63", cli)
 	err = driver.Create()
 	t.Logf("%v", err)
 	assert.Nil(t, err)

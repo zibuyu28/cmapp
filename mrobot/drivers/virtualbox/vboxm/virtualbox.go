@@ -10,6 +10,7 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/state"
 	mcnutils "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/util"
 	"golang.org/x/crypto/ssh"
+	"math/rand"
 	"net"
 	"os"
 	"os/exec"
@@ -34,7 +35,7 @@ const (
 	defaultDiskSize            = 20000
 	defaultDNSProxy            = true
 	defaultDNSResolver         = true
-	defaultShareFolder         = "/home:hostname"
+	defaultShareFolder         = "/Users:Users"
 )
 
 var (
@@ -73,12 +74,14 @@ type Driver struct {
 	NoVTXCheck          bool
 	ShareFolder         string
 
-	ctx context.Context
-	cli *ssh.Client
+	ctx            context.Context
+	cli            *ssh.Client
+	rmtHost        string
+	localSSHKeyMap map[string]string
 }
 
 // NewRMTDriver creates a new VirtualBox remote driver with default settings.
-func NewRMTDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.SSHCli) *Driver {
+func NewRMTDriver(ctx context.Context, hostName, storePath, rmtHost string, cli *ssh_cmd.SSHCli) *Driver {
 	return &Driver{
 		VBoxManager:         NewVBoxRemoteCmdManager(ctx, cli),
 		b2dUpdater:          NewRMTB2DUpdater(ctx, cli.SSHCli, "/Users/wanghengfang/GolandProjects/cmapp/mrobot/bin/boot2docker.iso"),
@@ -105,9 +108,11 @@ func NewRMTDriver(ctx context.Context, hostName, storePath string, cli *ssh_cmd.
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
-		ctx:         ctx,
-		cli:         cli.SSHCli,
-		ShareFolder: defaultShareFolder,
+		ctx:            ctx,
+		cli:            cli.SSHCli,
+		rmtHost:        rmtHost,
+		ShareFolder:    defaultShareFolder,
+		localSSHKeyMap: map[string]string{},
 	}
 }
 
@@ -209,7 +214,7 @@ func (d *Driver) GetCreateFlags() []base.Flag {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "127.0.0.1", nil
+	return d.rmtHost, nil
 }
 
 func (d *Driver) GetSSHUsername() string {
@@ -349,15 +354,17 @@ func (d *Driver) CreateVM() error {
 		}
 	} else {
 		log.Infof(d.ctx, "Creating SSH key...")
-		sshKeyPath, err := d.sshKeyGenerator.Generate(d.GetSSHKeyPath())
+		sshPubKeyPath, err := d.sshKeyGenerator.Generate(d.GetSSHKeyPath())
 		if err != nil {
 			return err
 		}
-		if len(sshKeyPath) == 0 {
-			sshKeyPath = d.publicSSHKeyPath()
+		if len(sshPubKeyPath) == 0 {
+			sshPubKeyPath = d.publicSSHKeyPath()
 		}
+		d.localSSHKeyMap[d.MachineName] = filepath.Dir(sshPubKeyPath)
+		d.SSHKeyPath = filepath.Join(filepath.Dir(sshPubKeyPath), "id_rsa")
 		log.Debugf(d.ctx, "Creating disk image...")
-		if err := d.diskCreator.Create(d.DiskSize, sshKeyPath, d.diskPath(), d); err != nil {
+		if err := d.diskCreator.Create(d.DiskSize, sshPubKeyPath, d.diskPath(), d); err != nil {
 			return err
 		}
 	}
@@ -539,7 +546,7 @@ func (d *Driver) Start() error {
 
 	switch s {
 	case state.Stopped, state.Saved:
-		d.SSHPort, err = setPortForwarding(d, 1, "ssh", "tcp", 22, d.SSHPort)
+		d.SSHPort, err = rmtSetPortForwarding(d, 1, "ssh", "tcp", 22)
 		if err != nil {
 			return err
 		}
@@ -958,21 +965,26 @@ func validateNoIPCollisions(hif HostInterfaces, hostOnlyNet *net.IPNet, currHost
 }
 
 func getRmtAvailableTCPPort(ctx context.Context, rmtHost string) (int, error) {
-	for i := 30000; i < 65535; i++ {
-		cn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", rmtHost, i), 3*time.Second)
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 20; i++ {
+		p := randInt(30001, 65534)
+		cn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", rmtHost, p), 3*time.Second)
 		if err != nil {
 			if strings.Contains(err.Error(), "connection refused") {
-				log.Infof(ctx, "remote host [%s] port [%d] in use", rmtHost, i)
-				continue
+				log.Infof(ctx, "remote host [%s] port [%d] not in use", rmtHost, p)
+				resultPort := p
+				return resultPort, nil
 			}
 		}
 		if cn != nil {
 			_ = cn.Close()
 		}
-		resultPort := i
-		return resultPort, nil
 	}
 	return -1, fmt.Errorf("unable to allocate tcp port")
+}
+
+func randInt(min int, max int) int {
+	return min + rand.Intn(max-min)
 }
 
 // Select an available port, trying the specified
@@ -1020,19 +1032,19 @@ func setPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, gu
 }
 
 // rmtSetPortForwarding Setup a NAT port forwarding entry.
-func rmtSetPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, guestPort, desiredHostPort int) (int, error) {
-	actualHostPort, err := getRmtAvailableTCPPort(d.ctx, desiredHostPort)
+func rmtSetPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, guestPort int) (int, error) {
+	actualHostPort, err := getRmtAvailableTCPPort(d.ctx, d.rmtHost)
 	if err != nil {
 		return -1, err
 	}
-	if desiredHostPort != actualHostPort && desiredHostPort != 0 {
+	if actualHostPort != -1 {
 		log.Debugf(d.ctx, "NAT forwarding host port for guest port %d (%s) changed from %d to %d",
-			guestPort, mapName, desiredHostPort, actualHostPort)
+			guestPort, mapName, 0, actualHostPort)
 	}
 	cmd := fmt.Sprintf("--natpf%d", interfaceNum)
 	d.vbm("modifyvm", d.MachineName, cmd, "delete", mapName)
 	if err := d.vbm("modifyvm", d.MachineName,
-		cmd, fmt.Sprintf("%s,%s,127.0.0.1,%d,,%d", mapName, protocol, actualHostPort, guestPort)); err != nil {
+		cmd, fmt.Sprintf("%s,%s,0.0.0.0,%d,,%d", mapName, protocol, actualHostPort, guestPort)); err != nil {
 		return -1, err
 	}
 	return actualHostPort, nil
