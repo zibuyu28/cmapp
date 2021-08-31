@@ -42,6 +42,7 @@ type DriverVB struct {
 	ServerSSHPort     int    `validate:"required"`
 	ServerSSHUsername string `validate:"required"`
 	ServerSSHPassword string `validate:"required"`
+	ServerVMStorePath string `validate:"required"`
 }
 
 func NewDriverVB() *DriverVB {
@@ -75,6 +76,12 @@ func (d *DriverVB) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*dr
 			EnvVar: "VB_SERVER_SSH_PASSWORD",
 			Value:  nil,
 		},
+		{
+			Name:   "VBServerVMStorePath",
+			Usage:  "virtualbox server ssh password",
+			EnvVar: "VB_SERVER_VM_STORE_PATH",
+			Value:  nil,
+		},
 	}
 	baseFlags.Flags = append(baseFlags.Flags, flags...)
 	return baseFlags, nil
@@ -96,6 +103,7 @@ func (d *DriverVB) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) 
 
 	d.ServerSSHUsername = m["VBServerSSHUserName"]
 	d.ServerSSHPassword = m["VBServerSSHPassword"]
+	d.ServerVMStorePath = m["VBServerVMStorePath"]
 
 	validate := v.New()
 	err = validate.Struct(d)
@@ -148,10 +156,11 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 		return nil, errors.New("fail to find uuid from metadata")
 	}
 	var customInfo = map[string]string{
-		"server_ssh_host":     d.ServerSSHHost,
-		"server_ssh_port":     strconv.Itoa(d.ServerSSHPort),
-		"server_ssh_username": d.ServerSSHUsername,
-		"server_ssh_password": d.ServerSSHPassword,
+		"server_ssh_host":      d.ServerSSHHost,
+		"server_ssh_port":      strconv.Itoa(d.ServerSSHPort),
+		"server_ssh_username":  d.ServerSSHUsername,
+		"server_ssh_password":  d.ServerSSHPassword,
+		"server_vm_store_path": d.ServerVMStorePath,
 	}
 	return &driver.Machine{
 		UUID:       datas[0],
@@ -161,7 +170,18 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 	}, nil
 }
 
+// TODO: 将empty参数变更为machine
 func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("fail to parse metadata info from context")
+	}
+
+	datas := md.Get("UUID")
+	if len(datas) != 1 {
+		return nil, errors.New("fail to find uuid from metadata")
+	}
+
 	// 1. 使用sdk请求远程的vbox webserver 创建一个主机 ----> 这个方式很复杂，主要vb支持的是webservice，soap协议。
 	//    go目前没有完善的配套，需要从零开发，所以放弃
 	// 2. 使用远程ssh的方式，使用shell创建主机， 直接调用 vboxManage create, 并且开启ssh端口映射
@@ -171,11 +191,13 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	if err != nil {
 		return nil, errors.Wrap(err, "new ssh cli")
 	}
-	vbdri := virtualbox.NewDriver(ctx, "", "", cli)
-	err = vbdri.CreateVM()
+	rmtDriver := virtualbox.NewRMTDriver(ctx, datas[0], d.ServerVMStorePath, d.ServerSSHHost, cli)
+	err = rmtDriver.Create()
 	if err != nil {
 		return nil, errors.Wrap(err, "create vm")
 	}
+	// 查询主机的信息
+
 	// TODO: update machine
 	return nil, nil
 }
