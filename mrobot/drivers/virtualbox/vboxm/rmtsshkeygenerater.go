@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 )
 
-
 func NewRmtSSHKeyGenerator(ctx context.Context, cli *ssh2.Client) SSHKeyGenerator {
 	return &rmtSSHKeyGenerator{
 		ctx: ctx,
@@ -63,7 +62,7 @@ func (r *rmtSSHKeyGenerator) uploadFile(file, rmtFile string) error {
 	// Open a file
 	f, err := os.Open(file)
 	if err != nil {
-		return errors.Wrap(err, "open boot2docker.iso")
+		return errors.Wrapf(err, "open file [%s]", file)
 	}
 
 	// Close client connection after the file has been copied

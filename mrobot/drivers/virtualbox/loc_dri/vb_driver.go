@@ -18,6 +18,7 @@ package loc_dri
 
 import (
 	"context"
+	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
@@ -27,7 +28,9 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -170,7 +173,7 @@ func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*drive
 	}, nil
 }
 
-// TODO: 将empty参数变更为machine
+// CreateExec 将empty参数变更为machine -> 解决：不需要
 func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -185,7 +188,6 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	// 1. 使用sdk请求远程的vbox webserver 创建一个主机 ----> 这个方式很复杂，主要vb支持的是webservice，soap协议。
 	//    go目前没有完善的配套，需要从零开发，所以放弃
 	// 2. 使用远程ssh的方式，使用shell创建主机， 直接调用 vboxManage create, 并且开启ssh端口映射
-	//
 	log.Debug(ctx, "Currently start to create machine exec")
 	cli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
 	if err != nil {
@@ -196,22 +198,83 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	if err != nil {
 		return nil, errors.Wrap(err, "create vm")
 	}
-	// 查询主机的信息
+	port, err := rmtDriver.GetSSHPort()
+	if err != nil {
+		return nil, errors.Wrap(err, "get virtualbox ssh port")
+	}
+	if port == 0 {
+		return nil, errors.New("get virtualbox ssh port is nil")
+	}
 
-	// TODO: update machine
-	return nil, nil
+	var customInfo = map[string]string{
+		"virtualbox_ssh_port":     fmt.Sprintf("%d", port),
+		"virtualbox_ssh_host":     d.ServerSSHHost,
+		"virtualbox_ssh_username": rmtDriver.GetSSHUsername(),
+		"virtualbox_ssh_password": "",
+		"virtualbox_ssh_key_path": rmtDriver.GetSSHKeyPath(),
+	}
+	return &driver.Machine{
+		UUID:       datas[0],
+		State:      1,
+		CustomInfo: customInfo,
+	}, nil
 }
 
 func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	// 1. 请求远程vb webserver 安装 ha ----> 调研后发现不支持
-	// TODO: 确认是否可以安装ha
+
 	// 2. 远程shell的方式可以直接创建 ----> 还是使用远程ssh的方式安装
-	panic("implement me")
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("fail to parse metadata info from context")
+	}
+
+	datas := md.Get("UUID")
+	if len(datas) != 1 {
+		return nil, errors.New("fail to find uuid from metadata")
+	}
+
+	log.Debug(ctx, "Currently start to install mrobot")
+	// 远程ssh copy mrobot 到 virtualbox 内部
+	cli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
+	if err != nil {
+		return nil, errors.Wrap(err, "new ssh cli")
+	}
+
+	s := os.Args[0]
+	abs, err := filepath.Abs(s)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get abs path of [%s]", s)
+	}
+
+	var rmtPath = "/home/docker/virtualbox-mrobot"
+	err = cli.Scp(abs, rmtPath)
+	if err != nil {
+		return nil, errors.Wrap(err,"scp local plugin to remote")
+	}
+
+	// 设置环境变量等等
+	mrobotEnvs := map[string]string {}
+
+	// 远程执行启动命令
+	out, err := cli.ExecCmd(fmt.Sprintf("/home/docker/virtualbox-mrobot"), ssh_cmd.WithEnv(mrobotEnvs))
+	if err != nil {
+		return nil, errors.Wrap(err, "run cmd to start mrobot")
+	}
+	if !strings.Contains(out, "ok") {
+		return nil, errors.New( "fail to mrobot start")
+	}
+	log.Debug(ctx, "Currently install mrobot success")
+	return &driver.Machine{
+		UUID:       datas[0],
+		State:      1,
+	}, nil
 }
 
 func (d *DriverVB) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	// 使用远程ssh的方式调用version接口
-	panic("implement me")
+	log.Debug(ctx, "Currently start to check health")
+	return nil, nil
 }
 
 func (d *DriverVB) Exit(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {

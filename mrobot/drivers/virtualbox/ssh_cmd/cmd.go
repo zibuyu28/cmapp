@@ -18,9 +18,12 @@ package ssh_cmd
 
 import (
 	"fmt"
+	"github.com/bramvdbogaerde/go-scp"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -34,7 +37,9 @@ type SSHCli struct {
 
 	secure  bool
 	timeout time.Duration
-	SSHCli     *ssh.Client
+	SSHCli  *ssh.Client
+
+	envs map[string]string
 }
 
 // NewSSHCli new ssh client
@@ -68,6 +73,52 @@ func WithSecure() func(*SSHCli) {
 	}
 }
 
+func WithEnv(envs map[string]string) func(*SSHCli) {
+	return func(cli *SSHCli) {
+		cli.envs = envs
+	}
+}
+
+func (s *SSHCli) Scp(locFile, rmtFile string) error {
+	_, err := os.Stat(locFile)
+	if err != nil {
+		return err
+	}
+
+	scpcli, err := scp.NewClientBySSH(s.SSHCli)
+	if err != nil {
+		return errors.Wrap(err, "establish connection to remote server")
+	}
+
+	// Open a file
+	f, err := os.Open(locFile)
+	if err != nil {
+		return errors.Wrapf(err, "open local file [%s]", locFile)
+	}
+
+	// Close client connection after the file has been copied
+	defer scpcli.Close()
+
+	// Close the file after it has been copied
+	defer f.Close()
+
+	// make sure dir is created
+	rdir := filepath.Dir(rmtFile)
+	out, err := s.ExecCmd(fmt.Sprintf("mkdir -p %s", rdir))
+	if err != nil {
+		return errors.Wrapf(err, "exec create dir [%s] command", rdir)
+	}
+	if len(out) != 0 {
+		return errors.Errorf("fail to exec create dir [%s] command, res [%s]", rdir, out)
+	}
+
+	err = scpcli.CopyFile(f, rmtFile, "0777")
+	if err != nil {
+		return errors.Wrapf(err, "copying file to remote [%s]", rmtFile)
+	}
+	return nil
+}
+
 func (s *SSHCli) ExecCmd(cmd string, opt ...Opt) (string, error) {
 	if s.SSHCli == nil {
 		return "", errors.New("fail to get client, because s.cli is nil. please exec InitConn first")
@@ -82,6 +133,15 @@ func (s *SSHCli) ExecCmd(cmd string, opt ...Opt) (string, error) {
 	}
 	defer sess.Close()
 
+	if s.envs != nil {
+		for key, val := range s.envs {
+			err = sess.Setenv(key, val)
+			if err != nil {
+				return "", errors.Wrapf(err, "set env key [%s], val [%s]", key, val)
+			}
+		}
+	}
+	defer func() { s.envs = nil }()
 	// exe command
 	res, err := sess.CombinedOutput(cmd)
 	if err != nil {
