@@ -16,7 +16,7 @@ cmapp
 
 ### 2021.08.23
 - [x] 调研`virtualbox`远程`sdk`
-- [ ] 实现`virtualbox`的本地驱动
+- [x] 实现`virtualbox`的本地驱动
 - [ ] 实现`virtualbox`远程驱动 
 - [ ] 增加`core`中创建主机的`http`接口
 - [ ] 增加`core`中查询主机、更新主机、删除主机信息接口
