@@ -121,25 +121,37 @@ func CreateMachine(ctx context.Context, uuid string) error {
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "CoreMachineID", fmt.Sprintf("%d", initMachine.ID))
 
-	_, err = meIns.CreateExec(ctx, &driver.Empty{})
+	ma, err := meIns.CreateExec(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "create execute")
 	}
 	log.Debug(ctx, "Currently execute create machine action success")
+	err = MachineUpdate(ctx, cli, ma, initMachine)
+	if err != nil {
+		return errors.Wrap(err, "update machine info")
+	}
 
-	_, err = meIns.InstallMRobot(ctx, &driver.Empty{})
+	ma, err = meIns.InstallMRobot(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "install machine robot")
 	}
 
 	log.Debug(ctx, "Currently install machine robot success")
+	err = MachineUpdate(ctx, cli, ma, initMachine)
+	if err != nil {
+		return errors.Wrap(err, "update machine info")
+	}
 
-	_, err = meIns.MRoHealthCheck(ctx, &driver.Empty{})
+	ma, err = meIns.MRoHealthCheck(ctx, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "machine robot health check")
 	}
 
 	log.Debug(ctx, "Currently install machine robot success")
+	err = MachineUpdate(ctx, cli, ma, initMachine)
+	if err != nil {
+		return errors.Wrap(err, "update machine info")
+	}
 
 	// TODO: need stop plugin server
 	ctx.Done()
@@ -147,6 +159,52 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	// register machine to machine center
 
 	log.Debug(ctx, "Currently register machine to machine center success")
+	return nil
+}
+
+// MachineUpdate machine info update
+func MachineUpdate(ctx context.Context, cli coreproto.MachineManageClient, ma *driver.Machine, tma *coreproto.TypedMachine) error {
+	if ma == nil {
+		log.Debug(ctx, "machine obj is nil")
+		return nil
+	}
+	var nu bool
+	if ma.State != 0 {
+		tma.State = ma.State
+		nu = true
+	}
+	if len(ma.Tags) != 0 {
+		ma.Tags = append(ma.Tags, tma.MachineTags...)
+		var m = make(map[string]struct{})
+		var tags []string
+		for _, tag := range ma.Tags {
+			if _, ok := m[tag]; ok {
+				continue
+			}
+			tags = append(tags, tag)
+			m[tag] = struct{}{}
+		}
+		tma.MachineTags = tags
+		nu = true
+	}
+	if len(ma.CustomInfo) != 0 {
+		for k, v := range ma.CustomInfo {
+			if ev, ok := tma.CustomInfo[k]; ok && ev == v {
+				continue
+			}
+			tma.CustomInfo[k] = v
+			nu = true
+		}
+	}
+	if nu {
+		if tma.ID == 0 {
+			return errors.New("typed machine id is nil")
+		}
+		_, err := cli.UpdateMachine(ctx, tma)
+		if err != nil {
+			return errors.Wrap(err, "update machine")
+		}
+	}
 	return nil
 }
 
