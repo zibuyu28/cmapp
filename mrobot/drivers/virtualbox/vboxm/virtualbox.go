@@ -1031,6 +1031,15 @@ func setPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, gu
 	return actualHostPort, nil
 }
 
+// ExportPort export target port
+func (d *Driver) ExportPort(name, protocol string, targetPort int) (int, error) {
+	forwarding, err := rmtSetPortForwarding(d, 1, name, protocol, targetPort)
+	if err != nil {
+		return -1, errors.Wrapf(err, "set port [%d] forward", targetPort)
+	}
+	return forwarding, nil
+}
+
 // rmtSetPortForwarding Setup a NAT port forwarding entry.
 func rmtSetPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, guestPort int) (int, error) {
 	actualHostPort, err := getRmtAvailableTCPPort(d.ctx, d.rmtHost)

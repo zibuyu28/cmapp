@@ -22,8 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
-	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/loc_dri"
-	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/rmt_dri"
+	k8slocal "github.com/zibuyu28/cmapp/mrobot/drivers/k8s/loc_dri"
+	k8srmt "github.com/zibuyu28/cmapp/mrobot/drivers/k8s/rmt_dri"
+	vblocal "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/loc_dri"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
@@ -31,7 +32,8 @@ import (
 
 var buildInDrivers = []string{"k8s"}
 var buildInDriversVersion = map[string]string{
-	"k8s": "1.0.0",
+	"k8s":        "1.0.0",
+	"virtualbox": "1.0.0",
 }
 
 type BuildInDriver struct {
@@ -51,7 +53,15 @@ func (d BuildInDriver) Exit() {
 func ParseDriver(driverName string) (*BuildInDriver, error) {
 	switch driverName {
 	case "k8s":
-		return &BuildInDriver{GrpcServer: &loc_dri.DriverK8s{
+		return &BuildInDriver{GrpcServer: &k8slocal.DriverK8s{
+			BaseDriver: pkg.BaseDriver{
+				UUID:          md5.MD5(fmt.Sprintf("%s:%s", driverName, buildInDriversVersion[driverName])),
+				DriverName:    driverName,
+				DriverVersion: buildInDriversVersion[driverName],
+			},
+		}}, nil
+	case "virtualbox":
+		return &BuildInDriver{GrpcServer: &vblocal.DriverVB{
 			BaseDriver: pkg.BaseDriver{
 				UUID:          md5.MD5(fmt.Sprintf("%s:%s", driverName, buildInDriversVersion[driverName])),
 				DriverName:    driverName,
@@ -71,7 +81,7 @@ func ParsePlugin(pluginName string) (*BuildInPlugin, error) {
 	switch pluginName {
 	case "k8s":
 		return &BuildInPlugin{
-			GrpcPluginServer: rmt_dri.NewK8sWorker(),
+			GrpcPluginServer: k8srmt.NewK8sWorker(),
 		}, nil
 	default:
 		return nil, errors.Errorf("fail to parse plugin named [%s], build in drivers [%v], please check config or param", pluginName, buildInDrivers)

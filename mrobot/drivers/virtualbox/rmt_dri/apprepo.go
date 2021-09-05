@@ -67,5 +67,68 @@ func guid(ctx context.Context) (uid string, err error) {
 }
 
 type App struct {
-	UID string `validate:"required"`
+	UID  string `validate:"required"`
+	Name string
+	// relative path
+	Workspace           string
+	InstallationPackage string
+	PackageMd5          string
+	StartCMD            []string
+	Tags                map[string]string
+	Environments        map[string]string
+	FilePremises        map[string]FilePremise
+	FileMounts          map[string]FileMount
+	Limit               *Limit
+	Health              *HealthOption
+	Log                 *Log
+	Ports               map[int]PortInfo
+}
+
+type PortInfo struct {
+	Port            int    `validate:"required"`
+	Name            string `validate:"required"`
+	Protocol        string `validate:"required"`
+	HostPortMapping int    `validate:"required"`
+}
+
+type Log struct {
+	RealTimeFile    string
+	CompressLogPath string
+}
+
+type MethodType string
+
+const (
+	HttpGet  MethodType = "httpGet"
+	HttpPost MethodType = "httpPost"
+)
+
+type HealthBasic struct {
+	Method MethodType
+	Path   string `validate:"required"`
+	Port   int    `validate:"required"`
+}
+
+type HealthOption struct {
+	Liveness *HealthBasic
+	Readness *HealthBasic
+}
+
+type Limit struct {
+	// unit 'm'
+	CPU int
+	// unit 'MB'
+	Memory int
+}
+
+type FileMount struct {
+	File    string `validate:"required"`
+	MountTo string `validate:"required"`
+	Volume  string
+}
+
+type FilePremise struct {
+	Name        string
+	AcquireAddr string
+	Shell       string
 }
