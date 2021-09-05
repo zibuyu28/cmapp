@@ -25,6 +25,10 @@ import (
 type CoreMachineManager struct {
 }
 
+func (m *CoreMachineManager) UpdateMachine(ctx context.Context, machine *proto.TypedMachine) (*proto.UpdateMachineRes, error) {
+	panic("implement me")
+}
+
 // RegisterMachine register machine to center
 func (m *CoreMachineManager) RegisterMachine(ctx context.Context, machine *proto.TypedMachine) (*proto.RegisterMachineRes, error) {
 	err := service_g.RegisterMachine(ctx, machine)

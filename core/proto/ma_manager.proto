@@ -9,6 +9,12 @@ service MachineManage {
 
   // RegisterMachine register machine to core center, maybe to maintain heartbeat, check health status
   rpc RegisterMachine (TypedMachine) returns (RegisterMachineRes) {}
+
+  rpc UpdateMachine(TypedMachine) returns (UpdateMachineRes) {}
+}
+
+message UpdateMachineRes {
+  bool res = 1;
 }
 
 message RegisterMachineRes {
