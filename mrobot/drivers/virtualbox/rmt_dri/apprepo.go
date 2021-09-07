@@ -73,6 +73,7 @@ type App struct {
 	Workspace           string
 	InstallationPackage string
 	PackageMd5          string
+	PackageHandleShells []string
 	StartCMD            []string
 	Tags                map[string]string
 	Environments        map[string]string

@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/cmd"
+	"github.com/zibuyu28/cmapp/common/httputil"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
@@ -27,6 +29,8 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	"net"
+	"os"
+	"path/filepath"
 )
 
 type VirtualboxWorker struct {
@@ -59,6 +63,7 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 		Workspace:           uid,
 		InstallationPackage: pkg.Binary.Download,
 		PackageMd5:          pkg.Binary.CheckSum,
+		PackageHandleShells: pkg.Binary.PackageHandleShells,
 		StartCMD:            pkg.Binary.StartCommands,
 		Tags:                map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", v.MachineID)},
 	}
@@ -77,10 +82,65 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 		},
 		Workspace: &worker0.App_WorkspaceInfo{Workspace: uid},
 	}
+	abs, _ := filepath.Abs(uid)
+	_ = os.MkdirAll(filepath.Join(abs, uid), os.ModePerm)
 	return wap, nil
 }
 
-func (v *VirtualboxWorker) StartApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
+func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empty, error) {
+	log.Debug(ctx, "Currently to start app")
+	app, err := repo.load(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fail to load app from repo")
+	}
+
+	log.Debugf(ctx, "Currently start get main package add [%s], save to dir [%s/]", app.InstallationPackage, app.Workspace)
+	abs, _ := filepath.Abs(app.Workspace)
+	_, err = os.Stat(abs)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			err = os.MkdirAll(abs, os.ModePerm)
+			if err != nil {
+				return nil, errors.Wrapf(err, "mkdir workspace [%s]", abs)
+			}
+		} else {
+			return nil, errors.Wrap(err, "os state")
+		}
+	}
+
+	packageFile := filepath.Join(abs, "pkg.tmp")
+	err = httputil.HTTPDoDownloadFile(packageFile, app.InstallationPackage)
+	if err != nil {
+		return nil, errors.Wrap(err, "download package")
+	}
+
+	// do package handle shell
+	for _, shell := range app.PackageHandleShells {
+		out, err := cmd.NewDefaultCMD(shell, []string{}, cmd.WithWorkDir(abs)).Run()
+		if err != nil {
+			return nil, errors.Wrapf(err, "exec package handle shell [%s], Err: [%v]", shell, err)
+		}
+		log.Debugf(ctx, "Currently execute shell [%s] success, out [%s]", shell, out)
+	}
+
+	log.Debug(ctx, "Currently start exec file premise")
+	for _, premise := range app.FilePremises {
+		log.Debugf(ctx, "start to get file [%s], addr [%s]", premise.Name, premise.AcquireAddr)
+		premiseFile := filepath.Join(abs, premise.Name)
+		err = httputil.HTTPDoDownloadFile(premiseFile, premise.AcquireAddr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "download premise [%s]", premise.Name)
+		}
+		out, err := cmd.NewDefaultCMD(premise.Shell, []string{}, cmd.WithWorkDir(abs)).Run()
+		if err != nil {
+			return nil, errors.Wrapf(err, "exec premise shell [%s], Err: [%v]", premise.Shell, err)
+		}
+		log.Debugf(ctx, "Currently execute premise shell [%s] success, out [%s]", premise.Shell, out)
+	}
+
+	log.Debug(ctx, "Currently start exec file mounts")
+
+
 	panic("implement me")
 }
 

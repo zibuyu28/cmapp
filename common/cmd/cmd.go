@@ -29,6 +29,7 @@ type Ins struct {
 	command   string
 	args      []string
 	retry     int
+	workdir   string
 }
 type CmdOption func(info *Ins)
 
@@ -71,6 +72,12 @@ func WithShellType(shellType ShellType) CmdOption {
 func WithTimeout(timeout int) CmdOption {
 	return func(i *Ins) {
 		i.timeout = timeout
+	}
+}
+
+func WithWorkDir(dir string) CmdOption {
+	return func(i *Ins) {
+		i.workdir = dir
 	}
 }
 
@@ -131,6 +138,11 @@ func (i *Ins) cmd() (out string, err error) {
 		cmd = exec.Command("/bin/sh", "-c", i.command)
 	case ShellTypeBash:
 		cmd = exec.Command("/bin/bash", "-c", i.command)
+	default:
+		return "", errors.Errorf("not support shell type [%v]", i.shellType)
+	}
+	if len(i.workdir) != 0 {
+		cmd.Dir = i.workdir
 	}
 
 	cmd.SysProcAttr = sysProcAttr

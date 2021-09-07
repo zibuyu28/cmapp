@@ -66,9 +66,10 @@ type Package struct {
 		StartCommands []string `json:"start_command" validate:"required"`
 	}
 	Binary struct {
-		Download      string   `json:"download" validate:"required"`
-		CheckSum      string   `json:"check_sum" validate:"required"`
-		StartCommands []string `json:"start_command" validate:"required"`
+		Download            string   `json:"download" validate:"required"`
+		CheckSum            string   `json:"check_sum" validate:"required"`
+		PackageHandleShells []string `json:"package_handle_shells"`
+		StartCommands       []string `json:"start_command" validate:"required"`
 	}
 }
 
