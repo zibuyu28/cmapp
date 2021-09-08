@@ -140,6 +140,16 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 
 	log.Debug(ctx, "Currently start exec file mounts")
 
+	//FileMount{
+	//	File:    "uuid/cert/conf/cfg.toml",
+	//	MountTo: "uuid/config/cfg.toml",
+	//	Volume:  "",
+	//}
+
+	//for _, mount := range app.FileMounts {
+	//	mount.Volume
+	//}
+
 
 	panic("implement me")
 }

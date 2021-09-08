@@ -165,7 +165,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 
 	vmes = append(vmes, corev1.VolumeMount{
 		Name:      fmt.Sprintf("app-%s-pvc", app.UID),
-		MountPath: fmt.Sprintf("/%s",app.UID),
+		MountPath: fmt.Sprintf("/%s", app.UID),
 		SubPath:   fmt.Sprintf("download"),
 	})
 
@@ -247,6 +247,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 				},
 			},
 			ImagePullPolicy: "IfNotPresent",
+			WorkingDir:      fmt.Sprintf("/%s", app.UID),
 		})
 	}
 
