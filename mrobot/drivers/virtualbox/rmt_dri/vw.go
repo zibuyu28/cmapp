@@ -31,6 +31,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 type VirtualboxWorker struct {
@@ -145,13 +147,81 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 	//	MountTo: "uuid/config/cfg.toml",
 	//	Volume:  "",
 	//}
-
+	// 所以这里的 filemount 都是不需要进行操作，只需要知道用户下载的文件都在 workspace->app.UID 下即可
 	//for _, mount := range app.FileMounts {
 	//	mount.Volume
 	//}
 
+	// tag handle: set tag to process environment -> check same name
+	var processEnvs = make(map[string]string)
+	for t, v1 := range app.Tags {
+		processEnvs[t] = v1
+	}
 
-	panic("implement me")
+	// env handle
+	for k, v2 := range app.Environments {
+		if old, ok := processEnvs[k]; ok {
+			log.Warnf(ctx, "Currently set env got same key [%s]. Now to cover old [%s], new [%s]. Please know this", k, old, v2)
+		}
+		processEnvs[k] = v2
+	}
+
+	// TODO: limit process's cpu and memory in the same way like docker
+	// now ignore limit
+
+	// start app
+	log.Debug(ctx, "Currently start to setup app")
+	setupCommand := strings.Join(app.StartCMD, " ")
+	out, err := cmd.NewDefaultCMD(setupCommand, []string{}, cmd.WithWorkDir(abs), cmd.WithEnvs(processEnvs)).Run()
+	if err != nil {
+		return nil, errors.Wrapf(err, "exec setup command [%s], Err: [%v]", setupCommand, err)
+	}
+	log.Debugf(ctx, "Currently setup app out [%s]", out)
+
+	// health: check this app is setup success or not
+	//       : by the way, the worker need to provided
+	//       : app live status checking-engine (timed
+	//       : check app running status, and recovery
+	//       : app if not health)
+
+	// now just to check 10 times
+
+	if app.Health.Readness != nil {
+		readnessUrl := fmt.Sprintf("http://127.0.0.1:%d%s", app.Health.Readness.Port, app.Health.Readness.Path)
+		log.Debugf(ctx, "Currently read url [%s]", readnessUrl)
+
+		// 检查1分钟
+		toutctx, cancelFunc := context.WithTimeout(ctx, time.Minute)
+		defer cancelFunc()
+		// 间隔1秒检查一次
+		ticker := time.NewTicker(time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				switch app.Health.Readness.Method {
+				case HttpGet:
+					_, err = httputil.HTTPDoGet(readnessUrl)
+					if err != nil {
+						log.Errorf(ctx, "Manage err when check app readness. Now to continue. Err: [%v]", err)
+						continue
+					}
+					return nil, nil
+				case HttpPost:
+					_, err = httputil.HTTPDoPost("", readnessUrl)
+					if err != nil {
+						log.Errorf(ctx, "Manage err when check app readness. Now to continue. Err: [%v]", err)
+						continue
+					}
+					return nil, nil
+				}
+			case <-toutctx.Done():
+				return nil, errors.New("app readness check timeout")
+			}
+		}
+	}
+
+	// TODO: get app pid == info
+	return nil, nil
 }
 
 func (v *VirtualboxWorker) StopApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {

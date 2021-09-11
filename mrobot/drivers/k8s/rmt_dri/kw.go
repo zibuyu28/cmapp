@@ -106,7 +106,7 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 			Workdir:  pkg.Image.WorkDir,
 			StartCMD: pkg.Image.StartCommands,
 		},
-		Workspace: &worker0.App_WorkspaceInfo{Workspace: "test"},
+		Workspace: &worker0.App_WorkspaceInfo{Workspace: app.UID},
 	}
 	return wap, nil
 }
@@ -155,6 +155,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 				})
 			}
 		} else {
+			// 因为initcontainer 和 container 挂载pvc的路径是一致的
 			//vmes = append(vmes, corev1.VolumeMount{
 			//	Name:      fmt.Sprintf("app-%s-pvc", app.UID),
 			//	MountPath: mount.MountTo,
@@ -163,9 +164,11 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 		}
 	}
 
+	// 因为initcontainer 和 container 挂载 pvc 的路径是一致的，去除 initcontainer 容器中文件的 filemount
 	vmes = append(vmes, corev1.VolumeMount{
 		Name:      fmt.Sprintf("app-%s-pvc", app.UID),
-		MountPath: fmt.Sprintf("/%s", app.UID),
+		// 将给定的 workspace-> app.UID 映射到 image 的 workdir 下面，这样可以使用相对路径
+		MountPath: fmt.Sprintf("%s/%s", app.WorkDir, app.UID),
 		SubPath:   fmt.Sprintf("download"),
 	})
 
