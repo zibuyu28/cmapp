@@ -89,6 +89,11 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 	return wap, nil
 }
 
+// GetHostVolume TODO: maybe need to implement
+func (v *VirtualboxWorker) GetHostVolume(ctx context.Context, _ *worker0.App) error {
+	panic("implement me")
+}
+
 func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empty, error) {
 	log.Debug(ctx, "Currently to start app")
 	app, err := repo.load(ctx)
