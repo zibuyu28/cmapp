@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
-	coreproto "github.com/zibuyu28/cmapp/core/proto"
+	coreproto "github.com/zibuyu28/cmapp/core/proto/ma_manager"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin/localbinary"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc"
