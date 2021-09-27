@@ -7,6 +7,10 @@
 package ch_manager
 
 import (
+	context "context"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -20,16 +24,25 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type A struct {
+// TypedChain chain definition
+type TypedChain struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	A string `protobuf:"bytes,1,opt,name=a,proto3" json:"a,omitempty"`
+	ID         int32             `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Name       string            `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
+	UUID       string            `protobuf:"bytes,3,opt,name=UUID,proto3" json:"UUID,omitempty"`
+	Type       string            `protobuf:"bytes,4,opt,name=Type,proto3" json:"Type,omitempty"`
+	Version    string            `protobuf:"bytes,5,opt,name=Version,proto3" json:"Version,omitempty"`
+	State      int32             `protobuf:"varint,6,opt,name=State,proto3" json:"State,omitempty"` // 1处理中，2正常，3异常
+	DriverID   int32             `protobuf:"varint,7,opt,name=DriverID,proto3" json:"DriverID,omitempty"`
+	Tags       []string          `protobuf:"bytes,8,rep,name=Tags,proto3" json:"Tags,omitempty"`
+	CustomInfo map[string]string `protobuf:"bytes,9,rep,name=CustomInfo,proto3" json:"CustomInfo,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (x *A) Reset() {
-	*x = A{}
+func (x *TypedChain) Reset() {
+	*x = TypedChain{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_ch_manager_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -37,13 +50,13 @@ func (x *A) Reset() {
 	}
 }
 
-func (x *A) String() string {
+func (x *TypedChain) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*A) ProtoMessage() {}
+func (*TypedChain) ProtoMessage() {}
 
-func (x *A) ProtoReflect() protoreflect.Message {
+func (x *TypedChain) ProtoReflect() protoreflect.Message {
 	mi := &file_ch_manager_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,25 +68,103 @@ func (x *A) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use A.ProtoReflect.Descriptor instead.
-func (*A) Descriptor() ([]byte, []int) {
+// Deprecated: Use TypedChain.ProtoReflect.Descriptor instead.
+func (*TypedChain) Descriptor() ([]byte, []int) {
 	return file_ch_manager_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *A) GetA() string {
+func (x *TypedChain) GetID() int32 {
 	if x != nil {
-		return x.A
+		return x.ID
+	}
+	return 0
+}
+
+func (x *TypedChain) GetName() string {
+	if x != nil {
+		return x.Name
 	}
 	return ""
+}
+
+func (x *TypedChain) GetUUID() string {
+	if x != nil {
+		return x.UUID
+	}
+	return ""
+}
+
+func (x *TypedChain) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *TypedChain) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *TypedChain) GetState() int32 {
+	if x != nil {
+		return x.State
+	}
+	return 0
+}
+
+func (x *TypedChain) GetDriverID() int32 {
+	if x != nil {
+		return x.DriverID
+	}
+	return 0
+}
+
+func (x *TypedChain) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *TypedChain) GetCustomInfo() map[string]string {
+	if x != nil {
+		return x.CustomInfo
+	}
+	return nil
 }
 
 var File_ch_manager_proto protoreflect.FileDescriptor
 
 var file_ch_manager_proto_rawDesc = []byte{
 	0x0a, 0x10, 0x63, 0x68, 0x5f, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x22, 0x11, 0x0a, 0x01, 0x61, 0x12, 0x0c, 0x0a, 0x01, 0x61, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x01, 0x61, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x2f, 0x63, 0x68, 0x5f, 0x6d, 0x61,
-	0x6e, 0x61, 0x67, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x6f, 0x22, 0xb4, 0x02, 0x0a, 0x0a, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69,
+	0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x49,
+	0x44, 0x12, 0x12, 0x0a, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x55, 0x55, 0x49, 0x44, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x55, 0x55, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x79, 0x70,
+	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x18, 0x0a,
+	0x07, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
+	0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x1a, 0x0a,
+	0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x18, 0x07, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x08, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x61, 0x67,
+	0x73, 0x18, 0x08, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x54, 0x61, 0x67, 0x73, 0x12, 0x3b, 0x0a,
+	0x0a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x18, 0x09, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x1b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x2e, 0x43,
+	0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0a,
+	0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x3d, 0x0a, 0x0f, 0x43, 0x75,
+	0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
+	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
+	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0x38, 0x0a, 0x0b, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x12, 0x29, 0x0a, 0x0b, 0x52, 0x65, 0x70, 0x6f,
+	0x72, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43,
+	0x68, 0x61, 0x69, 0x6e, 0x1a, 0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69,
+	0x6e, 0x22, 0x00, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x2f, 0x63, 0x68, 0x5f, 0x6d, 0x61, 0x6e, 0x61,
+	0x67, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -88,16 +179,20 @@ func file_ch_manager_proto_rawDescGZIP() []byte {
 	return file_ch_manager_proto_rawDescData
 }
 
-var file_ch_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_ch_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_ch_manager_proto_goTypes = []interface{}{
-	(*A)(nil), // 0: a
+	(*TypedChain)(nil), // 0: TypedChain
+	nil,                // 1: TypedChain.CustomInfoEntry
 }
 var file_ch_manager_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: TypedChain.CustomInfo:type_name -> TypedChain.CustomInfoEntry
+	0, // 1: ChainManage.ReportChain:input_type -> TypedChain
+	0, // 2: ChainManage.ReportChain:output_type -> TypedChain
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_ch_manager_proto_init() }
@@ -107,7 +202,7 @@ func file_ch_manager_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_ch_manager_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*A); i {
+			switch v := v.(*TypedChain); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -125,9 +220,9 @@ func file_ch_manager_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_ch_manager_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_ch_manager_proto_goTypes,
 		DependencyIndexes: file_ch_manager_proto_depIdxs,
@@ -137,4 +232,84 @@ func file_ch_manager_proto_init() {
 	file_ch_manager_proto_rawDesc = nil
 	file_ch_manager_proto_goTypes = nil
 	file_ch_manager_proto_depIdxs = nil
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConnInterface
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion6
+
+// ChainManageClient is the client API for ChainManage service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ChainManageClient interface {
+	ReportChain(ctx context.Context, in *TypedChain, opts ...grpc.CallOption) (*TypedChain, error)
+}
+
+type chainManageClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewChainManageClient(cc grpc.ClientConnInterface) ChainManageClient {
+	return &chainManageClient{cc}
+}
+
+func (c *chainManageClient) ReportChain(ctx context.Context, in *TypedChain, opts ...grpc.CallOption) (*TypedChain, error) {
+	out := new(TypedChain)
+	err := c.cc.Invoke(ctx, "/ChainManage/ReportChain", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ChainManageServer is the server API for ChainManage service.
+type ChainManageServer interface {
+	ReportChain(context.Context, *TypedChain) (*TypedChain, error)
+}
+
+// UnimplementedChainManageServer can be embedded to have forward compatible implementations.
+type UnimplementedChainManageServer struct {
+}
+
+func (*UnimplementedChainManageServer) ReportChain(context.Context, *TypedChain) (*TypedChain, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportChain not implemented")
+}
+
+func RegisterChainManageServer(s *grpc.Server, srv ChainManageServer) {
+	s.RegisterService(&_ChainManage_serviceDesc, srv)
+}
+
+func _ChainManage_ReportChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TypedChain)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChainManageServer).ReportChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ChainManage/ReportChain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChainManageServer).ReportChain(ctx, req.(*TypedChain))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _ChainManage_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "ChainManage",
+	HandlerType: (*ChainManageServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ReportChain",
+			Handler:    _ChainManage_ReportChain_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "ch_manager.proto",
 }

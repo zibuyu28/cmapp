@@ -19,27 +19,27 @@ package api_g
 import (
 	"context"
 	"github.com/zibuyu28/cmapp/core/internal/service_g"
-	"github.com/zibuyu28/cmapp/core/proto"
+	"github.com/zibuyu28/cmapp/core/proto/ma_manager"
 )
 
 type CoreMachineManager struct {
 }
 
-func (m *CoreMachineManager) UpdateMachine(ctx context.Context, machine *proto.TypedMachine) (*proto.UpdateMachineRes, error) {
+func (m *CoreMachineManager) UpdateMachine(ctx context.Context, machine *ma_manager.TypedMachine) (*ma_manager.UpdateMachineRes, error) {
 	panic("implement me")
 }
 
 // RegisterMachine register machine to center
-func (m *CoreMachineManager) RegisterMachine(ctx context.Context, machine *proto.TypedMachine) (*proto.RegisterMachineRes, error) {
+func (m *CoreMachineManager) RegisterMachine(ctx context.Context, machine *ma_manager.TypedMachine) (*ma_manager.RegisterMachineRes, error) {
 	err := service_g.RegisterMachine(ctx, machine)
 	if err != nil {
 		return nil, err
 	}
-	return &proto.RegisterMachineRes{Res: true}, nil
+	return &ma_manager.RegisterMachineRes{Res: true}, nil
 }
 
 // ReportInitMachine report init machine
-func (m *CoreMachineManager) ReportInitMachine(ctx context.Context, machine *proto.TypedMachine) (*proto.TypedMachine, error) {
+func (m *CoreMachineManager) ReportInitMachine(ctx context.Context, machine *ma_manager.TypedMachine) (*ma_manager.TypedMachine, error) {
 	err := service_g.StoreMachineRec(ctx, machine)
 	if err != nil {
 		return nil, err

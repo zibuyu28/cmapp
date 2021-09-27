@@ -2,6 +2,19 @@ syntax = "proto3";
 
 option go_package = "./ch_manager";
 
-message a {
-    string a = 1;
+service ChainManage {
+    rpc ReportChain(TypedChain) returns (TypedChain) {};
+}
+
+// TypedChain chain definition
+message TypedChain {
+    int32 ID = 1;
+    string Name = 2;
+    string UUID = 3;
+    string Type = 4;
+    string Version = 5;
+    int32 State = 6; // 1处理中，2正常，3异常
+    int32 DriverID = 7;
+    repeated string Tags = 8;
+    map<string, string> CustomInfo = 9;
 }

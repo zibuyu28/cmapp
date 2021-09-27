@@ -21,11 +21,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/model"
-	"github.com/zibuyu28/cmapp/core/proto"
+	"github.com/zibuyu28/cmapp/core/proto/ma_manager"
 )
 
 // StoreMachineRec store machine record
-func StoreMachineRec(ctx context.Context, machine *proto.TypedMachine) error {
+func StoreMachineRec(ctx context.Context, machine *ma_manager.TypedMachine) error {
 	m := &model.Machine{
 		UUID:       machine.UUID,
 		State:      int(machine.State),
@@ -42,7 +42,7 @@ func StoreMachineRec(ctx context.Context, machine *proto.TypedMachine) error {
 }
 
 // RegisterMachine TODO: implement register logic
-func RegisterMachine(ctx context.Context, machine *proto.TypedMachine) error  {
+func RegisterMachine(ctx context.Context, machine *ma_manager.TypedMachine) error  {
 	log.Warn(ctx, "mock register, please implement me")
 	return nil
 }

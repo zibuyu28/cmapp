@@ -22,7 +22,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/api_g"
-	"github.com/zibuyu28/cmapp/core/proto"
+	"github.com/zibuyu28/cmapp/core/proto/ch_manager"
+	"github.com/zibuyu28/cmapp/core/proto/ma_manager"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -42,7 +43,8 @@ func grpcServerStart(ctx context.Context) {
 		log.Fatalf(ctx, "failed to listen: %v", err)
 	}
 	grpcserver = grpc.NewServer()
-	proto.RegisterMachineManageServer(grpcserver, &api_g.CoreMachineManager{})
+	ma_manager.RegisterMachineManageServer(grpcserver, &api_g.CoreMachineManager{})
+	ch_manager.RegisterChainManageServer(grpcserver, &api_g.CoreChainManager{})
 	log.Infof(ctx, "server listening at %v", lis.Addr())
 	if err := grpcserver.Serve(lis); err != nil {
 		log.Fatalf(ctx, "failed to serve: %v", err)
