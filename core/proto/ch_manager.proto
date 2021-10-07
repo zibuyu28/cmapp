@@ -3,7 +3,11 @@ syntax = "proto3";
 option go_package = "./ch_manager";
 
 service ChainManage {
+    // ReportChain report typed chain to db
     rpc ReportChain(TypedChain) returns (TypedChain) {};
+
+    // UpdateChain update typed chain in db, ID param in typed chain is in need
+    rpc UpdateChain(TypedChain) returns (TypedChain) {};
 }
 
 // TypedChain chain definition

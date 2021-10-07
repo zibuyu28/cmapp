@@ -138,8 +138,8 @@ func (c *ConnIns) writePump() {
 	}
 }
 
-// serveWs handles websocket requests from the peer.
-func serveWs(ctx context.Context, hub *Hub, w http.ResponseWriter, r *http.Request) {
+// ServeWs handles websocket requests from the peer.
+func ServeWs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {

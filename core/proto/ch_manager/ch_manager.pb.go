@@ -159,12 +159,15 @@ var file_ch_manager_proto_rawDesc = []byte{
 	0x73, 0x74, 0x6f, 0x6d, 0x49, 0x6e, 0x66, 0x6f, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
 	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
 	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
-	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0x38, 0x0a, 0x0b, 0x43, 0x68, 0x61,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0x63, 0x0a, 0x0b, 0x43, 0x68, 0x61,
 	0x69, 0x6e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x12, 0x29, 0x0a, 0x0b, 0x52, 0x65, 0x70, 0x6f,
 	0x72, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43,
 	0x68, 0x61, 0x69, 0x6e, 0x1a, 0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69,
-	0x6e, 0x22, 0x00, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x2f, 0x63, 0x68, 0x5f, 0x6d, 0x61, 0x6e, 0x61,
-	0x67, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x22, 0x00, 0x12, 0x29, 0x0a, 0x0b, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x12, 0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x1a,
+	0x0b, 0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x22, 0x00, 0x42, 0x0e,
+	0x5a, 0x0c, 0x2e, 0x2f, 0x63, 0x68, 0x5f, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -187,9 +190,11 @@ var file_ch_manager_proto_goTypes = []interface{}{
 var file_ch_manager_proto_depIdxs = []int32{
 	1, // 0: TypedChain.CustomInfo:type_name -> TypedChain.CustomInfoEntry
 	0, // 1: ChainManage.ReportChain:input_type -> TypedChain
-	0, // 2: ChainManage.ReportChain:output_type -> TypedChain
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	0, // 2: ChainManage.UpdateChain:input_type -> TypedChain
+	0, // 3: ChainManage.ReportChain:output_type -> TypedChain
+	0, // 4: ChainManage.UpdateChain:output_type -> TypedChain
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -246,7 +251,10 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ChainManageClient interface {
+	// ReportChain report typed chain to db
 	ReportChain(ctx context.Context, in *TypedChain, opts ...grpc.CallOption) (*TypedChain, error)
+	// UpdateChain update typed chain in db, ID param in typed chain is in need
+	UpdateChain(ctx context.Context, in *TypedChain, opts ...grpc.CallOption) (*TypedChain, error)
 }
 
 type chainManageClient struct {
@@ -266,9 +274,21 @@ func (c *chainManageClient) ReportChain(ctx context.Context, in *TypedChain, opt
 	return out, nil
 }
 
+func (c *chainManageClient) UpdateChain(ctx context.Context, in *TypedChain, opts ...grpc.CallOption) (*TypedChain, error) {
+	out := new(TypedChain)
+	err := c.cc.Invoke(ctx, "/ChainManage/UpdateChain", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChainManageServer is the server API for ChainManage service.
 type ChainManageServer interface {
+	// ReportChain report typed chain to db
 	ReportChain(context.Context, *TypedChain) (*TypedChain, error)
+	// UpdateChain update typed chain in db, ID param in typed chain is in need
+	UpdateChain(context.Context, *TypedChain) (*TypedChain, error)
 }
 
 // UnimplementedChainManageServer can be embedded to have forward compatible implementations.
@@ -277,6 +297,9 @@ type UnimplementedChainManageServer struct {
 
 func (*UnimplementedChainManageServer) ReportChain(context.Context, *TypedChain) (*TypedChain, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportChain not implemented")
+}
+func (*UnimplementedChainManageServer) UpdateChain(context.Context, *TypedChain) (*TypedChain, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateChain not implemented")
 }
 
 func RegisterChainManageServer(s *grpc.Server, srv ChainManageServer) {
@@ -301,6 +324,24 @@ func _ChainManage_ReportChain_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChainManage_UpdateChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TypedChain)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChainManageServer).UpdateChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ChainManage/UpdateChain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChainManageServer).UpdateChain(ctx, req.(*TypedChain))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ChainManage_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "ChainManage",
 	HandlerType: (*ChainManageServer)(nil),
@@ -308,6 +349,10 @@ var _ChainManage_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportChain",
 			Handler:    _ChainManage_ReportChain_Handler,
+		},
+		{
+			MethodName: "UpdateChain",
+			Handler:    _ChainManage_UpdateChain_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

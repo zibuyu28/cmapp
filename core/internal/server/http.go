@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/ws"
 	"syscall"
 )
 
@@ -30,7 +31,9 @@ var httpserver *gin.Engine
 
 func httpServerStart(ctx context.Context) {
 	httpserver = gin.Default()
-	httpserver.POST("/ws", )
+	httpserver.POST("/ws", func(c *gin.Context) {
+		ws.ServeWs(ctx, c.Writer, c.Request)
+	})
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
 		log.Fatalf(ctx, "failed to listen: %v", err)

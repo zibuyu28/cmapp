@@ -16,7 +16,10 @@
 
 package model
 
-import "time"
+import (
+	"github.com/pkg/errors"
+	"time"
+)
 
 // Chain chain definition in db
 type Chain struct {
@@ -32,4 +35,28 @@ type Chain struct {
 	DriverID   int               `xorm:"int(11) 'driver_id'"`
 	Tags       []string          `xorm:"varchar(1024) 'tags'"`
 	CustomInfo map[string]string `xorm:"text 'custom_info'"`
+}
+
+
+// InsertChain insert chain to db
+func InsertChain(chain *Chain) error {
+	_, err := ormEngine.Insert(chain)
+	if err != nil {
+		return errors.Wrap(err, "chain insert to db")
+	}
+	return nil
+}
+
+
+// GetChainByID get chain by id
+func GetChainByID(id int) (*Chain, error) {
+	var drv = &Chain{}
+	has, err := ormEngine.Table(&Chain{}).Where("id = ?", id).Get(drv)
+	if err != nil {
+		return nil, errors.Wrap(err, "query chain from db")
+	}
+	if !has {
+		return nil, errors.Errorf("record not exist which id [%d]", id)
+	}
+	return drv, nil
 }

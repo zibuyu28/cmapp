@@ -73,8 +73,8 @@ message App {
     repeated FileMount FileMounts = 3;
 
     message EnvVar {
-        string key = 1;
-        string value = 2;
+        string Key = 1;
+        string Value = 2;
     }
 
     repeated EnvVar EnvironmentVars = 4;
@@ -82,7 +82,7 @@ message App {
     message Network {
         message PortInf {
             int32 Port = 1;
-            string name = 2;
+            string Name = 2;
             enum Protocol {
                 TCP = 0;
                 UDP = 1;
@@ -104,7 +104,7 @@ message App {
     repeated Network Networks = 5;
 
     message WorkspaceInfo {
-        string workspace = 1;
+        string Workspace = 1;
     }
 
     WorkspaceInfo Workspace = 6;
