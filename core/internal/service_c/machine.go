@@ -24,9 +24,11 @@ import (
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/model"
+	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -75,4 +77,64 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, driver
 	}
 	log.Infof(ctx, "Currently ro create command execute result : %s", out)
 	return nil
+}
+
+type RMD struct {
+	repo sync.Map
+}
+
+type clientIns struct {
+
+}
+
+var RMDIns = RMD{repo: sync.Map{}}
+
+func (R *RMD) NewApp(in *ag.NewAppReq) (*ag.App, error) {
+	// in.MachineID, save to repo
+
+	panic("implement me")
+}
+
+func (R *RMD) StartApp(in *ag.App) error {
+	panic("implement me")
+}
+
+func (R *RMD) StopApp(in *ag.App) error {
+	panic("implement me")
+}
+
+func (R *RMD) DestroyApp(in *ag.App) error {
+	panic("implement me")
+}
+
+func (R *RMD) TagEx(appUUID string, in *ag.Tag) error {
+	panic("implement me")
+}
+
+func (R *RMD) FileMountEx(appUUID string, in *ag.FileMount) error {
+	panic("implement me")
+}
+
+func (R *RMD) EnvEx(appUUID string, in *ag.EnvVar) error {
+	panic("implement me")
+}
+
+func (R *RMD) NetworkEx(appUUID string, in *ag.Network) error {
+	panic("implement me")
+}
+
+func (R *RMD) FilePremiseEx(appUUID string, in *ag.File) error {
+	panic("implement me")
+}
+
+func (R *RMD) LimitEx(appUUID string, in *ag.Limit) error {
+	panic("implement me")
+}
+
+func (R *RMD) HealthEx(appUUID string, in *ag.Health) error {
+	panic("implement me")
+}
+
+func (R *RMD) LogEx(appUUID string, in *ag.Log) error {
+	panic("implement me")
 }

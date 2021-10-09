@@ -22,25 +22,31 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/ws"
+	"strings"
 	"syscall"
 )
 
 var defaultHttpPort = 9008
 
-var httpserver *gin.Engine
+var httpserver = gin.Default()
 
 func httpServerStart(ctx context.Context) {
-	httpserver = gin.Default()
 	httpserver.POST("/ws", func(c *gin.Context) {
 		ws.ServeWs(ctx, c.Writer, c.Request)
 	})
+	log.Infof(ctx, "server listening at :%d", defaultHttpPort)
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
 		log.Fatalf(ctx, "failed to listen: %v", err)
 	}
-	log.Infof(ctx, "server listening at :%d", defaultHttpPort)
 }
 
 func httpServerStop() {
 	_ = syscall.Kill(syscall.Getpid(), syscall.SIGKILL)
+}
+
+// Group new group
+func Group(apiVersion, relativePath string) *gin.RouterGroup {
+	relativePath = strings.TrimPrefix(relativePath, "/")
+	return httpserver.Group(fmt.Sprintf("/api/%s/%s", apiVersion, relativePath))
 }

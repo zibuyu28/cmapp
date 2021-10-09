@@ -29,48 +29,50 @@ var coreDefaultHost = "127.0.0.1"
 var coreDefaultPort = 9008
 
 type coreReq struct {
-	fnc   string
-	param interface{}
+	Fnc   string      `json:"fnc"`
+	Param interface{} `json:"param"`
 }
 
 type coreResp struct {
-	code    CoreCode
-	data    interface{}
-	message string
+	Code    CoreCode    `json:"code"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
 }
 
 type CoreCode int
 
 const (
 	SUCCESS CoreCode = 200
-	FAILED CoreCode = 400
+	FAILED  CoreCode = 400
 )
 
-func Send(fnc string, req interface{}) ([]byte, error) {
-	cr := coreReq{
-		fnc:   fnc,
-		param: req,
-	}
-	respb, err := httputil.HTTPDoPost(cr, getURL())
+type APIVersion string
+
+const (
+	V1 APIVersion = "v1"
+)
+
+func SendPost(v APIVersion, req interface{}) ([]byte, error) {
+	respb, err := httputil.HTTPDoPost(req, getURL(v))
 	if err != nil {
 		return nil, errors.Wrap(err, "send req to core")
 	}
-	resp := coreResp{data: struct{}{}}
+	resp := coreResp{Data: struct{}{}}
 	err = json.Unmarshal(respb, &resp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unmarshal resp [%s]", string(respb))
 	}
-	if resp.code != SUCCESS {
-		return nil, errors.Errorf("fail to call [%s] to call, message [%s]", fnc, resp.message)
+	if resp.Code != SUCCESS {
+		return nil, errors.Errorf("fail to call with req [%v], message [%s]", req, resp.Message)
 	}
-	datab, err := json.Marshal(resp.data)
+	datab, err := json.Marshal(resp.Data)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal response's data info")
 	}
 	return datab, nil
 }
 
-func getURL() string {
+func getURL(version APIVersion) string {
 	host := viper.GetString("CORE_HOST")
 	if len(host) == 0 {
 		host = coreDefaultHost
@@ -80,5 +82,5 @@ func getURL() string {
 	if port == 0 {
 		port = coreDefaultPort
 	}
-	return fmt.Sprintf("%s:%d/md", host, port)
+	return fmt.Sprintf("%s:%d/api/%s/md/exec", host, port, version)
 }

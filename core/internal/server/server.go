@@ -36,8 +36,8 @@ func Serve(ctx context.Context) {
 // Stop stop serve both grpc and http
 func Stop() {
 	log.Info(context.Background(), "stop both grpc and http server")
-	httpServerStop()
 	grpcServerStop()
+	httpServerStop()
 }
 
 func signalHandler() {

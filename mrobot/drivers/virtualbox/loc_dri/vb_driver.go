@@ -265,6 +265,7 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dri
 		return nil, errors.New( "fail to mrobot start")
 	}
 	log.Debug(ctx, "Currently install mrobot success")
+	// 将9009 端口映射出来，并且返回外部可以访问的地址
 	return &driver.Machine{
 		UUID:       datas[0],
 		State:      1,

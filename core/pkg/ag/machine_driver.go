@@ -22,11 +22,6 @@ import (
 	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
 )
 
-type NewAppReq struct {
-	Name    string
-	Version string
-}
-
 type function string
 
 const (
@@ -159,11 +154,29 @@ type FileMount struct {
 
 // HMD MachineDriver implement with HTTP
 type HMD struct {
+	Version base.APIVersion
+}
+
+type NewAppReq struct {
+	MachineID int
+	Name      string
+	Version   string
+}
+
+type Req struct {
+	AppUUID string      `json:"app_uuid"`
+	Fnc     string      `json:"fnc"`
+	Param   interface{} `json:"param"`
 }
 
 // NewApp new app to core
 func (m *HMD) NewApp(nar *NewAppReq) (*App, error) {
-	ins, err := base.Send(newApp.String(), nar)
+	req := Req{
+		AppUUID: "init",
+		Fnc:     newApp.String(),
+		Param:   nar,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return nil, errors.Wrap(err, "send new app request")
 	}
@@ -175,32 +188,52 @@ func (m *HMD) NewApp(nar *NewAppReq) (*App, error) {
 	return &app, nil
 }
 
-func (m *HMD) StartApp(a *App) error {
-	_, err := base.Send(startApp.String(), a)
+func (m *HMD) StartApp(appUUID string, a *App) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     startApp.String(),
+		Param:   a,
+	}
+	_, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send new app request")
 	}
 	return nil
 }
 
-func (m *HMD) StopApp(a *App) error {
-	_, err := base.Send(stopApp.String(), a)
+func (m *HMD) StopApp(appUUID string, a *App) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     stopApp.String(),
+		Param:   a,
+	}
+	_, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send stop app request")
 	}
 	return nil
 }
 
-func (m *HMD) DestroyApp(a *App) error {
-	_, err := base.Send(destroyApp.String(), a)
+func (m *HMD) DestroyApp(appUUID string, a *App) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     destroyApp.String(),
+		Param:   a,
+	}
+	_, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send destroy app request")
 	}
 	return nil
 }
 
-func (m *HMD) TagEx(t *Tag) error {
-	ins, err := base.Send(tagEx.String(), t)
+func (m *HMD) TagEx(appUUID string, t *Tag) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     tagEx.String(),
+		Param:   t,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set tag request")
 	}
@@ -211,8 +244,13 @@ func (m *HMD) TagEx(t *Tag) error {
 	return nil
 }
 
-func (m *HMD) FileMountEx(mount *FileMount) error {
-	ins, err := base.Send(fileMountEx.String(), mount)
+func (m *HMD) FileMountEx(appUUID string, mount *FileMount) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     fileMountEx.String(),
+		Param:   mount,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set file mount request")
 	}
@@ -223,8 +261,13 @@ func (m *HMD) FileMountEx(mount *FileMount) error {
 	return nil
 }
 
-func (m *HMD) EnvEx(ev *EnvVar) error {
-	ins, err := base.Send(envEx.String(), ev)
+func (m *HMD) EnvEx(appUUID string, ev *EnvVar) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     envEx.String(),
+		Param:   ev,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set env request")
 	}
@@ -235,8 +278,13 @@ func (m *HMD) EnvEx(ev *EnvVar) error {
 	return nil
 }
 
-func (m *HMD) NetworkEx(nw *Network) error {
-	ins, err := base.Send(networkEx.String(), nw)
+func (m *HMD) NetworkEx(appUUID string, nw *Network) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     networkEx.String(),
+		Param:   nw,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set network request")
 	}
@@ -247,8 +295,13 @@ func (m *HMD) NetworkEx(nw *Network) error {
 	return nil
 }
 
-func (m *HMD) FilePremiseEx(file *File) error {
-	ins, err := base.Send(filePremiseEx.String(), file)
+func (m *HMD) FilePremiseEx(appUUID string, file *File) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     filePremiseEx.String(),
+		Param:   file,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set file premise request")
 	}
@@ -259,8 +312,13 @@ func (m *HMD) FilePremiseEx(file *File) error {
 	return nil
 }
 
-func (m *HMD) LimitEx(limit *Limit) error {
-	ins, err := base.Send(limitEx.String(), limit)
+func (m *HMD) LimitEx(appUUID string, limit *Limit) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     limitEx.String(),
+		Param:   limit,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set limit request")
 	}
@@ -271,8 +329,13 @@ func (m *HMD) LimitEx(limit *Limit) error {
 	return nil
 }
 
-func (m *HMD) HealthEx(health *Health) error {
-	ins, err := base.Send(healthEx.String(), health)
+func (m *HMD) HealthEx(appUUID string, health *Health) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     healthEx.String(),
+		Param:   health,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set health request")
 	}
@@ -283,8 +346,13 @@ func (m *HMD) HealthEx(health *Health) error {
 	return nil
 }
 
-func (m *HMD) LogEx(log *Log) error {
-	ins, err := base.Send(logEx.String(), log)
+func (m *HMD) LogEx(appUUID string, log *Log) error {
+	req := Req{
+		AppUUID: appUUID,
+		Fnc:     logEx.String(),
+		Param:   log,
+	}
+	ins, err := base.SendPost(m.Version, req)
 	if err != nil {
 		return errors.Wrap(err, "send set log request")
 	}
