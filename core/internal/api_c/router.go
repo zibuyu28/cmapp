@@ -1,8 +1,8 @@
 package api_c
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/zibuyu28/cmapp/core/internal/server"
 	"net/http"
 )
 
@@ -17,32 +17,18 @@ func (r routerVersion) string() string {
 	return string(r)
 }
 
-var machineApiV1 *gin.RouterGroup
-
-type MDReq struct {
-	AppUUID string      `json:"app_uuid" validate:"required"`
-	Fnc     string      `json:"fnc" validate:"required"`
-	Param   interface{} `json:"param" validate:"required"`
+var GMR = map[string]map[string]func(g *gin.Context){
+	fmt.Sprintf("%s/md", V1.string()): {
+		mpf(http.MethodPost, "/exec"): mdExec,
+	},
+	fmt.Sprintf("%s/mc", V1.string()): {},
 }
 
-// MachineDriverV1Ctl machine driver v1 controller
-func MachineDriverV1Ctl() {
-	machineApiV1 = server.Group(V1.string(), "md")
-	machineApiV1.Handle(http.MethodPost, "/exec", func(g *gin.Context) {
-		var p = MDReq{}
-		err := g.BindJSON(&p)
-		if err != nil {
-			fail(g, err)
-			return
-		}
-		r, err := mdExecHandler(&p)
-		if err != nil {
-			fail(g, err)
-			return
-		}
-		ok(g, r)
-	})
+func mpf(httpMethod, relativePath string) string {
+	// TODO: check path
+	return fmt.Sprintf("%s@%s", httpMethod, relativePath)
 }
+
 
 // Resp response
 type Resp struct {

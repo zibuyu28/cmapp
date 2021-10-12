@@ -1,11 +1,34 @@
 package api_c
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/core/internal/service_c"
+	"github.com/zibuyu28/cmapp/core/internal/service_c/machine"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
 )
+
+type MDReq struct {
+	AppUUID string      `json:"app_uuid" validate:"required"`
+	Fnc     string      `json:"fnc" validate:"required"`
+	Param   interface{} `json:"param" validate:"required"`
+}
+
+func mdExec(g *gin.Context) {
+	var p = MDReq{}
+	err := g.BindJSON(&p)
+	if err != nil {
+		fail(g, err)
+		return
+	}
+	r, err := mdExecHandler(g.Request.Context(), &p)
+	if err != nil {
+		fail(g, err)
+		return
+	}
+	ok(g, r)
+}
 
 type function string
 
@@ -27,7 +50,7 @@ const (
 )
 
 // mdExecHandler machine driver exec handler
-func mdExecHandler(req *MDReq) (interface{}, error) {
+func mdExecHandler(ctx context.Context, req *MDReq) (interface{}, error) {
 	pb, err := json.Marshal(req.Param)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal request's param")
@@ -39,7 +62,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		app, err := service_c.RMDIns.NewApp(&nar)
+		app, err := machine.RMDIns.NewApp(ctx, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "new app")
 		}
@@ -50,7 +73,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.StartApp(&nar)
+		err = machine.RMDIns.StartApp(ctx, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "start app")
 		}
@@ -61,7 +84,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.StopApp(&nar)
+		err = machine.RMDIns.StopApp(ctx, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "stop app")
 		}
@@ -72,7 +95,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.DestroyApp(&nar)
+		err = machine.RMDIns.DestroyApp(ctx, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "destroy app")
 		}
@@ -83,7 +106,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.TagEx(req.AppUUID, &nar)
+		err = machine.RMDIns.TagEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "add tag")
 		}
@@ -94,7 +117,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.FileMountEx(req.AppUUID, &nar)
+		err = machine.RMDIns.FileMountEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "file mount")
 		}
@@ -106,7 +129,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.EnvEx(req.AppUUID, &nar)
+		err = machine.RMDIns.EnvEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set env")
 		}
@@ -117,7 +140,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.NetworkEx(req.AppUUID, &nar)
+		err = machine.RMDIns.NetworkEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set network")
 		}
@@ -128,7 +151,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.FilePremiseEx(req.AppUUID, &nar)
+		err = machine.RMDIns.FilePremiseEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set file premise")
 		}
@@ -139,7 +162,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.LimitEx(req.AppUUID, &nar)
+		err = machine.RMDIns.LimitEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set app limit")
 		}
@@ -150,7 +173,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.HealthEx(req.AppUUID, &nar)
+		err = machine.RMDIns.HealthEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set app health")
 		}
@@ -161,7 +184,7 @@ func mdExecHandler(req *MDReq) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = service_c.RMDIns.LogEx(req.AppUUID, &nar)
+		err = machine.RMDIns.LogEx(ctx, req.AppUUID, &nar)
 		if err != nil {
 			return nil, errors.Wrap(err, "set app log")
 		}

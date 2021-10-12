@@ -30,6 +30,7 @@ type Machine struct {
 	State      int               `xorm:"int(8) DEFAULT 0 'state'"`
 	UUID       string            `xorm:"char(64) 'uuid'"`
 	DriverID   int               `xorm:"int(11) 'driver_id'"`
+	AGGRPCAddr string            `xorm:"varchar(128) 'ag_grpc_addr'"`
 	Tags       []string          `xorm:"text 'tags'"`
 	CustomInfo map[string]string `xorm:"text 'custom_info'"`
 }
@@ -41,4 +42,17 @@ func InsertMachine(machine *Machine) error {
 		return errors.Wrap(err, "machine insert to db")
 	}
 	return nil
+}
+
+// GetMachineByID get machine by id
+func GetMachineByID(id int) (*Machine, error) {
+	var drv = &Machine{}
+	has, err := ormEngine.Table(&Machine{}).Where("id = ?", id).Get(drv)
+	if err != nil {
+		return nil, errors.Wrap(err, "query machine from db")
+	}
+	if !has {
+		return nil, errors.Errorf("record not exist which id [%d]", id)
+	}
+	return drv, nil
 }

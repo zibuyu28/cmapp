@@ -21,19 +21,27 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/zibuyu28/cmapp/common/log"
-	"github.com/zibuyu28/cmapp/common/ws"
+	"github.com/zibuyu28/cmapp/core/internal/api_c"
+	"github.com/zibuyu28/cmapp/core/internal/server/mid"
 	"strings"
 	"syscall"
 )
 
 var defaultHttpPort = 9008
 
-var httpserver = gin.Default()
+var httpserver = func() *gin.Engine {
+	engine := gin.New()
+	engine.Use(mid.GinLogger(false))
+	engine.Use(mid.RecoveryWithLogger(false))
+	return engine
+}()
 
 func httpServerStart(ctx context.Context) {
-	httpserver.POST("/ws", func(c *gin.Context) {
-		ws.ServeWs(ctx, c.Writer, c.Request)
-	})
+	//httpserver.POST("/ws", func(c *gin.Context) {
+	//	ws.ServeWs(ctx, c.Writer, c.Request)
+	//})
+	log.Infof(ctx, "register api")
+	registerApi()
 	log.Infof(ctx, "server listening at :%d", defaultHttpPort)
 	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
 	if err != nil {
@@ -46,7 +54,16 @@ func httpServerStop() {
 }
 
 // Group new group
-func Group(apiVersion, relativePath string) *gin.RouterGroup {
-	relativePath = strings.TrimPrefix(relativePath, "/")
-	return httpserver.Group(fmt.Sprintf("/api/%s/%s", apiVersion, relativePath))
+func registerApi() {
+	for group, routers := range api_c.GMR {
+		gp := strings.TrimPrefix(group, "/")
+		routerGroup := httpserver.Group(fmt.Sprintf("/api/%s", gp))
+		for path, f := range routers {
+			split := strings.Split(path, "@")
+			if len(split) != 2 {
+				panic(fmt.Sprintf("error path [%s]", path))
+			}
+			routerGroup.Handle(split[0], split[1], f)
+		}
+	}
 }
