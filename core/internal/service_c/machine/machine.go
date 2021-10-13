@@ -85,15 +85,16 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, driver
 }
 
 type RMD struct {
-	repo sync.Map
+	agConnRepo  sync.Map
+	appRepo     sync.Map
+	appConnRepo sync.Map
 }
 
 type clientIns struct {
 	rpcClient worker0.Worker0Client
 }
 
-// TODO：需要记下app
-var RMDIns = RMD{repo: sync.Map{}}
+var RMDIns = RMD{agConnRepo: sync.Map{}, appRepo: sync.Map{}, appConnRepo: sync.Map{}}
 
 var defaultTimeout = 3
 
@@ -104,17 +105,21 @@ func contextBuild(ctx context.Context, appuid string) context.Context {
 }
 
 func connAG(ctx context.Context, addr string) (worker0.Worker0Client, error) {
+	load, ok := RMDIns.agConnRepo.Load(addr)
+	if !ok {
+		timeout, cancelFunc := context.WithTimeout(ctx, time.Duration(10)*time.Second)
+		defer cancelFunc()
 
-	timeout, cancelFunc := context.WithTimeout(ctx, time.Duration(10)*time.Second)
-	defer cancelFunc()
-
-	conn, err := grpc.DialContext(timeout, addr, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Errorf(ctx, "Error create grpc connection with [%s]", addr)
-		return nil, errors.Wrapf(err, "Error create grpc connection with [%s]", addr)
+		conn, err := grpc.DialContext(timeout, addr, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			log.Errorf(ctx, "Error create grpc connection with [%s]", addr)
+			return nil, errors.Wrapf(err, "Error create grpc connection with [%s]", addr)
+		}
+		client := worker0.NewWorker0Client(conn)
+		RMDIns.agConnRepo.Store(addr, client)
+		return client, nil
 	}
-	client := worker0.NewWorker0Client(conn)
-
+	return load.(worker0.Worker0Client), nil
 }
 
 func (R *RMD) NewApp(ctx context.Context, in *ag.NewAppReq) (*ag.App, error) {
@@ -149,9 +154,11 @@ func (R *RMD) NewApp(ctx context.Context, in *ag.NewAppReq) (*ag.App, error) {
 	if len(app.UUID) == 0 {
 		return nil, errors.Errorf("app uuid is nil")
 	}
-	RMDIns.repo.Store(app.UUID, &clientIns{rpcClient: rpc})
+	ags := appstruct(app)
+	RMDIns.appRepo.Store(app.UUID, ags)
+	RMDIns.appConnRepo.Store(app.UUID, &clientIns{rpcClient: rpc})
 	log.Debugf(ctx, "store app [%s] to repo", app.UUID)
-	return appstruct(app), nil
+	return ags, nil
 }
 
 func (R *RMD) StartApp(ctx context.Context, in *ag.App) error {
@@ -159,7 +166,7 @@ func (R *RMD) StartApp(ctx context.Context, in *ag.App) error {
 	if len(in.UUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(in.UUID)
+	load, ok := RMDIns.appConnRepo.Load(in.UUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", in.UUID)
 	}
@@ -178,7 +185,7 @@ func (R *RMD) StopApp(ctx context.Context, in *ag.App) error {
 	if len(in.UUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(in.UUID)
+	load, ok := RMDIns.appConnRepo.Load(in.UUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", in.UUID)
 	}
@@ -197,7 +204,7 @@ func (R *RMD) DestroyApp(ctx context.Context, in *ag.App) error {
 	if len(in.UUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(in.UUID)
+	load, ok := RMDIns.appConnRepo.Load(in.UUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", in.UUID)
 	}
@@ -216,18 +223,24 @@ func (R *RMD) TagEx(ctx context.Context, appUUID string, in *ag.Tag) error {
 	if len(appUUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.TagEx(outctx, &worker0.App_Tag{
+	t, err := ins.rpcClient.TagEx(outctx, &worker0.App_Tag{
 		Key:   in.Key,
 		Value: in.Value,
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request set app tag")
+	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app tag")
+		app := value.(*ag.App)
+		tagset(app, []*worker0.App_Tag{t})
 	}
 	log.Infof(ctx, "app exec set tag success")
 	return nil
@@ -238,7 +251,7 @@ func (R *RMD) FileMountEx(ctx context.Context, appUUID string, in *ag.FileMount)
 	if len(appUUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
@@ -255,6 +268,12 @@ func (R *RMD) FileMountEx(ctx context.Context, appUUID string, in *ag.FileMount)
 	in.File = r.File
 	in.MountTo = r.MountTo
 	in.Volume = r.Volume
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app file mount")
+		app := value.(*ag.App)
+		filemountset(app, []*worker0.App_FileMount{r})
+	}
 	log.Infof(ctx, "app exec file mount success")
 	return nil
 }
@@ -264,18 +283,24 @@ func (R *RMD) EnvEx(ctx context.Context, appUUID string, in *ag.EnvVar) error {
 	if len(appUUID) == 0 || in == nil {
 		return errors.New("app uuid is nil, please check")
 	}
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.EnvEx(outctx, &worker0.App_EnvVar{
+	env, err := ins.rpcClient.EnvEx(outctx, &worker0.App_EnvVar{
 		Key:   in.Key,
 		Value: in.Value,
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request set env")
+	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app envs")
+		app := value.(*ag.App)
+		envset(app, []*worker0.App_EnvVar{env})
 	}
 	log.Infof(ctx, "app exec set env success")
 	return nil
@@ -290,7 +315,7 @@ func (R *RMD) NetworkEx(ctx context.Context, appUUID string, in *ag.Network) err
 		return errors.Errorf("port info [%v] is nil", in.PortInfo)
 	}
 
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
@@ -306,6 +331,13 @@ func (R *RMD) NetworkEx(ctx context.Context, appUUID string, in *ag.Network) err
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request config network")
+	}
+
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app network")
+		app := value.(*ag.App)
+		networkset(app, []*worker0.App_Network{net})
 	}
 
 	network := &ag.Network{
@@ -342,19 +374,25 @@ func (R *RMD) FilePremiseEx(ctx context.Context, appUUID string, in *ag.File) er
 		return errors.New("app uuid is nil, please check")
 	}
 
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.FilePremiseEx(outctx, &worker0.App_File{
+	f, err := ins.rpcClient.FilePremiseEx(outctx, &worker0.App_File{
 		Name:        in.Name,
 		AcquireAddr: in.AcquireAddr,
 		Shell:       in.Shell,
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request file premise")
+	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app file premise")
+		app := value.(*ag.App)
+		filepremiseset(app, []*worker0.App_File{f})
 	}
 	log.Infof(ctx, "app exec file premise success")
 	return nil
@@ -366,18 +404,24 @@ func (R *RMD) LimitEx(ctx context.Context, appUUID string, in *ag.Limit) error {
 		return errors.New("app uuid is nil, please check")
 	}
 
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.LimitEx(outctx, &worker0.App_Limit{
+	l, err := ins.rpcClient.LimitEx(outctx, &worker0.App_Limit{
 		CPU:    int32(in.CPU),
 		Memory: int32(in.Memory),
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request set limit")
+	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app limit")
+		app := value.(*ag.App)
+		limitset(app, l)
 	}
 	log.Infof(ctx, "app exec set limit success")
 	return nil
@@ -389,13 +433,13 @@ func (R *RMD) HealthEx(ctx context.Context, appUUID string, in *ag.Health) error
 		return errors.New("app uuid is nil, please check")
 	}
 
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.HealthEx(outctx, &worker0.App_Health{
+	rh, err := ins.rpcClient.HealthEx(outctx, &worker0.App_Health{
 		Liveness: &worker0.App_Health_Basic{
 			MethodType: worker0.App_Health_Basic_Method(in.Liveness.MethodType),
 			Path:       in.Liveness.Path,
@@ -410,6 +454,12 @@ func (R *RMD) HealthEx(ctx context.Context, appUUID string, in *ag.Health) error
 	if err != nil {
 		return errors.Wrap(err, "rpc request set health")
 	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app health info")
+		app := value.(*ag.App)
+		healthset(app, rh)
+	}
 	log.Infof(ctx, "app exec set health success")
 	return nil
 }
@@ -420,18 +470,24 @@ func (R *RMD) LogEx(ctx context.Context, appUUID string, in *ag.Log) error {
 		return errors.New("app uuid is nil, please check")
 	}
 
-	load, ok := RMDIns.repo.Load(appUUID)
+	load, ok := RMDIns.appConnRepo.Load(appUUID)
 	if !ok {
 		return errors.Errorf("can not found app by uuid [%s]", appUUID)
 	}
 	ins := load.(*clientIns)
 	outctx := contextBuild(ctx, appUUID)
-	_, err := ins.rpcClient.LogEx(outctx, &worker0.App_Log{
+	lo, err := ins.rpcClient.LogEx(outctx, &worker0.App_Log{
 		RealTimeFile: in.RealTimeFile,
 		FilePath:     in.FilePath,
 	})
 	if err != nil {
 		return errors.Wrap(err, "rpc request set log info")
+	}
+	value, tok := RMDIns.appRepo.Load(appUUID)
+	if tok {
+		log.Infof(ctx, "set local app log info")
+		app := value.(*ag.App)
+		logset(app, lo)
 	}
 	log.Infof(ctx, "app exec set log info success")
 	return nil

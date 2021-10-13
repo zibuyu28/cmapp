@@ -578,7 +578,7 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 }
 
 // FilePremiseEx file premise
-func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App, error) {
+func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App_File, error) {
 
 	log.Debug(ctx, "Currently start to execute set file premise")
 	app, err := repo.load(ctx)
@@ -600,7 +600,7 @@ func (k *K8sWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (
 		Shell:       file.Shell,
 	}
 	app.FilePremises[key] = premise
-	return nil, nil
+	return file, nil
 }
 
 func (k *K8sWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit) (*worker0.App_Limit, error) {
@@ -622,7 +622,7 @@ func (k *K8sWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit) (*wor
 	return limit, nil
 }
 
-func (k *K8sWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*worker0.App, error) {
+func (k *K8sWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*worker0.App_Health, error) {
 	log.Debug(ctx, "Currently start to execute set health info")
 	app, err := repo.load(ctx)
 	if err != nil {
@@ -666,7 +666,7 @@ func (k *K8sWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*
 		return nil, nil
 	}
 	app.Health = &healthOpt
-	return nil, nil
+	return health, nil
 }
 
 func (k *K8sWorker) LogEx(ctx context.Context, appLog *worker0.App_Log) (*worker0.App_Log, error) {

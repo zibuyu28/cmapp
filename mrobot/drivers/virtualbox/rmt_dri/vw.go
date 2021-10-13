@@ -363,7 +363,7 @@ func getLocalIP() (string, error) {
 	return "", errors.New("Can not find the client ip address!")
 }
 
-func (v *VirtualboxWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App, error) {
+func (v *VirtualboxWorker) FilePremiseEx(ctx context.Context, file *worker0.App_File) (*worker0.App_File, error) {
 
 	log.Debug(ctx, "Currently start to execute set file premise")
 	app, err := repo.load(ctx)
@@ -385,7 +385,7 @@ func (v *VirtualboxWorker) FilePremiseEx(ctx context.Context, file *worker0.App_
 		Shell:       file.Shell,
 	}
 	app.FilePremises[key] = premise
-	return nil, nil
+	return file, nil
 }
 
 func (v *VirtualboxWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit) (*worker0.App_Limit, error) {
@@ -407,7 +407,7 @@ func (v *VirtualboxWorker) LimitEx(ctx context.Context, limit *worker0.App_Limit
 	return limit, nil
 }
 
-func (v *VirtualboxWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*worker0.App, error) {
+func (v *VirtualboxWorker) HealthEx(ctx context.Context, health *worker0.App_Health) (*worker0.App_Health, error) {
 	log.Debug(ctx, "Currently start to execute set health info")
 	app, err := repo.load(ctx)
 	if err != nil {
@@ -451,7 +451,7 @@ func (v *VirtualboxWorker) HealthEx(ctx context.Context, health *worker0.App_Hea
 		return nil, nil
 	}
 	app.Health = &healthOpt
-	return nil, nil
+	return health, nil
 }
 
 func (v *VirtualboxWorker) LogEx(ctx context.Context, appLog *worker0.App_Log) (*worker0.App_Log, error) {

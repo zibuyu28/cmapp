@@ -27,11 +27,11 @@ service Worker0 {
     }
     rpc NetworkEx (App.Network) returns (App.Network) {
     }
-    rpc FilePremiseEx (App.File) returns (App) {
+    rpc FilePremiseEx (App.File) returns (App.File) {
     }
     rpc LimitEx (App.Limit) returns (App.Limit) {
     }
-    rpc HealthEx (App.Health) returns (App) {
+    rpc HealthEx (App.Health) returns (App.Health) {
     }
     rpc LogEx (App.Log) returns (App.Log) {
     }
