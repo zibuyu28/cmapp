@@ -17,7 +17,12 @@ message TypedChain {
     string UUID = 3;
     string Type = 4;
     string Version = 5;
-    int32 State = 6; // 1处理中，2正常，3异常
+    enum StateE {
+        Handling = 0;
+        Normal = 1;
+        Abnormal = 2;
+    }
+    StateE State = 6; // 1处理中，2正常，3异常
     int32 DriverID = 7;
     repeated string Tags = 8;
     map<string, string> CustomInfo = 9;

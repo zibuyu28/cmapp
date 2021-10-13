@@ -16,9 +16,26 @@
 
 package cengine
 
-import "context"
+import (
+	"context"
+	"github.com/go-playground/validator/v10"
+	"github.com/pkg/errors"
+)
 
-func CreateChain(ctx context.Context) error {
+type InitInfo struct {
+	DriverName    string `json:"driver_name" validate:"required"`
+	DriverVersion string `json:"driver_version" validate:"required"`
+	DriverID      int    `json:"driver_id" validate:"required"`
+	CoreGRPCPort  int    `json:"core_grpc_port" validate:"required"`
+}
+
+// CreateChain create chain action
+func CreateChain(ctx context.Context, info InitInfo) error {
 	// 初始化链的参数
-	panic("implement me")
+	err := validator.New().Struct(&info)
+	if err != nil {
+		return errors.Wrap(err, "check param")
+	}
+
+	return errors.New("implement me")
 }

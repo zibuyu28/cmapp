@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option go_package = "./driver";
+
+package driver;
+
+import "mdriver.proto";
+
+// ChainDriver chain driver service
+service ChainDriver {
+
+  // InitMachine create a machine to store
+  rpc InitChain (Empty) returns (Chain) {
+  }
+
+  // CreateExec driver to execute really create action for a machine
+  rpc CreateExec (Empty) returns (Machine) {
+  }
+
+  // InstallMRobot install machine robot in this new machine
+  rpc InstallMRobot (Empty) returns (Machine) {
+  }
+
+  // MRoHealthCheck check machine robot install successfully or not
+  rpc MRoHealthCheck (Empty) returns (Machine) {
+  }
+
+  // Exit driver exit
+  rpc Exit (Empty) returns (Empty) {
+  }
+}
+
+
+
+message Chain {
+
+}
