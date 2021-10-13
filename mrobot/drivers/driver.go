@@ -25,6 +25,7 @@ import (
 	k8slocal "github.com/zibuyu28/cmapp/mrobot/drivers/k8s/loc_dri"
 	k8srmt "github.com/zibuyu28/cmapp/mrobot/drivers/k8s/rmt_dri"
 	vblocal "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/loc_dri"
+	vbrmt "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/rmt_dri"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
@@ -82,6 +83,10 @@ func ParsePlugin(pluginName string) (*BuildInPlugin, error) {
 	case "k8s":
 		return &BuildInPlugin{
 			GrpcPluginServer: k8srmt.NewK8sWorker(),
+		}, nil
+	case "virtualbox":
+		return &BuildInPlugin{
+			GrpcPluginServer: vbrmt.NewVirtualboxWorker(),
 		}, nil
 	default:
 		return nil, errors.Errorf("fail to parse plugin named [%s], build in drivers [%v], please check config or param", pluginName, buildInDrivers)

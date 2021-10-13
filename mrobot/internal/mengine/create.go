@@ -111,6 +111,7 @@ func CreateMachine(ctx context.Context, uuid string) error {
 		DriverID:    machine.DriverID,
 		MachineTags: machine.Tags,
 		CustomInfo:  machine.CustomInfo,
+		AGGRPCAddr:  "",
 	}
 	initMachine, err := cli.ReportInitMachine(ctx, pm)
 	if err != nil {
@@ -195,6 +196,10 @@ func MachineUpdate(ctx context.Context, cli coreproto.MachineManageClient, ma *d
 			tma.CustomInfo[k] = v
 			nu = true
 		}
+	}
+	if len(ma.AGGRPCAddr) != 0 && ma.AGGRPCAddr != tma.AGGRPCAddr {
+		tma.AGGRPCAddr = ma.AGGRPCAddr
+		nu = true
 	}
 	if nu {
 		if tma.ID == 0 {

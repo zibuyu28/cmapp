@@ -19,6 +19,7 @@ package rmt_dri
 import (
 	"context"
 	"fmt"
+	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/httputil"
@@ -27,10 +28,12 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
 	virtualbox "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/core"
+	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,6 +48,37 @@ type VirtualboxWorker struct {
 	VBUUID       string
 }
 
+func NewVirtualboxWorker() *VirtualboxWorker {
+	w := &VirtualboxWorker{
+		MachineID:    0,
+		HostIP:       agfw.Flags["HostIP"].Value,
+		HostPort:     0,
+		HostUsername: agfw.Flags["HostUsername"].Value,
+		HostPassword: agfw.Flags["HostPassword"].Value,
+		StorePath:    agfw.Flags["StorePath"].Value,
+		VBUUID:       agfw.Flags["VBUUID"].Value,
+	}
+	if len(agfw.Flags["HostPort"].Value) != 0 {
+		port, err := strconv.Atoi(agfw.Flags["HostPort"].Value)
+		if err != nil {
+			panic(err)
+		}
+		w.HostPort = port
+	}
+	if len(agfw.Flags["MachineID"].Value) != 0 {
+		mid, err := strconv.Atoi(agfw.Flags["MachineID"].Value)
+		if err != nil {
+			panic(err)
+		}
+		w.MachineID = mid
+	}
+	validate := v.New()
+	err := validate.Struct(*w)
+	if err != nil {
+		panic(err)
+	}
+	return w
+}
 func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker0.App, error) {
 	log.Infof(ctx, "new app [%s/%s]", req.Name, req.Version)
 	if len(req.Name) == 0 || len(req.Version) == 0 {

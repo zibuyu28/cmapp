@@ -216,6 +216,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 		return nil, errors.Wrap(err, "new kubernetes client")
 	}
 
+	// TODO: 从 core 获取 image 信息
 	repository := d.ImageRepository
 	image := fmt.Sprintf("%s/%s/mrobot:%s", repository.Repository, repository.StorePath, d.DriverVersion)
 	log.Debugf(ctx, "Currently image info [%v]", image)
@@ -244,7 +245,12 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dr
 	if err != nil {
 		return nil, errors.Wrap(err, "create deployment")
 	}
-	return nil, nil
+	// 开启 nodePort/ingress
+	machine := &driver.Machine{
+		AGGRPCAddr: "test-service:30082",
+	}
+
+	return machine, nil
 }
 
 func (d *DriverK8s) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {

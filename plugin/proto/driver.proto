@@ -55,4 +55,5 @@ message Machine {
     int32 DriverID = 3;
     repeated string Tags = 4;
     map<string, string> CustomInfo = 5;
+    string AGGRPCAddr = 6;
 }

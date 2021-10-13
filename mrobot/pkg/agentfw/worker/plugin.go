@@ -22,11 +22,11 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"os"
-	"time"
 )
 
-
 var workerServer worker0.Worker0Server
+
+var AGGRPCDefaultPort = 9008
 
 // RegisterWorker register a instance to agentfw
 func RegisterWorker(imp worker0.Worker0Server) {
@@ -34,16 +34,14 @@ func RegisterWorker(imp worker0.Worker0Server) {
 }
 
 type plugin struct {
-	addr string
-	rpcClient worker0.Worker0Client
 }
 
 func pluginIns(ctx context.Context) (*plugin, error) {
 	if workerServer == nil {
-		log.Fatalf(ctx, "Error verify plugin, plugin is nil. Please import 'worker0' package, " +
+		log.Fatalf(ctx, "Error verify plugin, plugin is nil. Please import 'worker0' package, "+
 			"then register an instance that implements the 'worker0.Worker0Server' interface through the 'worker0.RegisterWorker0' method")
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", AGGRPCDefaultPort))
 	if err != nil {
 		log.Fatalf(ctx, "Error loading plugin RPC server. Err: [%v], stdErr: [%s]", err, os.Stderr)
 	}
@@ -65,27 +63,6 @@ func pluginIns(ctx context.Context) (*plugin, error) {
 	fmt.Println(listener.Addr())
 
 	return &plugin{
-		addr: listener.Addr().String(),
 	}, nil
 
-}
-
-func (p *plugin) run(ctx context.Context, sig chan bool) {
-	timeout, cancelFunc := context.WithTimeout(ctx, time.Second*10)
-	defer cancelFunc()
-	conn, err := grpc.DialContext(timeout, p.addr, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf(ctx, "Error create grpc connection with [%s]", p.addr)
-	}
-	rpc := worker0.NewWorker0Client(conn)
-
-	p.rpcClient = rpc
-
-	log.Infof(ctx, "plugin running successfully [%s]", p.addr)
-	sig <- true
-	select {
-	case <-ctx.Done():
-		log.Info(ctx, "Currently worker plugin exist")
-		return
-	}
 }

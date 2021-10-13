@@ -25,6 +25,7 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
 	virtualbox "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm"
 	"github.com/zibuyu28/cmapp/mrobot/pkg"
+	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
 	"os"
@@ -250,11 +251,28 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dri
 	var rmtPath = "/home/docker/virtualbox-mrobot"
 	err = cli.Scp(abs, rmtPath)
 	if err != nil {
-		return nil, errors.Wrap(err,"scp local plugin to remote")
+		return nil, errors.Wrap(err, "scp local plugin to remote")
 	}
 
-	// 设置环境变量等等
-	mrobotEnvs := map[string]string {}
+	mids := md.Get("CoreMachineID")
+	if len(mids) != 1 {
+		return nil, errors.New("fail to find core id from metadata")
+	}
+	coreID, err := strconv.Atoi(mids[0])
+	if err != nil {
+		return nil, errors.Wrapf(err, "parse core id [%s] to int", mids[0])
+	}
+
+	// TODO: 设置环境变量等等
+	mrobotEnvs := map[string]string{
+		"MachineID":    fmt.Sprintf("%d", coreID),
+		"HostIP":       d.ServerSSHHost,
+		"HostPort":     fmt.Sprintf("%d", d.ServerSSHPort),
+		"HostUsername": d.ServerSSHUsername,
+		"HostPassword": d.ServerSSHPassword,
+		"StorePath":    d.ServerVMStorePath,
+		"VBUUID":       datas[0],
+	}
 
 	// 远程执行启动命令
 	out, err := cli.ExecCmd(fmt.Sprintf("/home/docker/virtualbox-mrobot"), ssh_cmd.WithEnv(mrobotEnvs))
@@ -262,13 +280,19 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dri
 		return nil, errors.Wrap(err, "run cmd to start mrobot")
 	}
 	if !strings.Contains(out, "ok") {
-		return nil, errors.New( "fail to mrobot start")
+		return nil, errors.New("fail to mrobot start")
 	}
 	log.Debug(ctx, "Currently install mrobot success")
-	// 将9009 端口映射出来，并且返回外部可以访问的地址
+	// 将 9008 端口映射出来，并且返回外部可以访问的地址
+	rmtDriver := virtualbox.NewRMTDriver(ctx, datas[0], d.ServerVMStorePath, d.ServerSSHHost, cli)
+	port, err := rmtDriver.ExportPort("ag_grpc_port", "tcp", worker.AGGRPCDefaultPort)
+	if err != nil {
+		return nil, errors.Wrap(err, "export grpc port")
+	}
 	return &driver.Machine{
 		UUID:       datas[0],
 		State:      1,
+		AGGRPCAddr: fmt.Sprintf("%s:%d", d.ServerSSHHost, port),
 	}, nil
 }
 

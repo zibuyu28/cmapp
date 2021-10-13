@@ -44,6 +44,15 @@ func InsertMachine(machine *Machine) error {
 	return nil
 }
 
+// UpdateMachine update machine
+func UpdateMachine(machine *Machine, id int, fields []string) error {
+	_, err := ormEngine.Cols(fields...).Where("id = ?", id).Update(machine)
+	if err != nil {
+		return errors.Wrapf(err, "update machine by id [%d]", id)
+	}
+	return nil
+}
+
 // GetMachineByID get machine by id
 func GetMachineByID(id int) (*Machine, error) {
 	var drv = &Machine{}

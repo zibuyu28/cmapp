@@ -29,4 +29,5 @@ message TypedMachine {
   int32 DriverID = 4;
   repeated string MachineTags = 5;
   map<string, string> CustomInfo = 6;
+  string AGGRPCAddr = 7;
 }

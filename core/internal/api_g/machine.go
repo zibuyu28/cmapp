@@ -18,6 +18,7 @@ package api_g
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/core/internal/service_g"
 	"github.com/zibuyu28/cmapp/core/proto/ma_manager"
 )
@@ -26,7 +27,14 @@ type CoreMachineManager struct {
 }
 
 func (m *CoreMachineManager) UpdateMachine(ctx context.Context, machine *ma_manager.TypedMachine) (*ma_manager.UpdateMachineRes, error) {
-	panic("implement me")
+	if machine.ID == 0 {
+		return nil, errors.New("machine id is nil")
+	}
+	err := service_g.UpdateMachineRec(ctx, machine)
+	if err != nil {
+		return nil, errors.Wrap(err, "update machine rec")
+	}
+	return &ma_manager.UpdateMachineRes{Res: true}, nil
 }
 
 // RegisterMachine register machine to center

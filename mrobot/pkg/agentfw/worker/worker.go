@@ -18,11 +18,15 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"github.com/zibuyu28/cmapp/common/log"
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 )
 
 const driverPrefix string = "DRIAGENT_"
@@ -70,6 +74,8 @@ func init() {
 //	},
 //}
 
+var AGDefaultHealthPort = 9009
+
 func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
 	var mux *http.ServeMux
 	if len(muxs) == 0 {
@@ -81,7 +87,7 @@ func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
 		_, _ = io.WriteString(writer, "ok")
 	})
 	s := &http.Server{
-		Addr:    "0.0.0.0:9009",
+		Addr:    fmt.Sprintf("0.0.0.0:%d", AGDefaultHealthPort),
 		Handler: mux,
 	}
 	err := s.ListenAndServe()
@@ -92,20 +98,36 @@ func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
 
 func Start(ctx context.Context, muxs ...*http.ServeMux) {
 	go healthFunc(ctx, muxs)
-	wscli, err := wsClientIns(ctx)
-	if err != nil {
-		log.Fatalf(ctx, "Currently fail to new ws client. Err: [%v]", err)
-	}
+	//wscli, err := wsClientIns(ctx)
+	//if err != nil {
+	//	log.Fatalf(ctx, "Currently fail to new ws client. Err: [%v]", err)
+	//}
 
-	// TODO: do function call to replace grpc call, just do not start the grpc server
-	plg, err := pluginIns(ctx)
+	_, err := pluginIns(ctx)
 	if err != nil {
 		log.Fatalf(ctx, "Currently fail to new plugin. Err: [%v]", err)
 	}
 
-	b := broker{
-		wsFont: wscli,
-		plg:    plg,
+	// block
+	// signal handler
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		s := <-c
+		switch s {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			time.Sleep(time.Second)
+			return
+		case syscall.SIGHUP:
+		// TODO app reload
+		default:
+			return
+		}
 	}
-	b.Execute(ctx)
+
+	//b := broker{
+	//	wsFont: wscli,
+	//	plg:    plg,
+	//}
+	//b.Execute(ctx)
 }

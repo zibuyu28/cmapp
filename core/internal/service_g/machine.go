@@ -24,6 +24,34 @@ import (
 	"github.com/zibuyu28/cmapp/core/proto/ma_manager"
 )
 
+// UpdateMachineRec update machine
+func UpdateMachineRec(ctx context.Context, machine *ma_manager.TypedMachine) error {
+	var updateFileds []string
+	m := &model.Machine{ID: int(machine.ID)}
+	if machine.State != 0 {
+		m.State = int(machine.State)
+		updateFileds = append(updateFileds, "state")
+	}
+	if len(machine.MachineTags) != 0 {
+		m.Tags = machine.MachineTags
+		updateFileds = append(updateFileds, "tags")
+	}
+	if len(machine.CustomInfo) != 0 {
+		m.CustomInfo = machine.CustomInfo
+		updateFileds = append(updateFileds, "custom_info")
+	}
+	if len(machine.AGGRPCAddr) != 0 {
+		m.AGGRPCAddr = machine.AGGRPCAddr
+		updateFileds = append(updateFileds, "ag_grpc_addr")
+	}
+
+	err := model.UpdateMachine(m, m.ID, updateFileds)
+	if err != nil {
+		return errors.Wrap(err, "update machine")
+	}
+	return nil
+}
+
 // StoreMachineRec store machine record
 func StoreMachineRec(ctx context.Context, machine *ma_manager.TypedMachine) error {
 	m := &model.Machine{
@@ -32,6 +60,7 @@ func StoreMachineRec(ctx context.Context, machine *ma_manager.TypedMachine) erro
 		DriverID:   int(machine.DriverID),
 		Tags:       machine.MachineTags,
 		CustomInfo: machine.CustomInfo,
+		AGGRPCAddr: machine.AGGRPCAddr,
 	}
 	err := model.InsertMachine(m)
 	if err != nil {
@@ -42,7 +71,7 @@ func StoreMachineRec(ctx context.Context, machine *ma_manager.TypedMachine) erro
 }
 
 // RegisterMachine TODO: implement register logic
-func RegisterMachine(ctx context.Context, machine *ma_manager.TypedMachine) error  {
+func RegisterMachine(ctx context.Context, machine *ma_manager.TypedMachine) error {
 	log.Warn(ctx, "mock register, please implement me")
 	return nil
 }
