@@ -18,8 +18,15 @@ package cengine
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/plugin/localbinary"
+	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+
+	"google.golang.org/grpc"
 )
 
 type InitInfo struct {
@@ -36,6 +43,39 @@ func CreateChain(ctx context.Context, info InitInfo) error {
 	if err != nil {
 		return errors.Wrap(err, "check param")
 	}
+	ins, err := getCEnginePluginInstance(ctx, info.DriverID, info.DriverName, info.DriverVersion)
+	if err != nil {
+		return errors.Wrap(err, "get chain engine plugin client")
+	}
+	fmt.Println(ins)
 
 	return errors.New("implement me")
+}
+
+// TODODone: 这个是一个很大的问题, 该怎么嵌入驱动 ----> 使用grpc嵌入
+func getCEnginePluginInstance(ctx context.Context, driverID int, driverName, driverVersion string) (driver.ChainDriverClient, error) {
+	// 启动 plugin
+	plugin, err := localbinary.NewPlugin(ctx, driverID, driverName, driverVersion)
+	if err != nil {
+		return nil, errors.Wrap(err, "new plugin")
+	}
+	go func() {
+		if err = plugin.Serve(); err != nil {
+			// TODO: Is this best approach?
+			log.Warn(ctx, err.Error())
+			return
+		}
+
+	}()
+
+	address, err := plugin.Address()
+	if err != nil {
+		return nil, errors.Wrap(err, "get plugin serve address")
+	}
+
+	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, errors.Wrap(err, "create grpc connection")
+	}
+	return driver.NewChainDriverClient(conn), nil
 }

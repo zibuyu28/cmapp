@@ -8,30 +8,58 @@ import "mdriver.proto";
 
 // ChainDriver chain driver service
 service ChainDriver {
-
-  // InitMachine create a machine to store
+  // InitChain create a chain to store
   rpc InitChain (Empty) returns (Chain) {
   }
 
-  // CreateExec driver to execute really create action for a machine
-  rpc CreateExec (Empty) returns (Machine) {
+  // InitNode create node to store
+  rpc InitNode (Empty) returns (Nodes) {
   }
-
-  // InstallMRobot install machine robot in this new machine
-  rpc InstallMRobot (Empty) returns (Machine) {
-  }
-
-  // MRoHealthCheck check machine robot install successfully or not
-  rpc MRoHealthCheck (Empty) returns (Machine) {
-  }
-
-  // Exit driver exit
-  rpc Exit (Empty) returns (Empty) {
+  
+  // CreateChainExec execute create chain action
+  rpc CreateChainExec (Chain) returns (Empty) {
   }
 }
 
 
+message Nodes {
+  repeated Node Nodes = 1; 
+}
+
+message Node {
+  string Name = 1;
+  string UUID = 2;
+  string type = 3;
+  enum StateE {
+      Handling = 0;
+      Normal = 1;
+      Abnormal = 2;
+  }
+  StateE State = 5; // 1处理中，2正常，3异常
+  string Message = 6;
+  int32 MachineID = 7;
+  int32 ChainID = 8;
+  repeated string Tags = 9;
+  map<string, string> CustomInfo = 10;
+}
 
 message Chain {
-
+  string Name = 1;
+  string UUID = 2;
+  string Type = 3;
+  string Version = 4;
+  enum StateE {
+      Handling = 0;
+      Normal = 1;
+      Abnormal = 2;
+  }
+  StateE State = 5; // 1处理中，2正常，3异常
+  int32 DriverID = 6;
+  repeated string Tags = 7;
+  map<string, string> CustomInfo = 8;
 }
+
+
+
+
+
