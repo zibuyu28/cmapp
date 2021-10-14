@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-// Chain chain definition in db
-type Chain struct {
+// Node node definition in db
+type Node struct {
 	ID         int               `xorm:"int(11) pk 'id'"`
 	CreateTime time.Time         `xorm:"datetime create 'create_time'"`
 	UpdateTime time.Time         `xorm:"datetime update 'update_time'"`
@@ -30,42 +30,18 @@ type Chain struct {
 	Name       string            `xorm:"varchar(256) 'name'"`
 	UUID       string            `xorm:"char(64) 'uuid'"`
 	Type       string            `xorm:"varchar(256) 'type'"`
-	Version    string            `xorm:"varchar(256) 'version'"`
 	State      int               `xorm:"int(8) DEFAULT 0 'state'"`
-	DriverID   int               `xorm:"int(11) 'driver_id'"`
+	ChainID    int               `xorm:"int(11) 'chain_id'"`
+	MachineID  int               `xorm:"int(11) 'machine_id'"`
 	Tags       []string          `xorm:"varchar(1024) 'tags'"`
 	CustomInfo map[string]string `xorm:"text 'custom_info'"`
 }
 
-
-// InsertChain insert chain to db
-func InsertChain(chain *Chain) error {
-	_, err := ormEngine.Insert(chain)
+// InsertNode insert node to db
+func InsertNode(node *Node) error {
+	_, err := ormEngine.Insert(node)
 	if err != nil {
-		return errors.Wrap(err, "chain insert to db")
+		return errors.Wrap(err, "node insert to db")
 	}
 	return nil
-}
-
-
-// UpdateChain update chain
-func UpdateChain(chain *Chain, id int, fields []string) error {
-	_, err := ormEngine.Cols(fields...).Where("id = ?", id).Update(chain)
-	if err != nil {
-		return errors.Wrapf(err, "update chain by id [%d]", id)
-	}
-	return nil
-}
-
-// GetChainByID get chain by id
-func GetChainByID(id int) (*Chain, error) {
-	var drv = &Chain{}
-	has, err := ormEngine.Table(&Chain{}).Where("id = ?", id).Get(drv)
-	if err != nil {
-		return nil, errors.Wrap(err, "query chain from db")
-	}
-	if !has {
-		return nil, errors.Errorf("record not exist which id [%d]", id)
-	}
-	return drv, nil
 }
