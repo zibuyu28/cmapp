@@ -11,25 +11,15 @@ service ChainDriver {
   // InitChain create a chain to store
   rpc InitChain (Empty) returns (Chain) {
   }
-
-  // InitNode create node to store
-  rpc InitNode (Empty) returns (Nodes) {
-  }
-  
   // CreateChainExec execute create chain action
   rpc CreateChainExec (Chain) returns (Empty) {
   }
 }
 
-
-message Nodes {
-  repeated Node Nodes = 1; 
-}
-
 message Node {
   string Name = 1;
   string UUID = 2;
-  string type = 3;
+  string Type = 3;
   enum StateE {
       Handling = 0;
       Normal = 1;
@@ -57,6 +47,7 @@ message Chain {
   int32 DriverID = 6;
   repeated string Tags = 7;
   map<string, string> CustomInfo = 8;
+  repeated Node Nodes = 9;
 }
 
 

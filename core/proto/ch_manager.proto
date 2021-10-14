@@ -6,6 +6,9 @@ service ChainManage {
     // ReportChain report typed chain to db
     rpc ReportChain(TypedChain) returns (TypedChain) {};
 
+    // ReportNodes report typed nodes to db
+    rpc ReportNodes(TypedNodes) returns (TypedNodes) {};
+
     // UpdateChain update typed chain in db, ID param in typed chain is in need
     rpc UpdateChain(TypedChain) returns (TypedChain) {};
 }
@@ -26,4 +29,26 @@ message TypedChain {
     int32 DriverID = 7;
     repeated string Tags = 8;
     map<string, string> CustomInfo = 9;
+}
+
+message TypedNodes {
+    repeated TypedNode Nodes = 1;
+}
+
+message TypedNode {
+    int32 ID = 1;
+    string Name = 2;
+    string UUID = 3;
+    string Type = 4;
+    enum StateE {
+        Handling = 0;
+        Normal = 1;
+        Abnormal = 2;
+    }
+    StateE State = 5; // 1处理中，2正常，3异常
+    string Message = 6;
+    int32 MachineID = 7;
+    int32 ChainID = 8;
+    repeated string Tags = 9;
+    map<string, string> CustomInfo = 10;
 }

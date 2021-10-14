@@ -24,6 +24,10 @@ import (
 type CoreChainManager struct {
 }
 
+func (c CoreChainManager) ReportNodes(ctx context.Context, nodes *ch_manager.TypedNodes) (*ch_manager.TypedNodes, error) {
+	panic("implement me")
+}
+
 func (c CoreChainManager) UpdateChain(ctx context.Context, chain *ch_manager.TypedChain) (*ch_manager.TypedChain, error) {
 	panic("implement me")
 }
