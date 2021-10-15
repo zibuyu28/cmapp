@@ -79,14 +79,15 @@ func CreateChain(ctx context.Context, info InitInfo) error {
 	}
 
 	log.Debugf(ctx, "report chain to core")
-	_, err = corecli.ReportChain(ctx, &tc)
+	res, err := corecli.ReportChain(ctx, &tc)
 	if err != nil {
 		return errors.Wrap(err, "report chain")
 	}
 
 	if chain.Nodes != nil && len(chain.Nodes) != 0 {
-		var tns  []*coreproto.TypedNode
-		for _, node := range chain.Nodes {
+		var tns []*coreproto.TypedNode
+		for i, node := range chain.Nodes {
+			chain.Nodes[i].ChainID = res.ID
 			tn := coreproto.TypedNode{
 				Name:       node.Name,
 				UUID:       node.UUID,
