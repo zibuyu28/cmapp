@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+
+	"github.com/zibuyu28/cmapp/crobot/pkg"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -73,6 +75,7 @@ var mockFabric = Fabric{
 }
 
 type FabricDriver struct {
+	BaseDriver pkg.BaseDriver
 }
 
 func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.Chain, error) {
@@ -153,5 +156,8 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 }
 
 func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*driver.Empty, error) {
+	panic("implement me")
+}
+func (f *FabricDriver) Exit(ctx context.Context, c *driver.Empty) (*driver.Empty, error) {
 	panic("implement me")
 }

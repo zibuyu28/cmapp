@@ -14,6 +14,9 @@ service ChainDriver {
   // CreateChainExec execute create chain action
   rpc CreateChainExec (Chain) returns (Empty) {
   }
+
+  // Exit driver exit
+  rpc Exit(Empty) returns (Empty) {}
 }
 
 message Node {
