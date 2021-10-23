@@ -12,6 +12,7 @@ require (
 	github.com/zibuyu28/cmapp/core v0.0.0-incompatible
 	github.com/zibuyu28/cmapp/plugin v0.0.0-incompatible
 	google.golang.org/grpc v1.40.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 replace github.com/zibuyu28/cmapp/common v0.0.0-incompatible => ../common

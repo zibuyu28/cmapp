@@ -25,12 +25,13 @@ type Channel struct {
 }
 
 type Orderer struct {
-	Name       string
-	UUID       string
-	MachineID  int
-	GRPCPort   int
-	HealthPort int
-	Tag        string
+	Name         string
+	UUID         string
+	MachineID    int
+	GRPCPort     int
+	HealthPort   int
+	Tag          string
+	NodeHostName string
 }
 
 type Organization struct {
@@ -49,6 +50,7 @@ type Peer struct {
 	Organization        Organization
 	AnchorPeer          bool
 	Tag                 string
+	NodeHostName        string
 }
 
 // Fabric fabric chain info

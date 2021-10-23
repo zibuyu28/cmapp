@@ -34,3 +34,7 @@ type MachineDriverAPI interface {
 	HealthEx(in *Health) error
 	LogEx(in *Log) error
 }
+
+type CoreAPI interface {
+	DownloadFile(fileName string) ([]byte, error)
+}

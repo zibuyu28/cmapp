@@ -156,8 +156,28 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 }
 
 func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*driver.Empty, error) {
+	// TODO: 开始创建链
+	/*
+			0. 生成证书
+			0.5. 将证书上传到core
+			1. 新建一个app
+			2. app 增加tag
+			3. app 增加预置文件
+			4. app 设置cpu和memory
+			5. app 设置健康检查
+			6. app 设置环境变量
+			7. app 设置端口
+			8. 启动app
+
+		  --- 节点启动之后
+
+			0. 创建通道
+			1. 加入通道
+	*/
+
 	panic("implement me")
 }
+
 func (f *FabricDriver) Exit(ctx context.Context, c *driver.Empty) (*driver.Empty, error) {
 	panic("implement me")
 }
