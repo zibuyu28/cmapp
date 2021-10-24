@@ -1,14 +1,13 @@
 package fabtool
 
 import (
+	"context"
 	"fmt"
+	"github.com/zibuyu28/cmapp/common/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 
-	"git.hyperchain.cn/blocface/chain-drivers-go/fabric_k8s/driver/model"
-	util "git.hyperchain.cn/blocface/goutil"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
@@ -67,105 +66,106 @@ type Config struct {
 }
 
 type CryptoGenTool struct {
+	ctx context.Context
 }
 
-func newCryptoGen() RT {
-	return CryptoGenTool{}
+func newCryptoGen(ctx context.Context) RT {
+	return CryptoGenTool{ctx: ctx}
 }
 
-func (c CryptoGenTool) ExtendPeerCert(chain *model.FabricChain, nodes []model.Node, baseDir string) error {
-	pwd, _ := os.Getwd()
-	cryptogen := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/cryptogen", chain.FabricVersion))
-	randomCryptoFilePath, _ := filepath.Abs(fmt.Sprintf("%s/%d-addpeer.yaml", baseDir, time.Now().UnixNano()))
-	certPath, _ := filepath.Abs(baseDir)
-
-	config := constructInitConfig(chain)
-	if config == nil {
-		return errors.New("config is nil")
-	}
-	configYaml, err := yaml.Marshal(config)
-	if err != nil {
-		err = errors.Wrap(err, "marshal config")
-		return err
-	}
-
-	// generate crypto config file
-	err = ioutil.WriteFile(randomCryptoFilePath, configYaml, os.ModePerm)
-	if err != nil {
-		err = errors.Wrap(err, "build crypto config")
-		return err
-	}
-
-	output, err := util.CMD(10,
-		fmt.Sprintf("%s extend --config=%s --input=%s/", cryptogen, randomCryptoFilePath, certPath))
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec crypto extend cert")
-		return err
-	}
-
-	for _, info := range chain.OrganizationInfos {
-		if info.OrganizationType != model.PeerOrganization {
-			continue
-		}
-		for _, node := range nodes {
-			if node.OrgID != info.ID {
-				continue
-			}
-			orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com/peers/peer%d.%s.fabric.com", info.UUID, node.ID, info.UUID))
-			if !util.FileExist(orgCertPath) {
-				err = errors.Errorf("node(%s) cert generate err", node.NodeName)
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (c CryptoGenTool) GenerateNewOrgCert(chain *model.FabricChain, org *model.NewOrg, baseDir string) error {
-	pwd, _ := os.Getwd()
-	cryptogen := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/cryptogen", chain.FabricVersion))
-	randomCryptoFilePath, _ := filepath.Abs(fmt.Sprintf("%s/%d-neworg.yaml", baseDir, time.Now().UnixNano()))
-	certPath, _ := filepath.Abs(baseDir)
-
-	config := constructNewOrgConfig(org)
-	configYaml, err := yaml.Marshal(config)
-	if err != nil {
-		err = errors.Wrap(err, "marshal config")
-		return err
-	}
-
-	// generate crypto config file
-	err = ioutil.WriteFile(randomCryptoFilePath, configYaml, os.ModePerm)
-	if err != nil {
-		err = errors.Wrap(err, "build crypto config")
-		return err
-	}
-
-	output, err := util.CMD(10,
-		fmt.Sprintf("%s generate --config=%s --output=%s/", cryptogen, randomCryptoFilePath, certPath))
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec crypto generate cert")
-		return err
-	}
-	for _, info := range org.OrganizationInfos {
-		if info.OrganizationType != model.PeerOrganization {
-			continue
-		}
-		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", info.UUID))
-		if !util.FileExist(orgCertPath) {
-			err = errors.Errorf("org(%s) cert generate err", info.Name)
-			return err
-		}
-	}
-	return nil
-}
+//func (c CryptoGenTool) ExtendPeerCert(chain *model.FabricChain, nodes []model.Node, baseDir string) error {
+//	pwd, _ := os.Getwd()
+//	cryptogen := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/cryptogen", chain.FabricVersion))
+//	randomCryptoFilePath, _ := filepath.Abs(fmt.Sprintf("%s/%d-addpeer.yaml", baseDir, time.Now().UnixNano()))
+//	certPath, _ := filepath.Abs(baseDir)
+//
+//	config := constructInitConfig(chain)
+//	if config == nil {
+//		return errors.New("config is nil")
+//	}
+//	configYaml, err := yaml.Marshal(config)
+//	if err != nil {
+//		err = errors.Wrap(err, "marshal config")
+//		return err
+//	}
+//
+//	// generate crypto config file
+//	err = ioutil.WriteFile(randomCryptoFilePath, configYaml, os.ModePerm)
+//	if err != nil {
+//		err = errors.Wrap(err, "build crypto config")
+//		return err
+//	}
+//
+//	output, err := util.CMD(10,
+//		fmt.Sprintf("%s extend --config=%s --input=%s/", cryptogen, randomCryptoFilePath, certPath))
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec crypto extend cert")
+//		return err
+//	}
+//
+//	for _, info := range chain.OrganizationInfos {
+//		if info.OrganizationType != model.PeerOrganization {
+//			continue
+//		}
+//		for _, node := range nodes {
+//			if node.OrgID != info.ID {
+//				continue
+//			}
+//			orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com/peers/peer%d.%s.fabric.com", info.UUID, node.ID, info.UUID))
+//			if !util.FileExist(orgCertPath) {
+//				err = errors.Errorf("node(%s) cert generate err", node.NodeName)
+//				return err
+//			}
+//		}
+//	}
+//
+//	return nil
+//}
+//
+//func (c CryptoGenTool) GenerateNewOrgCert(chain *model.FabricChain, org *model.NewOrg, baseDir string) error {
+//	pwd, _ := os.Getwd()
+//	cryptogen := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/cryptogen", chain.FabricVersion))
+//	randomCryptoFilePath, _ := filepath.Abs(fmt.Sprintf("%s/%d-neworg.yaml", baseDir, time.Now().UnixNano()))
+//	certPath, _ := filepath.Abs(baseDir)
+//
+//	config := constructNewOrgConfig(org)
+//	configYaml, err := yaml.Marshal(config)
+//	if err != nil {
+//		err = errors.Wrap(err, "marshal config")
+//		return err
+//	}
+//
+//	// generate crypto config file
+//	err = ioutil.WriteFile(randomCryptoFilePath, configYaml, os.ModePerm)
+//	if err != nil {
+//		err = errors.Wrap(err, "build crypto config")
+//		return err
+//	}
+//
+//	output, err := util.CMD(10,
+//		fmt.Sprintf("%s generate --config=%s --output=%s/", cryptogen, randomCryptoFilePath, certPath))
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec crypto generate cert")
+//		return err
+//	}
+//	for _, info := range org.OrganizationInfos {
+//		if info.OrganizationType != model.PeerOrganization {
+//			continue
+//		}
+//		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", info.UUID))
+//		if !util.FileExist(orgCertPath) {
+//			err = errors.Errorf("org(%s) cert generate err", info.Name)
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
 func (c CryptoGenTool) GenerateInitCert(driveruuid string, chain *fabric.Fabric, baseDir string) error {
 	pwd, _ := os.Getwd()
-	cryptogen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/cryptogen", chain.FabricVersion))
+	cryptogen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/cryptogen", chain.Version))
 	cryptogenConfigPath, _ := filepath.Abs(fmt.Sprintf("%s/crypto.yaml", baseDir))
 	certPath, _ := filepath.Abs(baseDir)
 
@@ -187,22 +187,35 @@ func (c CryptoGenTool) GenerateInitCert(driveruuid string, chain *fabric.Fabric,
 	}
 
 	command := fmt.Sprintf("generate --config=%s --output=%s/", cryptogenConfigPath, certPath)
-	coutput, err := cmd.NewDefaultCMD(cryptogen, command).Run()
-	fmt.Printf("output : %s\n", output)
+	log.Debugf(c.ctx, "GenerateInitCert command [%s %s]", cryptogen, command)
+	output, err := cmd.NewDefaultCMD(cryptogen, []string{command}).Run()
+	log.Debugf(c.ctx, "output : %s", output)
 	if err != nil {
 		return errors.Wrap(err, "exec crypto generate cert")
 	}
-	for _, info := range chain.OrganizationInfos {
-		if info.OrganizationType != model.PeerOrganization {
-			continue
-		}
-		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", info.UUID))
-		if !util.FileExist(orgCertPath) {
-			err = errors.Errorf("org(%s) cert generate err", info.Name)
-			return err
-		}
+
+	b, err := checkCertRight(chain, certPath)
+	if err != nil {
+		return errors.Wrap(err, "check cert exist")
+	}
+	if !b {
+		return errors.New("cert generate fail, file not exist")
 	}
 	return nil
+}
+
+func checkCertRight(chain *fabric.Fabric, certPath string) (bool, error) {
+	for _, peer := range chain.Peers {
+		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", peer.Organization.UUID))
+		_, err := os.Stat(orgCertPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return false, nil
+			}
+			return false, errors.Wrapf(err, "os stat path [%s]", orgCertPath)
+		}
+	}
+	return true, nil
 }
 
 //func constructNewOrgConfig(neworg *fabric.NewOrg) *Config {
@@ -250,8 +263,8 @@ func constructInitConfig(chain *fabric.Fabric) *Config {
 	for _, orderer := range chain.Orderers {
 
 		odns := NodeSpec{
-			Hostname:   fmt.Sprintf("orderer%d", orderer.ID),
-			CommonName: fmt.Sprintf("orderer%d.orderer.fabric.com", orderer.ID),
+			Hostname:   fmt.Sprintf("orderer%s", orderer.UUID),
+			CommonName: fmt.Sprintf("orderer%s.orderer.fabric.com", orderer.UUID),
 			SANS:       []string{orderer.NodeHostName},
 		}
 
@@ -280,8 +293,8 @@ func constructInitConfig(chain *fabric.Fabric) *Config {
 		var peerNodes []NodeSpec
 		for _, peer := range ps {
 			prns := NodeSpec{
-				Hostname:   fmt.Sprintf("peer%d", peer.ID),
-				CommonName: fmt.Sprintf("peer%d.%s.fabric.com", peer.ID, org),
+				Hostname:   fmt.Sprintf("peer%s", peer.UUID),
+				CommonName: fmt.Sprintf("peer%s.%s.fabric.com", peer.UUID, org),
 				SANS:       []string{peer.NodeHostName},
 			}
 			peerNodes = append(peerNodes, prns)

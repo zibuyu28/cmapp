@@ -1,23 +1,23 @@
 package fabtool
 
 import (
+	"context"
 	"fmt"
-	"git.hyperchain.cn/blocface/chain-drivers-go/common/utils"
-	"git.hyperchain.cn/blocface/chain-drivers-go/fabric_k8s/driver/model"
-	"git.hyperchain.cn/blocface/chain-drivers-go/fabric_k8s/driver/service/cmd"
-	log "git.hyperchain.cn/blocface/golog"
-	util "git.hyperchain.cn/blocface/goutil"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/cmd"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
 type PeerTool struct {
+	ctx context.Context
 }
 
-func newPeer() RT {
-	return PeerTool{}
+func newPeer(ctx context.Context) RT {
+	return PeerTool{ctx: ctx}
 }
 
 type FetchType string
@@ -27,73 +27,81 @@ const (
 	FetchBlock  FetchType = "block"
 )
 
-func (p PeerTool) CreateNewChannel(chain *model.FabricChain, channel model.ChainChannel, targetPeer *model.Node, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-	toolPath := filepath.Dir(peer)
-	abs, err := filepath.Abs(baseDir)
-	if err != nil {
-		return errors.Wrap(err, "base dir abs")
-	}
+//
+//func (p PeerTool) CreateNewChannel(chain *model.FabricChain, channel model.ChainChannel, targetPeer *model.Node, baseDir string) error {
+//	pwd, _ := os.Getwd()
+//	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
+//	toolPath := filepath.Dir(peer)
+//	abs, err := filepath.Abs(baseDir)
+//	if err != nil {
+//		return errors.Wrap(err, "base dir abs")
+//	}
+//
+//	coreyaml := filepath.Join(toolPath, "core.yaml")
+//	if !util.FileExist(coreyaml) {
+//		// 增加core.yaml 配置文件模板
+//		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+//		if err != nil {
+//			err = errors.Wrap(err, "generate core.yaml config")
+//			return err
+//		}
+//	}
+//
+//	// peer channel create -o localhost:7050  -c nine  -f ./channel-artifacts/tttx.tx --outputBlock ./channel-artifacts/channel1.block --tls --cafile /Users/wanghengfang/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+//	envs, err := getEnv(chain, targetPeer, baseDir)
+//	if err != nil {
+//		err = errors.Wrap(err, "get env by peer")
+//		return err
+//	}
+//	if envs != nil {
+//		envs["FABRIC_CFG_PATH"] = toolPath
+//	}
+//
+//	command := fmt.Sprintf("%s channel create -o %s:7050 -c %s -f %s/%s.tx --outputBlock %s/%s.block", peer, chain.Orderers[0].NodeHostName, channel.UUID,
+//		abs, channel.UUID, abs, channel.UUID)
+//	if chain.TLSEnabled {
+//		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+//		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
+//			command, abs, chain.Orderers[0].ID)
+//	}
+//	log.Debugf("exec command : %s", command)
+//
+//	// 增加如上环境变量
+//	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
+//
+//	// 执行命令
+//	output, err := defaultCMD.Run()
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec create channel command")
+//		return err
+//	}
+//	return nil
+//}
 
-	coreyaml := filepath.Join(toolPath, "core.yaml")
-	if !util.FileExist(coreyaml) {
-		// 增加core.yaml 配置文件模板
-		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-		if err != nil {
-			err = errors.Wrap(err, "generate core.yaml config")
-			return err
+func (p PeerTool) JoinChannel(driveruuid string, chain *fabric.Fabric, targetPeer *fabric.Peer, channelBlockPath, baseDir string) error {
+	pwd, _ := os.Getwd()
+	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
+	toolPath := filepath.Dir(peer)
+
+	_, err := os.Stat(channelBlockPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return errors.Wrapf(err, "channel block file(%s) not found", channelBlockPath)
 		}
-	}
-
-	// peer channel create -o localhost:7050  -c nine  -f ./channel-artifacts/tttx.tx --outputBlock ./channel-artifacts/channel1.block --tls --cafile /Users/wanghengfang/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-	envs, err := getEnv(chain, targetPeer, baseDir)
-	if err != nil {
-		err = errors.Wrap(err, "get env by peer")
-		return err
-	}
-	if envs != nil {
-		envs["FABRIC_CFG_PATH"] = toolPath
-	}
-
-	command := fmt.Sprintf("%s channel create -o %s:7050 -c %s -f %s/%s.tx --outputBlock %s/%s.block", peer, chain.Orderers[0].NodeHostName, channel.UUID,
-		abs, channel.UUID, abs, channel.UUID)
-	if chain.TLSEnabled {
-		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-			command, abs, chain.Orderers[0].ID)
-	}
-	log.Debugf("exec command : %s", command)
-
-	// 增加如上环境变量
-	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
-
-	// 执行命令
-	output, err := defaultCMD.Run()
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec create channel command")
-		return err
-	}
-	return nil
-}
-
-func (p PeerTool) JoinChannel(chain *model.FabricChain, targetPeer *model.Node, channelBlockPath, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-	toolPath := filepath.Dir(peer)
-
-	if !util.FileExist(channelBlockPath) {
-		return errors.Errorf("update pb file(%s) not found", channelBlockPath)
+		return errors.Wrapf(err, "check channel block file [%s]", channelBlockPath)
 	}
 
 	coreyaml := filepath.Join(toolPath, "core.yaml")
-	if !util.FileExist(coreyaml) {
-		// 增加core.yaml 配置文件模板
-		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-		if err != nil {
-			err = errors.Wrap(err, "generate core.yaml config")
-			return err
+	_, err = os.Stat(coreyaml)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+			if err != nil {
+				return errors.Wrap(err, "generate core.yaml config")
+			}
+		} else {
+			return errors.Wrapf(err, "check channel block file [%s]", channelBlockPath)
 		}
 	}
 
@@ -108,253 +116,248 @@ func (p PeerTool) JoinChannel(chain *model.FabricChain, targetPeer *model.Node, 
 
 	command := fmt.Sprintf("%s channel join -b %s", peer, channelBlockPath)
 
-	log.Infof("exec command : %s", command)
+	log.Debugf(p.ctx, "JoinChannel command [%s]", command)
 
 	// 增加如上环境变量
-	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs), cmd.WithRetry(10), cmd.WithTimeout(20))
 
 	// 执行命令
-	output, err := defaultCMD.Run()
-	fmt.Printf("output : %s\n", output)
+	output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs), cmd.WithRetry(10), cmd.WithTimeout(20)).Run()
+	log.Debugf(p.ctx, "output : %s", output)
 	if err != nil {
-		err = errors.Wrap(err, "exec join channel command")
-		return err
+		return errors.Wrap(err, "exec join channel command")
 	}
 	return nil
 }
 
-func (p PeerTool) UpdateAnchorPeer(chain *model.FabricChain, targetPeer *model.Node, updatePb, baseDir string) error {
+func (p PeerTool) UpdateAnchorPeer(driveruuid string, chain *fabric.Fabric, targetPeer *fabric.Peer, updatePb, baseDir string) error {
 	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
+	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, _ := filepath.Abs(baseDir)
 
 	coreyaml := filepath.Join(toolPath, "core.yaml")
-	if !util.FileExist(coreyaml) {
-		// 增加core.yaml 配置文件模板
-		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-		if err != nil {
-			err = errors.Wrap(err, "generate core.yaml config")
-			return err
+	_, err := os.Stat(coreyaml)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// 增加core.yaml 配置文件模板
+			err = ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+			if err != nil {
+				err = errors.Wrap(err, "generate core.yaml config")
+				return err
+			}
+		} else {
+			return errors.Wrap(err, "check core yaml file exist")
 		}
 	}
-
 	// 每个通道都更新
-	for _, info := range chain.ChannelInfos {
-		for _, org := range chain.OrganizationInfos {
-			if org.OrganizationType != model.PeerOrganization {
-				continue
+	for _, channel := range chain.Channels {
+		for _, pe := range chain.Peers {
+			anchorPeerArtifactTX, _ := filepath.Abs(fmt.Sprintf("%s/%s-%sMSPAnchors.tx", abs, channel.UUID, pe.UUID))
+			_, err = os.Stat(anchorPeerArtifactTX)
+			if err != nil {
+				return errors.Wrapf(err, "check file [%s] exist", anchorPeerArtifactTX)
 			}
-
-			anchorPeerArtifactTX, _ := filepath.Abs(fmt.Sprintf("%s/%s-%sMSPAnchors.tx", abs, info.Name, org.UUID))
-
-			if !util.FileExist(anchorPeerArtifactTX) {
-				return errors.Errorf("update anchor peer actiface file(%s) not found", anchorPeerArtifactTX)
-			}
-
 			envs, err := getEnv(chain, targetPeer, baseDir)
 			if err != nil {
-				err = errors.Wrap(err, "get env by peer")
-				return err
+				return errors.Wrap(err, "get env by peer")
 			}
 			if envs != nil {
 				envs["FABRIC_CFG_PATH"] = toolPath
 			}
 
 			// peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA >&log.txt
-			command := fmt.Sprintf("%s channel update -f %s -o %s:7050 -c %s", peer, anchorPeerArtifactTX, chain.Orderers[0].NodeHostName, info.Name)
-			if chain.TLSEnabled {
+			command := fmt.Sprintf("%s channel update -f %s -o %s:7050 -c %s", peer, anchorPeerArtifactTX, chain.Orderers[0].NodeHostName, channel.UUID)
+			if chain.TLSEnable {
 				// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 				command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-					command, abs, chain.Orderers[0].ID)
+					command, abs, chain.Orderers[0].UUID)
 			}
-			log.Debugf("exec command : %s", command)
+			log.Debugf(p.ctx, "UpdateAnchorPeer command [%s]", command)
 
 			// 增加如上环境变量
-			defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
 
 			// 执行命令
-			output, err := defaultCMD.Run()
-			fmt.Printf("output : %s\n", output)
+			output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs)).Run()
+			log.Debugf(p.ctx, "output : %s", output)
 			if err != nil {
-				err = errors.Wrap(err, "exec update channel command")
-				return err
+				return errors.Wrap(err, "exec update channel command")
 			}
 		}
 	}
 	return nil
 }
 
-func (p PeerTool) UpdateChannelConfig(chain *model.FabricChain, targetPeer *model.Node, channelName, updatePb, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-	toolPath := filepath.Dir(peer)
-	abs, _ := filepath.Abs(baseDir)
+//
+//func (p PeerTool) UpdateChannelConfig(chain *model.FabricChain, targetPeer *model.Node, channelName, updatePb, baseDir string) error {
+//	pwd, _ := os.Getwd()
+//	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
+//	toolPath := filepath.Dir(peer)
+//	abs, _ := filepath.Abs(baseDir)
+//
+//	if len(channelName) == 0 {
+//		return errors.Errorf("channel id(%s) not found", channelName)
+//	}
+//
+//	if !util.FileExist(updatePb) {
+//		return errors.Errorf("update pb file(%s) not found", updatePb)
+//	}
+//	coreyaml := filepath.Join(toolPath, "core.yaml")
+//	if !util.FileExist(coreyaml) {
+//		// 增加core.yaml 配置文件模板
+//		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+//		if err != nil {
+//			err = errors.Wrap(err, "generate core.yaml config")
+//			return err
+//		}
+//	}
+//
+//	envs, err := getEnv(chain, targetPeer, baseDir)
+//	if err != nil {
+//		err = errors.Wrap(err, "get env by peer")
+//		return err
+//	}
+//	if envs != nil {
+//		envs["FABRIC_CFG_PATH"] = toolPath
+//	}
+//
+//	// peer channel update -f org3_update_in_envelope.pb -c $CHANNEL_NAME -o orderer.example.com:7050 --tls --cafile $ORDERER_CA
+//	command := fmt.Sprintf("%s channel update -f %s -o %s:7050 -c %s", peer, updatePb, chain.Orderers[0].NodeHostName, channelName)
+//	if chain.TLSEnabled {
+//		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+//		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
+//			command, abs, chain.Orderers[0].ID)
+//	}
+//
+//	log.Infof("exec command : %s", command)
+//
+//	// 增加如上环境变量
+//	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
+//
+//	// 执行命令
+//	output, err := defaultCMD.Run()
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec update channel command")
+//		return err
+//	}
+//	return nil
+//}
+//
+//func (p PeerTool) SignConfigTx(chain *model.FabricChain, targetPeer *model.Node, updatePb, baseDir string) error {
+//	pwd, _ := os.Getwd()
+//	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
+//	toolPath := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/", chain.FabricVersion))
+//
+//	if !util.FileExist(updatePb) {
+//		return errors.Errorf("update pb file(%s) not found", updatePb)
+//	}
+//	coreyaml := filepath.Join(toolPath, "core.yaml")
+//	if !util.FileExist(coreyaml) {
+//		// 增加core.yaml 配置文件模板
+//		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+//		if err != nil {
+//			err = errors.Wrap(err, "generate core.yaml config")
+//			return err
+//		}
+//	}
+//	envs, err := getEnv(chain, targetPeer, baseDir)
+//	if err != nil {
+//		err = errors.Wrap(err, "get env by peer")
+//		return err
+//	}
+//	if envs != nil {
+//		envs["FABRIC_CFG_PATH"] = toolPath
+//	}
+//	// peer channel signconfigtx -f org3_update_in_envelope.pb
+//	command := fmt.Sprintf("%s channel signconfigtx -f %s", peer, updatePb)
+//	// 增加如上环境变量
+//	cmdWithEnv := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
+//
+//	log.Infof("exec command : %s", command)
+//	output, err := cmdWithEnv.Run()
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec sign config tx command")
+//		return err
+//	}
+//	return nil
+//}
+//
+//func (p PeerTool) FetchChannelConfig(chain *model.FabricChain, channelName string, anchorPeer *model.Node, outputFile, baseDir string, fetchType FetchType) error {
+//	abs, _ := filepath.Abs(baseDir)
+//	pwd, _ := os.Getwd()
+//	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
+//	toolPath := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/", chain.FabricVersion))
+//
+//	dir := filepath.Dir(outputFile)
+//	exists, err := util.PathExists(dir)
+//	if err != nil || !exists {
+//		return errors.Errorf("output path(%s) not exsit", outputFile)
+//	}
+//
+//	if len(channelName) == 0 {
+//		return errors.New("channel name is empty")
+//	}
+//
+//	if len(chain.Orderers) == 0 {
+//		return errors.New("orderer info length is empty")
+//	}
+//	if len(chain.Peers) == 0 {
+//		return errors.New("peer info length is empty")
+//	}
+//
+//	// 增加core.yaml 配置文件模板
+//	err = ioutil.WriteFile(filepath.Join(toolPath, "core.yaml"), []byte(coreConfig), os.ModePerm)
+//	if err != nil {
+//		err = errors.Wrap(err, "generate core.yaml config")
+//		return err
+//	}
+//
+//	envs, err := getEnv(chain, anchorPeer, baseDir)
+//	if err != nil {
+//		err = errors.Wrap(err, "get env by peer")
+//		return err
+//	}
+//
+//	if envs != nil {
+//		envs["FABRIC_CFG_PATH"] = toolPath
+//	}
+//
+//	var command string
+//	if fetchType == FetchConfig {
+//		command = fmt.Sprintf("%s channel fetch config %s -o %s:7050 -c %s", peer, outputFile, chain.Orderers[0].NodeHostName, channelName)
+//	} else if fetchType == FetchBlock {
+//		command = fmt.Sprintf("%s channel fetch 0 %s -o %s:7050 -c %s", peer, outputFile, chain.Orderers[0].NodeHostName, channelName)
+//	}
+//
+//	if chain.TLSEnabled {
+//		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+//		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
+//			command, abs, chain.Orderers[0].ID)
+//	}
+//
+//	log.Infof("exec command : %s", command)
+//
+//	// 增加如上环境变量
+//	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs), cmd.WithRetry(3))
+//
+//	// 执行如下命令
+//	// peer channel fetch config config_block.pb -o orderer.example.com:7050 -c mychannel --tls --cafile /Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+//	output, err := defaultCMD.Run()
+//	fmt.Printf("output : %s\n", output)
+//	if err != nil {
+//		err = errors.Wrap(err, "exec feat channel command")
+//		return err
+//	}
+//
+//	if !utils.FileExists(outputFile) {
+//		err = errors.New("channel config fetch failed")
+//		return err
+//	}
+//	return nil
+//}
 
-	if len(channelName) == 0 {
-		return errors.Errorf("channel id(%s) not found", channelName)
-	}
-
-	if !util.FileExist(updatePb) {
-		return errors.Errorf("update pb file(%s) not found", updatePb)
-	}
-	coreyaml := filepath.Join(toolPath, "core.yaml")
-	if !util.FileExist(coreyaml) {
-		// 增加core.yaml 配置文件模板
-		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-		if err != nil {
-			err = errors.Wrap(err, "generate core.yaml config")
-			return err
-		}
-	}
-
-	envs, err := getEnv(chain, targetPeer, baseDir)
-	if err != nil {
-		err = errors.Wrap(err, "get env by peer")
-		return err
-	}
-	if envs != nil {
-		envs["FABRIC_CFG_PATH"] = toolPath
-	}
-
-	// peer channel update -f org3_update_in_envelope.pb -c $CHANNEL_NAME -o orderer.example.com:7050 --tls --cafile $ORDERER_CA
-	command := fmt.Sprintf("%s channel update -f %s -o %s:7050 -c %s", peer, updatePb, chain.Orderers[0].NodeHostName, channelName)
-	if chain.TLSEnabled {
-		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-			command, abs, chain.Orderers[0].ID)
-	}
-
-	log.Infof("exec command : %s", command)
-
-	// 增加如上环境变量
-	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
-
-	// 执行命令
-	output, err := defaultCMD.Run()
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec update channel command")
-		return err
-	}
-	return nil
-}
-
-func (p PeerTool) SignConfigTx(chain *model.FabricChain, targetPeer *model.Node, updatePb, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-	toolPath := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/", chain.FabricVersion))
-
-	if !util.FileExist(updatePb) {
-		return errors.Errorf("update pb file(%s) not found", updatePb)
-	}
-	coreyaml := filepath.Join(toolPath, "core.yaml")
-	if !util.FileExist(coreyaml) {
-		// 增加core.yaml 配置文件模板
-		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-		if err != nil {
-			err = errors.Wrap(err, "generate core.yaml config")
-			return err
-		}
-	}
-	envs, err := getEnv(chain, targetPeer, baseDir)
-	if err != nil {
-		err = errors.Wrap(err, "get env by peer")
-		return err
-	}
-	if envs != nil {
-		envs["FABRIC_CFG_PATH"] = toolPath
-	}
-	// peer channel signconfigtx -f org3_update_in_envelope.pb
-	command := fmt.Sprintf("%s channel signconfigtx -f %s", peer, updatePb)
-	// 增加如上环境变量
-	cmdWithEnv := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
-
-	log.Infof("exec command : %s", command)
-	output, err := cmdWithEnv.Run()
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec sign config tx command")
-		return err
-	}
-	return nil
-}
-
-func (p PeerTool) FetchChannelConfig(chain *model.FabricChain, channelName string, anchorPeer *model.Node, outputFile, baseDir string, fetchType FetchType) error {
-	abs, _ := filepath.Abs(baseDir)
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-	toolPath := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/", chain.FabricVersion))
-
-	dir := filepath.Dir(outputFile)
-	exists, err := util.PathExists(dir)
-	if err != nil || !exists {
-		return errors.Errorf("output path(%s) not exsit", outputFile)
-	}
-
-	if len(channelName) == 0 {
-		return errors.New("channel name is empty")
-	}
-
-	if len(chain.Orderers) == 0 {
-		return errors.New("orderer info length is empty")
-	}
-	if len(chain.Peers) == 0 {
-		return errors.New("peer info length is empty")
-	}
-
-	// 增加core.yaml 配置文件模板
-	err = ioutil.WriteFile(filepath.Join(toolPath, "core.yaml"), []byte(coreConfig), os.ModePerm)
-	if err != nil {
-		err = errors.Wrap(err, "generate core.yaml config")
-		return err
-	}
-
-	envs, err := getEnv(chain, anchorPeer, baseDir)
-	if err != nil {
-		err = errors.Wrap(err, "get env by peer")
-		return err
-	}
-
-	if envs != nil {
-		envs["FABRIC_CFG_PATH"] = toolPath
-	}
-
-	var command string
-	if fetchType == FetchConfig {
-		command = fmt.Sprintf("%s channel fetch config %s -o %s:7050 -c %s", peer, outputFile, chain.Orderers[0].NodeHostName, channelName)
-	} else if fetchType == FetchBlock {
-		command = fmt.Sprintf("%s channel fetch 0 %s -o %s:7050 -c %s", peer, outputFile, chain.Orderers[0].NodeHostName, channelName)
-	}
-
-	if chain.TLSEnabled {
-		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-			command, abs, chain.Orderers[0].ID)
-	}
-
-	log.Infof("exec command : %s", command)
-
-	// 增加如上环境变量
-	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs), cmd.WithRetry(3))
-
-	// 执行如下命令
-	// peer channel fetch config config_block.pb -o orderer.example.com:7050 -c mychannel --tls --cafile /Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-	output, err := defaultCMD.Run()
-	fmt.Printf("output : %s\n", output)
-	if err != nil {
-		err = errors.Wrap(err, "exec feat channel command")
-		return err
-	}
-
-	if !utils.FileExists(outputFile) {
-		err = errors.New("channel config fetch failed")
-		return err
-	}
-	return nil
-}
-
-func getEnv(chain *model.FabricChain, node *model.Node, baseDir string) (map[string]string, error) {
+func getEnv(chain *fabric.Fabric, node *fabric.Peer, baseDir string) (map[string]string, error) {
 
 	//export FABRIC_CFG_PATH=/Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/config
 	//export CORE_PEER_ID=Org2cli
@@ -366,33 +369,25 @@ func getEnv(chain *model.FabricChain, node *model.Node, baseDir string) (map[str
 	//export CORE_PEER_TLS_ROOTCERT_FILE=/Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 	//export CORE_PEER_MSPCONFIGPATH=/Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
 
-	if node.NodeType != model.Peer {
-		return nil, errors.Errorf("node type node(%s) must be peer", node.NodeType)
-	}
+	//if node.NodeType != model.Peer {
+	//	return nil, errors.Errorf("node type node(%s) must be peer", node.NodeType)
+	//}
 	abs, _ := filepath.Abs(baseDir)
-	var org = ""
-	for _, info := range chain.OrganizationInfos {
-		if info.OrganizationType != model.PeerOrganization {
-			continue
-		}
-		if node.OrgID == info.ID {
-			org = info.UUID
-			break
-		}
+
+	if len(node.Organization.UUID) == 0 {
+		return nil, errors.Errorf("node org [%s] not correct", node.Organization.UUID)
 	}
-	if len(org) == 0 {
-		return nil, errors.Errorf("node orgid(%d) not found in chain", node.OrgID)
-	}
+	org := node.Organization.UUID
 	var envs = make(map[string]string, 0)
 	envs["CORE_PEER_ID"] = fmt.Sprintf("%scli", org)
 	envs["CORE_PEER_ADDRESS"] = fmt.Sprintf("%s:7051", node.NodeHostName)
 	envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP", org)
-	if chain.TLSEnabled {
+	if chain.TLSEnable {
 		envs["CORE_PEER_TLS_ENABLED"] = "true"
 		// org2.example.com/peers/peer0.org2.example.com/tls/server.crt
 		tlsPath := filepath.Join(abs,
 			fmt.Sprintf("peerOrganizations/%s.fabric.com/peers", org),
-			fmt.Sprintf("peer%d.%s.fabric.com/tls/", node.ID, org))
+			fmt.Sprintf("peer%s.%s.fabric.com/tls/", node.UUID, org))
 		envs["CORE_PEER_TLS_CERT_FILE"] = filepath.Join(tlsPath, "signcerts/cert.pem")
 		envs["CORE_PEER_TLS_KEY_FILE"] = filepath.Join(tlsPath, "keystore/key.pem")
 		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = filepath.Join(tlsPath, "tlscacerts/tls.pem")
