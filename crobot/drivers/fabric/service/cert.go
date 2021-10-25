@@ -59,6 +59,20 @@ func (c *CertWorker) InitCert(ctx context.Context, chain *fabric.Fabric) error {
 	return nil
 }
 
+func (c *CertWorker) GetNodeCertMap() (map[string]string, error) {
+	if c.nodeCertMap == nil {
+		return nil, errors.New("node cert map is nil, please exec PathMap first")
+	}
+	return c.nodeCertMap, nil
+}
+
+func (c *CertWorker) GetOrganizationCertMap() (map[string]string, error) {
+	if c.organizationCertMap == nil {
+		return nil, errors.New("organization cert map is nil, please exec PathMap first")
+	}
+	return c.organizationCertMap, nil
+}
+
 func (c *CertWorker) PathMap(chain *fabric.Fabric) {
 	c.nodeCertMap = make(map[string]string)
 	c.organizationCertMap = make(map[string]string)

@@ -37,4 +37,6 @@ type MachineDriverAPI interface {
 
 type CoreAPI interface {
 	DownloadFile(fileName string) ([]byte, error)
+	// UploadFile upload file, fileName is full path of the file, than return the download path of this file
+	UploadFile(fileName string) (string,error)
 }

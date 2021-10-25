@@ -1,5 +1,7 @@
 package fabric
 
+import "github.com/zibuyu28/cmapp/core/pkg/ag"
+
 type ConsensusType string
 
 const (
@@ -32,6 +34,8 @@ type Orderer struct {
 	HealthPort   int
 	Tag          string
 	NodeHostName string
+	RemoteCert   string
+	APP          *ag.App
 }
 
 type Organization struct {
@@ -51,17 +55,20 @@ type Peer struct {
 	AnchorPeer          bool
 	Tag                 string
 	NodeHostName        string
+	RemoteCert          string
+	APP                 *ag.App
 }
 
 // Fabric fabric chain info
 type Fabric struct {
-	Name        string
-	UUID        string
-	Version     string
-	Consensus   ConsensusType
-	CertGenType CertGenerateType
-	Channels    []Channel
-	TLSEnable   bool
-	Orderers    []Orderer
-	Peers       []Peer
+	Name               string
+	UUID               string
+	Version            string
+	Consensus          ConsensusType
+	CertGenType        CertGenerateType
+	Channels           []Channel
+	TLSEnable          bool
+	RemoteGenesisBlock string
+	Orderers           []Orderer
+	Peers              []Peer
 }

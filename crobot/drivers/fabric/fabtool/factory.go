@@ -32,7 +32,7 @@ func NewTool(ctx context.Context, driveruuid, toolName, version string) (RT, err
 		if os.IsNotExist(err) {
 			log.Warnf(ctx, "%s not exist", toolName)
 			_ = os.MkdirAll(filepath.Dir(toolFullName), os.ModePerm)
-			err := downLoadTool(ctx, toolName, version, toolFullName)
+			err = downLoadTool(ctx, toolName, version, toolFullName)
 			if err != nil {
 				return nil, errors.Wrap(err, "download tool")
 			}

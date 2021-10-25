@@ -284,7 +284,10 @@ func (c *ConfigWorker) InitTxFile(ctx context.Context, chain *fabric.Fabric) err
 	}
 	setCapabilities(configtx)
 	setApplication(configtx)
-	setOrderer(chain, configtx, caFileRootPath)
+	err = setOrderer(chain, configtx, caFileRootPath)
+	if err != nil {
+		return errors.Wrap(err, "set orderer")
+	}
 	setChannel(configtx)
 	setProfiles(configtx)
 	tx, err := yaml.Marshal(*configtx)
