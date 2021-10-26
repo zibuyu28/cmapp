@@ -35,6 +35,7 @@ type Orderer struct {
 	Tag          string
 	NodeHostName string
 	RemoteCert   string
+	LogLevel     string
 	APP          *ag.App
 }
 
@@ -56,6 +57,7 @@ type Peer struct {
 	Tag                 string
 	NodeHostName        string
 	RemoteCert          string
+	LogLevel     string
 	APP                 *ag.App
 }
 

@@ -454,7 +454,8 @@ func setOrderer(chain *fabric.Fabric, configtx *Configtx, caFileRootPath string)
 		if len(chain.Orderers) == 0 {
 			return errors.New("solo consensus type must has one orderer")
 		}
-		domain := chain.Orderers[0].NodeHostName + ":7050"
+		domain := fmt.Sprintf("%s:%d", chain.Orderers[0].NodeHostName, chain.Orderers[0].GRPCPort)
+		//domain := chain.Orderers[0].NodeHostName + ":7050"
 		orderer.Addresses = []string{domain}
 	case ConsensusKafka:
 		return errors.New("not support consensus type kafka")
@@ -462,12 +463,12 @@ func setOrderer(chain *fabric.Fabric, configtx *Configtx, caFileRootPath string)
 		domains := make([]string, 0)
 		consenters := make([]Consenter, 0)
 		for _, o := range chain.Orderers {
-			ordererAddr := fmt.Sprintf("%s:7050", o.NodeHostName)
+			ordererAddr := fmt.Sprintf("%s:%d", o.NodeHostName, o.GRPCPort)
 			domains = append(domains, ordererAddr)
 			tls := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com/orderers/%s.orderer.fabric.com/tls/signcerts/cert.pem", caFileRootPath, o.UUID)
 			consenter := Consenter{
 				Host:          o.NodeHostName,
-				Port:          7050,
+				Port:          o.GRPCPort,
 				ClientTLSCert: tls,
 				ServerTLSCert: tls,
 			}
@@ -681,7 +682,7 @@ func setOrganizations(chain *fabric.Fabric, configtx *Configtx, caFileRootPath s
 				AnchorPeers: []AnchorPeer{
 					{
 						Host: peer.NodeHostName,
-						Port: 7051,
+						Port: peer.GRPCPort,
 					},
 				},
 			}
