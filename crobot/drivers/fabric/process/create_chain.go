@@ -130,6 +130,7 @@ func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
 		}
 
 	}
+	panic("implement me")
 }
 
 func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
