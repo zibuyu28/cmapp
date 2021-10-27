@@ -57,8 +57,9 @@ type Peer struct {
 	Tag                 string
 	NodeHostName        string
 	RemoteCert          string
-	LogLevel     string
+	LogLevel            string
 	APP                 *ag.App
+	CouchDB             *ag.App
 }
 
 // Fabric fabric chain info

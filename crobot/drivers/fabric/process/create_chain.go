@@ -128,6 +128,65 @@ func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
 		if err != nil {
 			return errors.Wrap(err, "set tag")
 		}
+		log.Debugf(ctx, "cert addr [%s]", peer.RemoteCert)
+		err = hmd.FilePremiseEx(peer.APP.UUID, &ag.File{
+			Name:        "msp.tar.gz",
+			AcquireAddr: peer.RemoteCert,
+			Shell:       "mkdir cert && tar -zxvf msp.tar.gz --strip-components 1",
+		})
+		if err != nil {
+			return errors.Wrap(err, "set cert file premise")
+		}
+		err = hmd.LimitEx(peer.APP.UUID, &ag.Limit{
+			CPU:    1000,
+			Memory: 1024,
+		})
+		if err != nil {
+			return errors.Wrap(err, "set app limit")
+		}
+		err = hmd.HealthEx(peer.APP.UUID, &ag.Health{
+			Liveness: ag.Basic{
+				MethodType: ag.GET,
+				Path:       "/healthz",
+				Port:       peer.HealthPort,
+			},
+			Readness: ag.Basic{
+				MethodType: ag.GET,
+				Path:       "/healthz",
+				Port:       peer.HealthPort,
+			},
+		})
+		if err != nil {
+			return errors.Wrap(err, "set app health")
+		}
+		var envs = make(map[string]string)
+		envs["CORE_LEDGER_STATE_STATEDATABASE"] = "CouchDB"
+		for i, network := range peer.CouchDB.Networks {
+			if network.PortInfo.Port != 5984 {
+				continue
+			}
+			for _, s := range peer.CouchDB.Networks[i].RouteInfo {
+				if s.RouteType == ag.OUT {
+					envs["CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS"] = s.Router
+				}
+			}
+		}
+		envs["CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME"] = ""
+		envs["CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD"] = ""
+		envs["CORE_CHAINCODE_BUILDER"] = ""
+		envs["CORE_CHAINCODE_GOLANG_RUNTIME"] = ""
+		envs["CORE_VM_ENDPOINT"] = ""
+		envs["FABRIC_LOGGING_SPEC"] = peer.LogLevel
+		envs["CORE_PEER_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
+		envs["CORE_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.HealthPort)
+		envs["CORE_PEER_GOSSIP_USELEADERELECTION"] = "true"
+		envs["CORE_PEER_GOSSIP_ORGLEADER"] = "false"
+		envs["CORE_PEER_PROFILE_ENABLED"] = "true"
+		envs["CORE_PEER_TLS_CERT_FILE"] = fmt.Sprintf("%s/config/tls/cert.pem", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_KEY_FILE"] = fmt.Sprintf("%s/config/tls/key.pem", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = fmt.Sprintf("%s/config/tls/tls.pem", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
+		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
 
 	}
 	panic("implement me")
@@ -149,7 +208,7 @@ func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
 		err = hmd.FilePremiseEx(order.APP.UUID, &ag.File{
 			Name:        "msp.tar.gz",
 			AcquireAddr: order.RemoteCert,
-			Shell:       "mkdir cert && tar -zxvf msp.tar.gz --strip-components 1",
+			Shell:       "mkdir config && tar -zxvf msp.tar.gz -C config/ --strip-components 1",
 		})
 		if err != nil {
 			return errors.Wrap(err, "set cert file premise")
@@ -215,129 +274,177 @@ func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
 }
 
 func newApp(chain *fabric.Fabric) error {
-
-	for i, orderer := range chain.Orderers {
-		app, err := hmd.NewApp(&ag.NewAppReq{
-			MachineID: orderer.MachineID,
-			Name:      "orderer",
-			Version:   "1.4.3",
-		})
+	for i := range chain.Orderers {
+		err := newOrdererApp(&chain.Orderers[i])
 		if err != nil {
-			return errors.Wrap(err, "new app")
-		}
-		chain.Orderers[i].APP = app
-		grpc := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         orderer.GRPCPort,
-				Name:         "grpc",
-				ProtocolType: ag.TCP,
-			},
-		}
-		err = hmd.NetworkEx(app.UUID, grpc)
-		if err != nil {
-			return errors.Wrap(err, "net work set ex")
-		}
-		health := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         orderer.HealthPort,
-				Name:         "health",
-				ProtocolType: ag.TCP,
-			},
-		}
-		err = hmd.NetworkEx(app.UUID, health)
-		if err != nil {
-			return errors.Wrap(err, "net work set ex")
-		}
-		app.Networks = []ag.Network{*grpc, *health}
-		for _, s := range grpc.RouteInfo {
-			if s.RouteType == ag.OUT {
-				chain.Orderers[i].NodeHostName = s.Router
-			}
+			return errors.Wrap(err, "new orderer app")
 		}
 	}
-	for i, peer := range chain.Peers {
-		app, err := hmd.NewApp(&ag.NewAppReq{
-			MachineID: peer.MachineID,
-			Name:      "peer",
-			Version:   "1.4.3",
-		})
+	for i := range chain.Peers {
+		err := newPeerApp(&chain.Peers[i])
 		if err != nil {
-			return errors.Wrap(err, "new app")
+			return errors.Wrap(err, "new peer app")
 		}
-		chain.Peers[i].APP = app
-		grpc := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         peer.GRPCPort,
-				Name:         "grpc",
-				ProtocolType: ag.TCP,
-			},
-		}
-		err = hmd.NetworkEx(app.UUID, grpc)
+		err = newCouchDBApp(&chain.Peers[i])
 		if err != nil {
-			return errors.Wrap(err, "net work set ex")
+			return errors.Wrap(err, "new peer couchdb app")
 		}
-		health := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         peer.HealthPort,
-				Name:         "health",
-				ProtocolType: ag.TCP,
-			},
+	}
+	return nil
+}
+
+func newOrdererApp(orderer *fabric.Orderer) error {
+	app, err := hmd.NewApp(&ag.NewAppReq{
+		MachineID: orderer.MachineID,
+		Name:      "orderer",
+		Version:   "1.4.3",
+	})
+	if err != nil {
+		return errors.Wrap(err, "new app")
+	}
+	orderer.APP = app
+	grpc := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         orderer.GRPCPort,
+			Name:         "grpc",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, grpc)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	health := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         orderer.HealthPort,
+			Name:         "health",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, health)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	app.Networks = []ag.Network{*grpc, *health}
+	for _, s := range grpc.RouteInfo {
+		if s.RouteType == ag.OUT {
+			orderer.NodeHostName = s.Router
 		}
-		err = hmd.NetworkEx(app.UUID, health)
-		if err != nil {
-			return errors.Wrap(err, "net work set ex")
-		}
-		ccport := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         peer.ChainCodeListenPort,
-				Name:         "chaincode",
-				ProtocolType: ag.TCP,
-			},
-		}
-		err = hmd.NetworkEx(app.UUID, ccport)
-		if err != nil {
-			return errors.Wrap(err, "net work set ex")
-		}
-		event := &ag.Network{
-			PortInfo: struct {
-				Port         int         `json:"port"`
-				Name         string      `json:"name"`
-				ProtocolType ag.Protocol `json:"protocol_type"`
-			}{
-				Port:         peer.EventPort,
-				Name:         "event",
-				ProtocolType: ag.TCP,
-			},
-		}
-		err = hmd.NetworkEx(app.UUID, event)
-		if err != nil {
-			return errors.Wrap(err, "net work set ex")
-		}
-		app.Networks = []ag.Network{*grpc, *health, *ccport, *event}
-		for _, s := range grpc.RouteInfo {
-			if s.RouteType == ag.OUT {
-				chain.Peers[i].NodeHostName = s.Router
-			}
+	}
+	return nil
+}
+
+func newCouchDBApp(peer *fabric.Peer) error {
+	app, err := hmd.NewApp(&ag.NewAppReq{
+		MachineID: peer.MachineID,
+		Name:      "couchdb",
+		Version:   "1.4.3",
+	})
+	if err != nil {
+		return errors.Wrap(err, "new app")
+	}
+	peer.CouchDB = app
+	health := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         5984,
+			Name:         "http",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, health)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	app.Networks = []ag.Network{*health}
+	return nil
+}
+
+func newPeerApp(peer *fabric.Peer) error {
+	app, err := hmd.NewApp(&ag.NewAppReq{
+		MachineID: peer.MachineID,
+		Name:      "peer",
+		Version:   "1.4.3",
+	})
+	if err != nil {
+		return errors.Wrap(err, "new app")
+	}
+	peer.APP = app
+	grpc := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         peer.GRPCPort,
+			Name:         "grpc",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, grpc)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	health := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         peer.HealthPort,
+			Name:         "health",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, health)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	ccport := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         peer.ChainCodeListenPort,
+			Name:         "chaincode",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, ccport)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	event := &ag.Network{
+		PortInfo: struct {
+			Port         int         `json:"port"`
+			Name         string      `json:"name"`
+			ProtocolType ag.Protocol `json:"protocol_type"`
+		}{
+			Port:         peer.EventPort,
+			Name:         "event",
+			ProtocolType: ag.TCP,
+		},
+	}
+	err = hmd.NetworkEx(app.UUID, event)
+	if err != nil {
+		return errors.Wrap(err, "net work set ex")
+	}
+	app.Networks = []ag.Network{*grpc, *health, *ccport, *event}
+	for _, s := range grpc.RouteInfo {
+		if s.RouteType == ag.OUT {
+			peer.NodeHostName = s.Router
 		}
 	}
 	return nil
