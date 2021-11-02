@@ -19,24 +19,24 @@ package ag
 // MachineDriverAPI machine driver api
 type MachineDriverAPI interface {
 	NewApp(in *NewAppReq) (*App, error)
-	StartApp(in *App) error
-	StopApp(in *App) error
-	DestroyApp(in *App) error
+	StartApp(appuid string, in *App) error
+	StopApp(appuid string, in *App) error
+	DestroyApp(appuid string, in *App) error
 
 	// --- construct App ---
 
-	TagEx(in *Tag) error
-	FileMountEx(in *FileMount) error
-	EnvEx(in *EnvVar) error
-	NetworkEx(in *Network) error
-	FilePremiseEx(in *File) error
-	LimitEx(in *Limit) error
-	HealthEx(in *Health) error
-	LogEx(in *Log) error
+	TagEx(appuid string, in *Tag) error
+	FileMountEx(appuid string, in *FileMount) error
+	EnvEx(appuid string, in *EnvVar) error
+	NetworkEx(appuid string, in *Network) error
+	FilePremiseEx(appuid string, in *File) error
+	LimitEx(appuid string, in *Limit) error
+	HealthEx(appuid string, in *Health) error
+	LogEx(appuid string, in *Log) error
 }
 
 type CoreAPI interface {
 	DownloadFile(fileName string) ([]byte, error)
 	// UploadFile upload file, fileName is full path of the file, than return the download path of this file
-	UploadFile(fileName string) (string,error)
+	UploadFile(fileName string) (string, error)
 }
