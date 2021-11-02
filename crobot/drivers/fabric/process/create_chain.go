@@ -100,17 +100,48 @@ func (c *CreateChainWorker) CreateChainProcess(chain *fabric.Fabric) error {
 	if err != nil {
 		return errors.Wrap(err, "upload node cert")
 	}
+	log.Debugf(c.ctx, "upload node cert success")
 	genesisBlock := fmt.Sprintf("%s/orderer.genesis.block", basePath)
 	gb, err := capi.UploadFile(genesisBlock)
 	if err != nil {
 		return errors.Wrap(err, "upload genesis block file")
 	}
 	chain.RemoteGenesisBlock = gb
+	log.Debugf(c.ctx, "upload genesis block success")
+
 	// 构建几个节点的配置，并启动
+	err = constructOrder(c.ctx, chain)
+	if err != nil {
+		return errors.Wrap(err, "construct orderers")
+	}
+	log.Debugf(c.ctx, "construct order app success")
+
+
+	err = constructPeer(c.ctx, chain)
+	if err != nil {
+		return errors.Wrap(err, "construct peers")
+	}
+	log.Debugf(c.ctx, "construct peer app success")
 
 	// 创建初始通道
+	channelWorker := service.NewChannelWorker(c.driveruuid, basePath)
+	err = channelWorker.CreateInitChannel(c.ctx, chain)
+	if err != nil {
+		return errors.Wrap(err, "create init channel")
+	}
+	log.Debugf(c.ctx, "create init channel success")
 	// 节点加入通道
+	err = channelWorker.JoinInitChannel(c.ctx, chain)
+	if err != nil {
+		return errors.Wrap(err, "join init channel")
+	}
+	log.Debugf(c.ctx, "join init channel success")
 	// 更新锚节点
+	err = channelWorker.UpdateAnchorPeers(c.ctx, chain)
+	if err != nil {
+		return errors.Wrap(err, "join init channel")
+	}
+	log.Debugf(c.ctx, "update anchor peer success")
 	// 完成过程
 
 	return nil
@@ -186,10 +217,41 @@ func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
 		envs["CORE_PEER_TLS_KEY_FILE"] = fmt.Sprintf("%s/config/tls/key.pem", peer.APP.Workspace.Workspace)
 		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = fmt.Sprintf("%s/config/tls/tls.pem", peer.APP.Workspace.Workspace)
 		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
-		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
+		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = "0.0.0.0:7052" // 链码监听地址
+		for i, network := range peer.APP.Networks {
+			if network.PortInfo.Port == 7052 {
+				for _, s := range peer.APP.Networks[i].RouteInfo {
+					if s.RouteType == ag.OUT {
+						envs["CORE_PEER_CHAINCODEADDRESS"] = s.Router // 链码回调时访问的地址
+					}
+				}
+			} else if network.PortInfo.Port == 7051 {
+				for _, s := range peer.APP.Networks[i].RouteInfo {
+					if s.RouteType == ag.OUT {
+						envs["CORE_PEER_GOSSIP_BOOTSTRAP"] = s.Router
+						envs["CORE_PEER_ADDRESS"] = s.Router
+						envs["CORE_PEER_GOSSIP_EXTERNALENDPOINT"] = s.Router
+					}
+				}
+			}
+		}
+		envs["CORE_PEER_ID"] = peer.UUID
+		envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP",peer.Organization.UUID)
 
+		for k, v := range envs {
+			log.Debugf(ctx, "set env key [%s], val [%s]", k, v)
+			err = hmd.EnvEx(peer.APP.UUID, &ag.EnvVar{Key: k, Value: v})
+			if err != nil {
+				return errors.Wrapf(err, "set env, key [%s], value [%s]", k, v)
+			}
+		}
+
+		err = hmd.StartApp(peer.APP.UUID, peer.APP)
+		if err != nil {
+			return errors.Wrapf(err, "star peer app [%s]", peer.APP.UUID)
+		}
 	}
-	panic("implement me")
+	return nil
 }
 
 func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
@@ -268,6 +330,10 @@ func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
 			if err != nil {
 				return errors.Wrapf(err, "set env, key [%s], value [%s]", k, v)
 			}
+		}
+		err = hmd.StartApp(order.APP.UUID, order.APP)
+		if err != nil {
+			return errors.Wrapf(err, "star order app [%s]", order.APP.UUID)
 		}
 	}
 	return nil

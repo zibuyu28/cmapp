@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
 	"io/ioutil"
 	"os"
@@ -27,57 +28,75 @@ const (
 	FetchBlock  FetchType = "block"
 )
 
-//
-//func (p PeerTool) CreateNewChannel(chain *model.FabricChain, channel model.ChainChannel, targetPeer *model.Node, baseDir string) error {
-//	pwd, _ := os.Getwd()
-//	peer := filepath.Join(pwd, "drivers", os.Args[3], fmt.Sprintf("tool/%s/peer", chain.FabricVersion))
-//	toolPath := filepath.Dir(peer)
-//	abs, err := filepath.Abs(baseDir)
-//	if err != nil {
-//		return errors.Wrap(err, "base dir abs")
-//	}
-//
-//	coreyaml := filepath.Join(toolPath, "core.yaml")
-//	if !util.FileExist(coreyaml) {
-//		// 增加core.yaml 配置文件模板
-//		err := ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
-//		if err != nil {
-//			err = errors.Wrap(err, "generate core.yaml config")
-//			return err
-//		}
-//	}
-//
-//	// peer channel create -o localhost:7050  -c nine  -f ./channel-artifacts/tttx.tx --outputBlock ./channel-artifacts/channel1.block --tls --cafile /Users/wanghengfang/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-//	envs, err := getEnv(chain, targetPeer, baseDir)
-//	if err != nil {
-//		err = errors.Wrap(err, "get env by peer")
-//		return err
-//	}
-//	if envs != nil {
-//		envs["FABRIC_CFG_PATH"] = toolPath
-//	}
-//
-//	command := fmt.Sprintf("%s channel create -o %s:7050 -c %s -f %s/%s.tx --outputBlock %s/%s.block", peer, chain.Orderers[0].NodeHostName, channel.UUID,
-//		abs, channel.UUID, abs, channel.UUID)
-//	if chain.TLSEnabled {
-//		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-//		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-//			command, abs, chain.Orderers[0].ID)
-//	}
-//	log.Debugf("exec command : %s", command)
-//
-//	// 增加如上环境变量
-//	defaultCMD := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs))
-//
-//	// 执行命令
-//	output, err := defaultCMD.Run()
-//	fmt.Printf("output : %s\n", output)
-//	if err != nil {
-//		err = errors.Wrap(err, "exec create channel command")
-//		return err
-//	}
-//	return nil
-//}
+
+func (p PeerTool) CreateNewChannel(driveruuid string,chain *fabric.Fabric, channel fabric.Channel, targetPeer *fabric.Peer, baseDir string) error {
+	pwd, _ := os.Getwd()
+	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
+	toolPath := filepath.Dir(peer)
+	abs, err := filepath.Abs(baseDir)
+	if err != nil {
+		return errors.Wrap(err, "base dir abs")
+	}
+
+	coreyaml := filepath.Join(toolPath, "core.yaml")
+	_, err = os.Stat(coreyaml)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = ioutil.WriteFile(coreyaml, []byte(coreConfig), os.ModePerm)
+			if err != nil {
+				return errors.Wrap(err, "generate core.yaml config")
+			}
+		} else {
+			return errors.Wrap(err, "check core yank file")
+		}
+	}
+
+	// peer channel create -o localhost:7050  -c nine  -f ./channel-artifacts/tttx.tx --outputBlock ./channel-artifacts/channel1.block --tls --cafile /Users/wanghengfang/go/src/github.com/hyperledger/fabric-samples/first-network/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+	envs, err := getEnv(chain, targetPeer, baseDir)
+	if err != nil {
+		err = errors.Wrap(err, "get env by peer")
+		return err
+	}
+	if envs != nil {
+		envs["FABRIC_CFG_PATH"] = toolPath
+	}
+	log.Debugf(p.ctx, "envs : [%s]", envs)
+	if len(chain.Orderers) == 0 {
+		return errors.New("order's number is nil")
+	}
+
+	var orderAddr string
+	for _, network := range chain.Orderers[0].APP.Networks {
+		if network.PortInfo.Port == 7050 {
+			for _, s := range network.RouteInfo {
+				if s.RouteType == ag.OUT {
+					orderAddr = s.Router
+				}
+			}
+		}
+	}
+	if len(orderAddr) == 0 {
+		return errors.New("order's app 7050 addr is nil")
+	}
+
+	command := fmt.Sprintf("channel create -o %s -c %s -f %s/%s.tx --outputBlock %s/%s.block", orderAddr, channel.UUID,
+		abs, channel.UUID, abs, channel.UUID)
+	if chain.TLSEnable {
+		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%s.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
+			command, abs, chain.Orderers[0].UUID)
+	}
+	log.Debugf(p.ctx, "exec command : [%s %s]", peer, command)
+
+	// 增加如上环境变量
+	output, err := cmd.NewDefaultCMD(peer, []string{command}, cmd.WithEnvs(envs)).Run()
+	fmt.Printf("output : %s\n", output)
+	if err != nil {
+		err = errors.Wrap(err, "exec create channel command")
+		return err
+	}
+	return nil
+}
 
 func (p PeerTool) JoinChannel(driveruuid string, chain *fabric.Fabric, targetPeer *fabric.Peer, channelBlockPath, baseDir string) error {
 	pwd, _ := os.Getwd()
@@ -380,6 +399,15 @@ func getEnv(chain *fabric.Fabric, node *fabric.Peer, baseDir string) (map[string
 	org := node.Organization.UUID
 	var envs = make(map[string]string, 0)
 	envs["CORE_PEER_ID"] = fmt.Sprintf("%scli", org)
+	for _, network := range node.APP.Networks {
+		if network.PortInfo.Port == 7051 {
+			for _, s := range network.RouteInfo {
+				if s.RouteType == ag.OUT {
+					envs["CORE_PEER_ADDRESS"] = s.Router
+				}
+			}
+		}
+	}
 	envs["CORE_PEER_ADDRESS"] = fmt.Sprintf("%s:7051", node.NodeHostName)
 	envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP", org)
 	if chain.TLSEnable {
