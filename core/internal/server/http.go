@@ -56,10 +56,10 @@ func httpServerStop() {
 // Group new group
 func registerApi() {
 	for group, routers := range api_c.GMR {
-		gp := strings.TrimPrefix(group, "/")
+		gp := strings.TrimPrefix(string(group), "/")
 		routerGroup := httpserver.Group(fmt.Sprintf("/api/%s", gp))
 		for path, f := range routers {
-			split := strings.Split(path, "@")
+			split := strings.Split(string(path), "@")
 			if len(split) != 2 {
 				panic(fmt.Sprintf("error path [%s]", path))
 			}

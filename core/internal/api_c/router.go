@@ -17,16 +17,23 @@ func (r routerVersion) string() string {
 	return string(r)
 }
 
-var GMR = map[string]map[string]func(g *gin.Context){
-	fmt.Sprintf("%s/md", V1.string()): {
+type RouterGroup string
+type MethodPath string
+
+var GMR = map[RouterGroup]map[MethodPath]func(g *gin.Context){
+	RouterGroup(fmt.Sprintf("%s/md", V1.string())): {
 		mpf(http.MethodPost, "/exec"): mdExec,
 	},
-	fmt.Sprintf("%s/mc", V1.string()): {},
+	RouterGroup(fmt.Sprintf("%s/mc", V1.string())): {},
+	RouterGroup(fmt.Sprintf("%s/file", V1.string())):{
+		mpf(http.MethodPost,"/:file_name"): fileExec,
+		mpf(http.MethodGet,"/:file_name"): fileExec,
+	},
 }
 
-func mpf(httpMethod, relativePath string) string {
+func mpf(httpMethod, relativePath string) MethodPath {
 	// TODO: check path
-	return fmt.Sprintf("%s@%s", httpMethod, relativePath)
+	return MethodPath(fmt.Sprintf("%s@%s", httpMethod, relativePath))
 }
 
 
