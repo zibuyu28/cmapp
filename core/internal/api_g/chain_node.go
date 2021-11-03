@@ -18,20 +18,48 @@ package api_g
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/core/internal/service_g"
 	"github.com/zibuyu28/cmapp/core/proto/ch_manager"
 )
 
 type CoreChainManager struct {
 }
 
+// ReportNodes report nodes
 func (c CoreChainManager) ReportNodes(ctx context.Context, nodes *ch_manager.TypedNodes) (*ch_manager.TypedNodes, error) {
-	panic("implement me")
+	defer func() {
+		for _, node := range nodes.Nodes {
+			if node.ID != 0 {
+				_ = service_g.RemoveNodeRec(ctx, int(node.ID))
+			}
+		}
+	}()
+	for i, node := range nodes.Nodes {
+		err := service_g.StoreNodeRec(ctx, node)
+		if err != nil {
+			return nil, errors.Wrap(err, "store node")
+		}
+		nodes.Nodes[i].ID = node.ID
+	}
+	return nodes, nil
 }
 
 func (c CoreChainManager) UpdateChain(ctx context.Context, chain *ch_manager.TypedChain) (*ch_manager.TypedChain, error) {
-	panic("implement me")
+	if chain.ID != 0 {
+		return nil, errors.New("chain id is nil")
+	}
+	err := service_g.UpdateChain(ctx, chain)
+	if err != nil {
+		return nil, errors.Wrap(err, "update chain")
+	}
+	return chain, nil
 }
 
 func (c CoreChainManager) ReportChain(ctx context.Context, chain *ch_manager.TypedChain) (*ch_manager.TypedChain, error) {
-	panic("implement me")
+	err := service_g.StoreChainRec(ctx, chain)
+	if err != nil {
+		return nil, errors.Wrap(err, "store chain")
+	}
+	return chain, nil
 }

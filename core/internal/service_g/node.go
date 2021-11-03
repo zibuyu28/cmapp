@@ -43,3 +43,14 @@ func StoreNodeRec(ctx context.Context, node *ch_manager.TypedNode) error {
 	node.ID = int32(mn.ID)
 	return nil
 }
+
+
+// RemoveNodeRec remove node
+func RemoveNodeRec(ctx context.Context,id int) error {
+	node := model.Node{ID: id}
+	err := model.DeleteNode(&node)
+	if err != nil {
+		return errors.Wrap(err, "insert node")
+	}
+	return nil
+}

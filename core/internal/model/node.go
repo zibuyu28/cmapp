@@ -45,3 +45,12 @@ func InsertNode(node *Node) error {
 	}
 	return nil
 }
+
+// DeleteNode delete node to db
+func DeleteNode(node *Node) error {
+	_, err := ormEngine.Delete(node)
+	if err != nil {
+		return errors.Wrapf(err, "node [%d] delete", node.ID)
+	}
+	return nil
+}
