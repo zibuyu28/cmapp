@@ -20,7 +20,7 @@ var (
 	// Timeout where we will bail if we're not able to properly contact the
 	// plugin server.
 	defaultTimeout = 10 * time.Second
-	CoreDrivers    = []string{"k8s"}
+	CoreDrivers    = []string{"k8s","virtualbox"}
 )
 
 const (

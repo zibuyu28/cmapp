@@ -18,6 +18,7 @@ package mengine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -40,7 +41,7 @@ const (
 )
 
 // CreateMachine create machine
-func CreateMachine(ctx context.Context, uuid string) error {
+func CreateMachine(ctx context.Context, uuid, param string) error {
 	log.Debugf(ctx, "Currently create machine logic, uuid [%v]", uuid)
 
 	driverName := os.Getenv(MachineEngineDriverName)
@@ -82,6 +83,24 @@ func CreateMachine(ctx context.Context, uuid string) error {
 	if err != nil {
 		log.Errorf(ctx, "Currently fail to new machine engine instance, driverName [%s]", driverName)
 		return errors.Wrap(err, "fail to new machine engine instance")
+	}
+	flags, err := meIns.GetCreateFlags(ctx, &driver.Empty{})
+	if err != nil {
+		return errors.Wrap(err, "get create flags")
+	}
+	var p = make(map[string]string)
+	err = json.Unmarshal([]byte(param), &p)
+	if err != nil {
+		return errors.Wrap(err, "param not in json format")
+	}
+	for i, flag := range flags.Flags {
+		if v, ok := p[flag.Name]; ok {
+			flags.Flags[i].Value = []string{v}
+		}
+	}
+	_, err = meIns.SetConfigFromFlags(ctx, flags)
+	if err != nil {
+		return errors.Wrap(err, "set config flags")
 	}
 
 	machine, err := meIns.InitMachine(ctx, &driver.Empty{})

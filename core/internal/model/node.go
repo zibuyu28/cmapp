@@ -23,10 +23,10 @@ import (
 
 // Node node definition in db
 type Node struct {
-	ID         int               `xorm:"int(11) pk 'id'"`
-	CreateTime time.Time         `xorm:"datetime create 'create_time'"`
-	UpdateTime time.Time         `xorm:"datetime update 'update_time'"`
-	DeleteTime time.Time         `xorm:"datetime delete 'delete_time'"`
+	ID         int               `xorm:"int(11) pk autoincr 'id'"`
+	CreateTime time.Time         `xorm:"datetime created 'create_time'"`
+	UpdateTime time.Time         `xorm:"datetime updated 'update_time'"`
+	DeleteTime time.Time         `xorm:"datetime deleted 'delete_time'"`
 	Name       string            `xorm:"varchar(256) 'name'"`
 	UUID       string            `xorm:"char(64) 'uuid'"`
 	Type       string            `xorm:"varchar(256) 'type'"`

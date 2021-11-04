@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/core/internal/model"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,6 +29,10 @@ import (
 // Serve all grpc and http
 func Serve(ctx context.Context) {
 	log.Info(ctx, "start grpc and http server")
+	err := model.InitORMEngine()
+	if err != nil {
+		panic(err)
+	}
 	go httpServerStart(context.Background())
 	go grpcServerStart(context.Background())
 	signalHandler()
@@ -49,6 +54,7 @@ func signalHandler() {
 		fmt.Println(fmt.Sprintf("service get a signal %s", s.String()))
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			Stop()
 			return
 		case syscall.SIGHUP:
 			return

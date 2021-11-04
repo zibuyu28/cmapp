@@ -37,32 +37,38 @@ import (
 )
 
 const (
-	DefaultGrpcPort int = 9009
+	DefaultGrpcPort   int    = 9009
+	DefaultDriverPath string = "drv.DriverPath"
 )
 
 const (
-	MachineEngineCoreGRPCPORT = "MACHINE_ENGINE_CORE_GRPC_PORT"
-	MachineEngineDriverID     = "MACHINE_ENGINE_DRIVER_ID"
-	MachineEngineDriverName   = "MACHINE_ENGINE_DRIVER_NAME"
+	MachineEngineCoreGRPCPORT  = "MACHINE_ENGINE_CORE_GRPC_PORT"
+	MachineEngineDriverID      = "MACHINE_ENGINE_DRIVER_ID"
+	MachineEngineDriverName    = "MACHINE_ENGINE_DRIVER_NAME"
+	MachineEngineDriverVersion = "MACHINE_ENGINE_DRIVER_VERSION"
 )
 
 // Create execute driver create command to initialization machine
-func Create(ctx context.Context, driverid int) error {
+func Create(ctx context.Context, driverid int, param interface{}) error {
 	drv, err := model.GetDriverByID(driverid)
 	if err != nil {
 		return errors.Wrap(err, "get driver by id")
 	}
-	err = CreateAction(ctx, "drv.DriverPath", drv.Name, driverid, uuid.New().String())
+	marshal, err := json.Marshal(param)
 	if err != nil {
-		return errors.Wrap(err, "create aciton")
+		return errors.Wrap(err, "marshal param")
+	}
+	err = CreateAction(ctx, DefaultDriverPath, drv, uuid.New().String(), string(marshal))
+	if err != nil {
+		return errors.Wrap(err, "create action")
 	}
 	return nil
 }
 
 // CreateAction driver to create machine
-func CreateAction(ctx context.Context, driverRootPath, driverName string, driverId int, args ...string) error {
-	abs, _ := filepath.Abs(filepath.Join(driverRootPath, driverName))
-	binaryPath := fmt.Sprintf("%s/exec/driver", abs)
+func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver, uuid, param string) error {
+	abs, _ := filepath.Abs(filepath.Join(driverRootPath, drv.Name, drv.Version))
+	binaryPath := fmt.Sprintf("%s/driver", abs)
 	_, err := os.Stat(binaryPath)
 	if err != nil {
 		if os.ErrNotExist == err {
@@ -70,11 +76,15 @@ func CreateAction(ctx context.Context, driverRootPath, driverName string, driver
 		}
 		return err
 	}
-	command := fmt.Sprintf("%s ro create", binaryPath)
-	newCmd := cmd.NewDefaultCMD(command, args, cmd.WithEnvs(map[string]string{
-		MachineEngineCoreGRPCPORT: strconv.Itoa(DefaultGrpcPort),
-		MachineEngineDriverName:   driverName,
-		MachineEngineDriverID:     strconv.Itoa(driverId),
+	command := fmt.Sprintf("%s ma create -u %s -p '%s'", binaryPath, uuid, param)
+	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
+		MachineEngineCoreGRPCPORT:  strconv.Itoa(DefaultGrpcPort),
+		MachineEngineDriverName:    drv.Name,
+		MachineEngineDriverVersion: drv.Version,
+		MachineEngineDriverID:      strconv.Itoa(drv.ID),
+		"BASE_CORE_ADDR":"10.1.41.185:9009",
+		"BASE_IMAGE_REPOSITORY":"harbor.hyeprchain.cn",
+		"BASE_IMAGE_STORE_PATH":"platform",
 	}), cmd.WithTimeout(300))
 	out, err := newCmd.Run()
 	if err != nil {

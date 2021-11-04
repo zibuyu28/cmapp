@@ -148,6 +148,7 @@ func (i *Ins) cmd() (out string, err error) {
 	cmd.SysProcAttr = sysProcAttr
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s",os.Getenv("PATH")))
 
 	// add env to cmd
 	if i.envs != nil {

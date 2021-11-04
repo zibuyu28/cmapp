@@ -23,10 +23,10 @@ import (
 
 // Machine machine definition in db
 type Machine struct {
-	ID         int               `xorm:"int(11) pk 'id'"`
-	CreateTime time.Time         `xorm:"datetime DEFAULT CURRENT_TIMESTAMP 'create_time'"`
-	UpdateTime time.Time         `xorm:"datetime DEFAULT CURRENT_TIMESTAMP 'update_time'"`
-	DeleteTime time.Time         `xorm:"datetime 'delete_time'"`
+	ID         int               `xorm:"int(11) pk autoincr 'id'"`
+	CreateTime time.Time         `xorm:"datetime created 'create_time'"`
+	UpdateTime time.Time         `xorm:"datetime updated 'update_time'"`
+	DeleteTime time.Time         `xorm:"datetime deleted 'delete_time'"`
 	State      int               `xorm:"int(8) DEFAULT 0 'state'"`
 	UUID       string            `xorm:"char(64) 'uuid'"`
 	DriverID   int               `xorm:"int(11) 'driver_id'"`

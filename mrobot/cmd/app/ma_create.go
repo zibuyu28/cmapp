@@ -18,34 +18,32 @@ package app
 
 import (
 	"context"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/internal/mengine"
 )
+
+var param string
+var uuid string
 
 // createCmd represents the ma command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "machine create",
+	Short: "create",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		err := mengine.CreateMachine(context.Background(), uuid.New().String())
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx := context.Background()
+		log.Debugf(ctx, "uuid : %s", uuid)
+		log.Debugf(ctx, "param : %s", param)
+		err := mengine.CreateMachine(ctx, uuid, param)
 		if err != nil {
-			return err
+			panic(err.Error())
 		}
-		return nil
-	},
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("args must contains uuid")
-		}
-		return nil
 	},
 }
 
@@ -60,5 +58,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// maCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	createCmd.Flags().StringVarP(&uuid, "uuid", "u", "", "the create machine's uuid")
+	createCmd.Flags().StringVarP(&param, "param", "p", "", "param to create action, format in json")
 }
