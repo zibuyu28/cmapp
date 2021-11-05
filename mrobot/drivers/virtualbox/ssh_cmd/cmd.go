@@ -22,8 +22,10 @@ import (
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -33,13 +35,30 @@ type SSHCli struct {
 	rmtHost  string `validate:"required"`
 	rmtPort  int    `validate:"required"`
 	userName string `validate:"required"`
-	password string `validate:"required"`
+	password string
+	keyPath  string
 
 	secure  bool
 	timeout time.Duration
 	SSHCli  *ssh.Client
 
 	envs map[string]string
+}
+
+func NewSSHCliWithKey(rmtHost string, rmtPort int, username, keyPath string) (*SSHCli, error) {
+	cli := &SSHCli{
+		rmtHost:  rmtHost,
+		rmtPort:  rmtPort,
+		userName: username,
+		keyPath:  keyPath,
+		secure:   false,
+		timeout:  defaultTimeout,
+	}
+	err := cli.initConn()
+	if err != nil {
+		return nil, errors.Wrap(err, "init connect")
+	}
+	return cli, nil
 }
 
 // NewSSHCli new ssh client
@@ -133,12 +152,17 @@ func (s *SSHCli) ExecCmd(cmd string, opt ...Opt) (string, error) {
 	}
 	defer sess.Close()
 
-	if s.envs != nil {
+	if s.envs != nil{
+		var envs []string
 		for key, val := range s.envs {
-			err = sess.Setenv(key, val)
-			if err != nil {
-				return "", errors.Wrapf(err, "set env key [%s], val [%s]", key, val)
-			}
+			//err = sess.Setenv(key, val)
+			//if err != nil {
+			//	return "", errors.Wrapf(err, "set env key [%s], val [%s]", key, val)
+			//}
+			envs = append(envs, fmt.Sprintf("%s=%s", key, val))
+		}
+		if len(envs) != 0 {
+			cmd = fmt.Sprintf("%s %s",strings.Join(envs, " "), cmd)
 		}
 	}
 	defer func() { s.envs = nil }()
@@ -171,7 +195,9 @@ func (s *SSHCli) initConn() error {
 	}
 
 	config := s.config()
-
+	if config == nil {
+		return errors.Errorf("fail to get config, please check param [%v]", s)
+	}
 	// Connect to host
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", s.rmtHost, s.rmtPort), config)
 	if err != nil {
@@ -190,10 +216,29 @@ func autoClose(cli *SSHCli) {
 }
 
 func (s *SSHCli) config() *ssh.ClientConfig {
+	if len(s.password) == 0 && len(s.keyPath) == 0 {
+		return nil
+	}
+	var authM ssh.AuthMethod
+	if len(s.password) != 0 {
+		authM = ssh.Password(s.password)
+	} else if len(s.keyPath) != 0 {
+		file, err := ioutil.ReadFile(s.keyPath)
+		if err != nil {
+			fmt.Printf("key [%s] not exist, err [%v]\n", s.keyPath, err)
+			return nil
+		}
+		key, err := ssh.ParsePrivateKey(file)
+		if err != nil {
+			fmt.Printf("parse private key , err [%v]\n", err)
+			return nil
+		}
+		authM = ssh.PublicKeys(key)
+	}
 	config := &ssh.ClientConfig{
 		User: s.userName,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(s.password),
+			authM,
 		},
 		Timeout: s.timeout,
 	}

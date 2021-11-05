@@ -115,7 +115,7 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	log.Debugf(ctx, "Currently init machine success, info [%+v]", machine)
 
 	// get grpc connect
-	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(10))
+	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(600))
 	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
 	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithInsecure(), grpc.WithBlock())
@@ -152,7 +152,7 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 		return errors.Wrap(err, "update machine info")
 	}
 
-	ma, err = meIns.InstallMRobot(ctx, &driver.Empty{})
+	ma, err = meIns.InstallMRobot(ctx, ma)
 	if err != nil {
 		return errors.Wrap(err, "install machine robot")
 	}
@@ -163,7 +163,7 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 		return errors.Wrap(err, "update machine info")
 	}
 
-	ma, err = meIns.MRoHealthCheck(ctx, &driver.Empty{})
+	ma, err = meIns.MRoHealthCheck(ctx, ma)
 	if err != nil {
 		return errors.Wrap(err, "machine robot health check")
 	}

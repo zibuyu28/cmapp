@@ -60,9 +60,8 @@ func pluginIns(ctx context.Context) (*plugin, error) {
 		listener.Close()
 	}()
 
-	fmt.Println(listener.Addr())
+	fmt.Println("agent start ok")
 
-	return &plugin{
-	}, nil
+	return &plugin{}, nil
 
 }

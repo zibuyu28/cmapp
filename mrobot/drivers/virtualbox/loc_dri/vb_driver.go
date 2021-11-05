@@ -21,6 +21,7 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/httputil"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/ssh_cmd"
 	virtualbox "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm"
@@ -28,16 +29,22 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
-	"strings"
 )
 
 const (
 	PluginEnvDriverName    = "MACHINE_PLUGIN_DRIVER_NAME"
 	PluginEnvDriverVersion = "MACHINE_PLUGIN_DRIVER_VERSION"
 	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
+)
+
+const (
+	AgentPluginName    = "AGENT_PLUGIN_DRIVER_NAME"
+	AgentPluginBuildIn = "AGENT_PLUGIN_BUILD_IN"
 )
 
 type DriverVB struct {
@@ -145,7 +152,7 @@ func (d *DriverVB) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) 
 		return nil, errors.Wrap(err, "test ssh flags")
 	}
 	_ = cli.Close()
-	return nil, nil
+	return &driver.Empty{}, nil
 }
 
 func (d *DriverVB) InitMachine(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
@@ -194,6 +201,7 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	if err != nil {
 		return nil, errors.Wrap(err, "new ssh cli")
 	}
+	defer cli.Close()
 	rmtDriver := virtualbox.NewRMTDriver(ctx, datas[0], d.ServerVMStorePath, d.ServerSSHHost, cli)
 	err = rmtDriver.Create()
 	if err != nil {
@@ -207,12 +215,17 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 		return nil, errors.New("get virtualbox ssh port is nil")
 	}
 
+	file, err := ioutil.ReadFile(rmtDriver.GetSSHKeyPath())
+	if err != nil {
+		return nil, errors.Wrap(err, "read ssh key")
+	}
 	var customInfo = map[string]string{
 		"virtualbox_ssh_port":     fmt.Sprintf("%d", port),
 		"virtualbox_ssh_host":     d.ServerSSHHost,
 		"virtualbox_ssh_username": rmtDriver.GetSSHUsername(),
 		"virtualbox_ssh_password": "",
 		"virtualbox_ssh_key_path": rmtDriver.GetSSHKeyPath(),
+		"virtualbox_ssh_key":      string(file),
 	}
 	return &driver.Machine{
 		UUID:       datas[0],
@@ -221,7 +234,7 @@ func (d *DriverVB) CreateExec(ctx context.Context, empty *driver.Empty) (*driver
 	}, nil
 }
 
-func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
+func (d *DriverVB) InstallMRobot(ctx context.Context, m *driver.Machine) (*driver.Machine, error) {
 	// 1. 请求远程vb webserver 安装 ha ----> 调研后发现不支持
 
 	// 2. 远程shell的方式可以直接创建 ----> 还是使用远程ssh的方式安装
@@ -237,12 +250,26 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dri
 
 	log.Debug(ctx, "Currently start to install mrobot")
 	// 远程ssh copy mrobot 到 virtualbox 内部
-	cli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
+	vbSSHPort := m.CustomInfo["virtualbox_ssh_port"]
+	vbSSHHost := m.CustomInfo["virtualbox_ssh_host"]
+	atoi, err := strconv.Atoi(vbSSHPort)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parse virtualbox ssh port [%s]", vbSSHPort)
+	}
+	vbSSHUsername := m.CustomInfo["virtualbox_ssh_username"]
+	//vbSSHPassword := m.CustomInfo["virtualbox_ssh_password"]
+	vbSSHKeypath := m.CustomInfo["virtualbox_ssh_key_path"]
+
+	cli, err := ssh_cmd.NewSSHCliWithKey(vbSSHHost, atoi, vbSSHUsername, vbSSHKeypath)
 	if err != nil {
 		return nil, errors.Wrap(err, "new ssh cli")
 	}
-
+	defer cli.Close()
 	s := os.Args[0]
+	goos := runtime.GOOS
+	if goos != "linux" {
+		s = s + "-linux"
+	}
 	abs, err := filepath.Abs(s)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get abs path of [%s]", s)
@@ -264,42 +291,75 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, empty *driver.Empty) (*dri
 	}
 
 	// TODO: 设置环境变量等等
+	const (
+		DriAgentHostIP        = "DRIAGENT_HOST_IP"
+		DriAgentHostPort      = "DRIAGENT_HOST_PORT"
+		DriAgentHostUsername  = "DRIAGENT_HOST_USERNAME"
+		DriAgentHostPassword  = "DRIAGENT_HOST_PASSWORD"
+		DriAgentHostStorePath = "DRIAGENT_HOST_STORE_PATH"
+		DriAgentVBUUID        = "DRIAGENT_VBUUID"
+		DriAgentMachineID     = "DRIAGENT_MACHINE_ID"
+	)
+
 	mrobotEnvs := map[string]string{
-		"MachineID":    fmt.Sprintf("%d", coreID),
-		"HostIP":       d.ServerSSHHost,
-		"HostPort":     fmt.Sprintf("%d", d.ServerSSHPort),
-		"HostUsername": d.ServerSSHUsername,
-		"HostPassword": d.ServerSSHPassword,
-		"StorePath":    d.ServerVMStorePath,
-		"VBUUID":       datas[0],
+		DriAgentMachineID:     fmt.Sprintf("%d", coreID),
+		DriAgentHostIP:        d.ServerSSHHost,
+		DriAgentHostPort:      fmt.Sprintf("%d", d.ServerSSHPort),
+		DriAgentHostUsername:  d.ServerSSHUsername,
+		DriAgentHostPassword:  d.ServerSSHPassword,
+		DriAgentHostStorePath: d.ServerVMStorePath,
+		DriAgentVBUUID:        datas[0],
+		AgentPluginBuildIn:    "true",
+		AgentPluginName:       "virtualbox",
 	}
 
 	// 远程执行启动命令
-	out, err := cli.ExecCmd(fmt.Sprintf("/home/docker/virtualbox-mrobot"), ssh_cmd.WithEnv(mrobotEnvs))
+	_, err = cli.ExecCmd("nohup /home/docker/virtualbox-mrobot ag >hostagent.log 2>&1 &", ssh_cmd.WithEnv(mrobotEnvs))
 	if err != nil {
 		return nil, errors.Wrap(err, "run cmd to start mrobot")
 	}
-	if !strings.Contains(out, "ok") {
-		return nil, errors.New("fail to mrobot start")
-	}
+	//log.Debugf(ctx, "")
+	//if !strings.Contains(out, "agent start ok") {
+	//	return nil, errors.New("fail to start mrobot")
+	//}
 	log.Debug(ctx, "Currently install mrobot success")
+
 	// 将 9008 端口映射出来，并且返回外部可以访问的地址
-	rmtDriver := virtualbox.NewRMTDriver(ctx, datas[0], d.ServerVMStorePath, d.ServerSSHHost, cli)
-	port, err := rmtDriver.ExportPort("ag_grpc_port", "tcp", worker.AGGRPCDefaultPort)
+	sshCli, err := ssh_cmd.NewSSHCli(d.ServerSSHHost, d.ServerSSHPort, d.ServerSSHUsername, d.ServerSSHPassword)
+	if err != nil {
+		return nil, errors.Wrap(err, "new vb server client")
+	}
+	defer sshCli.Close()
+	rmtDriver := virtualbox.NewRMTDriver(ctx, datas[0], d.ServerVMStorePath, d.ServerSSHHost, sshCli)
+	grpcPort, err := rmtDriver.ExportPort("ag_grpc_port", "tcp", worker.AGGRPCDefaultPort)
 	if err != nil {
 		return nil, errors.Wrap(err, "export grpc port")
 	}
-	return &driver.Machine{
-		UUID:       datas[0],
-		State:      1,
-		AGGRPCAddr: fmt.Sprintf("%s:%d", d.ServerSSHHost, port),
-	}, nil
+	healthPort, err := rmtDriver.ExportPort("ag_health_port", "tcp", worker.AGHealthDefaultPort)
+	if err != nil {
+		return nil, errors.Wrap(err, "export health port")
+	}
+	m.AGGRPCAddr = fmt.Sprintf("%s:%d", d.ServerSSHHost, grpcPort)
+	m.CustomInfo["health_addr"] = fmt.Sprintf("%s:%d", d.ServerSSHHost, healthPort)
+	m.State = 1
+	m.UUID = datas[0]
+	return m, nil
 }
 
-func (d *DriverVB) MRoHealthCheck(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
+func (d *DriverVB) MRoHealthCheck(ctx context.Context, m *driver.Machine) (*driver.Machine, error) {
 	// 使用远程ssh的方式调用version接口
-	log.Debug(ctx, "Currently start to check health")
-	return nil, nil
+	s, ok := m.CustomInfo["health_addr"]
+	if !ok {
+		return nil, errors.New("health addr is nil")
+	}
+	get, err := httputil.HTTPDoGet(fmt.Sprintf("http://%s/healthz", s))
+	if err != nil {
+		return nil, errors.Wrap(err, "request to agent healthz interface")
+	}
+	if string(get) == "ok" {
+		m.State = 2
+	}
+	return m, nil
 }
 
 func (d *DriverVB) Exit(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {

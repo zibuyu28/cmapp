@@ -6,7 +6,6 @@ require (
 	github.com/agiledragon/gomonkey v2.0.1+incompatible
 	github.com/bramvdbogaerde/go-scp v1.1.0
 	github.com/go-playground/validator/v10 v10.4.1
-	github.com/goinggo/mapstructure v0.0.0-20140717182941-194205d9b4a9
 	github.com/google/uuid v1.2.0
 	github.com/intel-go/cpuid v0.0.0-20210602155658-5747e5cec0d9
 	github.com/mitchellh/go-homedir v1.1.0

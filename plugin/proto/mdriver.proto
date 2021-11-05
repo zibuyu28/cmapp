@@ -23,11 +23,11 @@ service MachineDriver {
     }
 
     // InstallMRobot install machine robot in this new machine
-    rpc InstallMRobot (Empty) returns (Machine) {
+    rpc InstallMRobot (Machine) returns (Machine) {
     }
 
     // MRoHealthCheck check machine robot install successfully or not
-    rpc MRoHealthCheck (Empty) returns (Machine) {
+    rpc MRoHealthCheck (Machine) returns (Machine) {
     }
 
     // Exit driver exit
@@ -43,7 +43,7 @@ message Flag {
     string Name = 1;
     string Usage = 2;
     string EnvVar = 3;
-    repeated string value = 4;
+    repeated string Value = 4;
 }
 
 message Empty {

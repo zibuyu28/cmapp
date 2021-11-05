@@ -20,10 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
@@ -58,7 +58,7 @@ func Create(ctx context.Context, driverid int, param interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "marshal param")
 	}
-	err = CreateAction(ctx, DefaultDriverPath, drv, uuid.New().String(), string(marshal))
+	err = CreateAction(ctx, DefaultDriverPath, drv, md5.MD5(fmt.Sprintf("%d", time.Now().UnixNano())), string(marshal))
 	if err != nil {
 		return errors.Wrap(err, "create action")
 	}
@@ -82,10 +82,10 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		MachineEngineDriverName:    drv.Name,
 		MachineEngineDriverVersion: drv.Version,
 		MachineEngineDriverID:      strconv.Itoa(drv.ID),
-		"BASE_CORE_ADDR":"10.1.41.185:9009",
-		"BASE_IMAGE_REPOSITORY":"harbor.hyeprchain.cn",
-		"BASE_IMAGE_STORE_PATH":"platform",
-	}), cmd.WithTimeout(300))
+		"BASE_CORE_ADDR":           "10.1.41.185:9009",
+		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
+		"BASE_IMAGE_STORE_PATH":    "platform",
+	}), cmd.WithTimeout(600))
 	out, err := newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)

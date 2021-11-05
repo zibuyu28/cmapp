@@ -4,7 +4,6 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/base"
 	mcnutils "github.com/zibuyu28/cmapp/mrobot/drivers/virtualbox/vboxm/util"
 	"time"
-
 )
 
 // IPWaiter waits for an IP to be configured.

@@ -51,22 +51,22 @@ type VirtualboxWorker struct {
 func NewVirtualboxWorker() *VirtualboxWorker {
 	w := &VirtualboxWorker{
 		MachineID:    0,
-		HostIP:       agfw.Flags["HostIP"].Value,
+		HostIP:       agfw.Flags["HOST_IP"].Value,
 		HostPort:     0,
-		HostUsername: agfw.Flags["HostUsername"].Value,
-		HostPassword: agfw.Flags["HostPassword"].Value,
-		StorePath:    agfw.Flags["StorePath"].Value,
+		HostUsername: agfw.Flags["HOST_USERNAME"].Value,
+		HostPassword: agfw.Flags["HOST_PASSWORD"].Value,
+		StorePath:    agfw.Flags["HOST_STORE_PATH"].Value,
 		VBUUID:       agfw.Flags["VBUUID"].Value,
 	}
-	if len(agfw.Flags["HostPort"].Value) != 0 {
-		port, err := strconv.Atoi(agfw.Flags["HostPort"].Value)
+	if len(agfw.Flags["HOST_PORT"].Value) != 0 {
+		port, err := strconv.Atoi(agfw.Flags["HOST_PORT"].Value)
 		if err != nil {
 			panic(err)
 		}
 		w.HostPort = port
 	}
-	if len(agfw.Flags["MachineID"].Value) != 0 {
-		mid, err := strconv.Atoi(agfw.Flags["MachineID"].Value)
+	if len(agfw.Flags["MACHINE_ID"].Value) != 0 {
+		mid, err := strconv.Atoi(agfw.Flags["MACHINE_ID"].Value)
 		if err != nil {
 			panic(err)
 		}

@@ -523,6 +523,7 @@ type ChainDriverClient interface {
 	InitChain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Chain, error)
 	// CreateChainExec execute create chain action
 	CreateChainExec(ctx context.Context, in *Chain, opts ...grpc.CallOption) (*Empty, error)
+	// Exit driver exit
 	Exit(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -567,6 +568,7 @@ type ChainDriverServer interface {
 	InitChain(context.Context, *Empty) (*Chain, error)
 	// CreateChainExec execute create chain action
 	CreateChainExec(context.Context, *Chain) (*Empty, error)
+	// Exit driver exit
 	Exit(context.Context, *Empty) (*Empty, error)
 }
 

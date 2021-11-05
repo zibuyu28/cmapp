@@ -74,7 +74,7 @@ func init() {
 //	},
 //}
 
-var AGDefaultHealthPort = 9009
+var AGHealthDefaultPort = 9009
 
 func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
 	var mux *http.ServeMux
@@ -87,7 +87,7 @@ func healthFunc(ctx context.Context, muxs []*http.ServeMux) {
 		_, _ = io.WriteString(writer, "ok")
 	})
 	s := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", AGDefaultHealthPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", AGHealthDefaultPort),
 		Handler: mux,
 	}
 	err := s.ListenAndServe()
