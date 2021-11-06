@@ -82,10 +82,10 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		MachineEngineDriverName:    drv.Name,
 		MachineEngineDriverVersion: drv.Version,
 		MachineEngineDriverID:      strconv.Itoa(drv.ID),
-		"BASE_CORE_ADDR":           "10.1.41.185:9009",
+		"BASE_CORE_ADDR":           "192.168.31.63:9009",
 		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
 		"BASE_IMAGE_STORE_PATH":    "platform",
-	}), cmd.WithTimeout(600))
+	}), cmd.WithTimeout(10))
 	out, err := newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)

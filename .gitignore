@@ -3,6 +3,7 @@
 core/core
 crobot/crobot
 mrobot/mrobot
+mrobot/mrobot-linux
 mrobot/bin/boot2docker.iso
 /mrobot/drivers/virtualbox/vboxm/sshkey/
 /core/drv.DriverPath/

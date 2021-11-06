@@ -169,9 +169,20 @@ func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 		lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginBuildIn, "true"))
 	}
 
-	if err := lbe.cmd.Start(); err != nil {
-		return nil, nil, fmt.Errorf("Error starting plugin binary: %s", err)
-	}
+	go func() {
+		e := lbe.cmd.Start()
+		if e != nil {
+			log.Errorf(lbe.ctx, "Error starting plugin binary: %v", err)
+		}
+	}()
+
+	go func(ctx context.Context) {
+		<-ctx.Done()
+		e := lbe.cmd.Process.Kill()
+		if e != nil {
+			log.Errorf(lbe.ctx, "kill process : %v", err)
+		}
+	}(lbe.ctx)
 
 	return outScanner, errScanner, nil
 }
@@ -212,6 +223,7 @@ func (lbp *Plugin) execServer() error {
 
 	// Scan just one line to get the address, then send it to the relevant
 	// channel.
+	log.Debugf(lbp.Ctx, "start to get addr")
 	outScanner.Scan()
 	addr := outScanner.Text()
 	if err := outScanner.Err(); err != nil {

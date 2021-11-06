@@ -140,9 +140,8 @@ func getCEnginePluginInstance(ctx context.Context, driverID int, driverName, dri
 		if err = plugin.Serve(); err != nil {
 			// TODO: Is this best approach?
 			log.Warn(ctx, err.Error())
-			return
+			//return nil, errors.Wrap(err, "plugin serve")
 		}
-
 	}()
 
 	address, err := plugin.Address()
