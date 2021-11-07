@@ -78,6 +78,8 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 	}
 	outCh := make(chan string, 10)
 	defer close(outCh)
+	timeout, cancelFunc := context.WithTimeout(ctx, 600*time.Second)
+	defer cancelFunc()
 
 	command := fmt.Sprintf("%s ma create -u %s -p '%s'", binaryPath, uuid, param)
 	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
@@ -89,7 +91,7 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
 		"BASE_IMAGE_STORE_PATH":    "platform",
 	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
-	go driverOutput(ctx, outCh)
+	go driverOutput(timeout, outCh)
 	_, err = newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)

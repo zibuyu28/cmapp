@@ -42,6 +42,8 @@ const (
 
 // CreateMachine create machine
 func CreateMachine(ctx context.Context, uuid, param string) error {
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
 	log.Debugf(ctx, "Currently create machine logic, uuid [%v]", uuid)
 
 	driverName := os.Getenv(MachineEngineDriverName)
@@ -175,7 +177,6 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	}
 
 	// TODO: need stop plugin server
-	ctx.Done()
 
 	// register machine to machine center
 

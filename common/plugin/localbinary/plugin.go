@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -177,6 +178,10 @@ func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 }
 
 func (lbe *Executor) Close() error {
+	go func() {
+		<-lbe.ctx.Done()
+		_ = syscall.Kill(lbe.cmd.Process.Pid, syscall.SIGKILL)
+	}()
 	if err := lbe.cmd.Wait(); err != nil {
 		return fmt.Errorf("Error waiting for binary close: %s", err)
 	}
@@ -230,6 +235,11 @@ func (lbp *Plugin) execServer() error {
 			log.Infof(lbp.Ctx, pluginOut, lbp.MachineName, out)
 		case err := <-stdErrCh:
 			log.Debugf(lbp.Ctx, pluginErr, lbp.MachineName, err)
+		case <-lbp.Ctx.Done():
+			if err := lbp.Executor.Close(); err != nil {
+				return fmt.Errorf("Error closing local plugin binary: %s", err)
+			}
+			return nil
 		case <-lbp.stopCh:
 			if err := lbp.Executor.Close(); err != nil {
 				return fmt.Errorf("Error closing local plugin binary: %s", err)

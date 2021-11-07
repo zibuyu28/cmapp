@@ -32,6 +32,7 @@ type Ins struct {
 	workdir   string
 	stream    bool
 	outStream chan string
+	ctx       context.Context
 }
 type CmdOption func(info *Ins)
 
@@ -43,6 +44,7 @@ func NewDefaultCMD(command string, args []string, opts ...CmdOption) *Ins {
 		command:   command,
 		args:      args,
 		retry:     1,
+		ctx:       context.Background(),
 	}
 	for _, opt := range opts {
 		opt(&i)
@@ -93,6 +95,12 @@ func WithStream(outStream chan string) CmdOption {
 	return func(i *Ins) {
 		i.stream = true
 		i.outStream = outStream
+	}
+}
+
+func WithContext(ctx context.Context) CmdOption {
+	return func(i *Ins) {
+		i.ctx = ctx
 	}
 }
 
@@ -149,7 +157,7 @@ func (i *Ins) cmd() (out string, err error) {
 	}
 
 	// 超时控制
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(i.ctx, time.Duration(i.timeout)*time.Second)
 	defer cancel()
 
 	switch i.shellType {
@@ -177,9 +185,9 @@ func (i *Ins) cmd() (out string, err error) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		fmt.Printf( "stdout: %s\n", stdout.String())
-		fmt.Printf( "stderr: %s\n", stderr.String())
-		fmt.Printf( "err: %s\n", err.Error())
+		fmt.Printf("stdout: %s\n", stdout.String())
+		fmt.Printf("stderr: %s\n", stderr.String())
+		fmt.Printf("err: %s\n", err.Error())
 		return "", err
 	}
 
@@ -192,9 +200,9 @@ func (i *Ins) cmd() (out string, err error) {
 		case <-ctx.Done():
 			//fmt.Println("ctx timeout")
 			if i.forceKill {
-				//fmt.Printf("ctx timeout kill job ppid:%d\n", cmd.Process.Pid)
+				fmt.Printf("ctx timeout kill job ppid:%d\n", cmd.Process.Pid)
 				if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
-					//fmt.Println("syscall.Kill return err: ", err)
+					fmt.Println("syscall.Kill return err: ", err)
 					return
 				}
 			}
@@ -211,8 +219,8 @@ func (i *Ins) cmd() (out string, err error) {
 			return "", err
 		}
 		// 未超时，被执行程序主动退出
-		fmt.Printf( "stdout: %s\n", stdout.String())
-		fmt.Printf( "stderr: %s\n", stderr.String())
+		fmt.Printf("stdout: %s\n", stdout.String())
+		fmt.Printf("stderr: %s\n", stderr.String())
 		if len(stderr.String()) != 0 {
 			return stdout.String(), errors.New(stderr.String())
 		}
@@ -254,7 +262,7 @@ func stream(scanner *bufio.Scanner, streamOutCh chan<- string, stopCh <-chan str
 	for scanner.Scan() {
 		line := scanner.Text()
 		if err := scanner.Err(); err != nil {
-			fmt.Printf( "Scanning stream: %s\n", err)
+			fmt.Printf("Scanning stream: %s\n", err)
 		}
 		select {
 		case streamOutCh <- strings.Trim(line, "\n"):
@@ -277,7 +285,7 @@ func (i *Ins) cmdWithStream() error {
 	}
 
 	// 超时控制
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(i.ctx, time.Duration(i.timeout)*time.Second)
 	defer cancel()
 
 	switch i.shellType {
@@ -324,7 +332,9 @@ func (i *Ins) cmdWithStream() error {
 		select {
 		case <-ctx.Done():
 			if i.forceKill {
+				fmt.Printf("ctx timeout kill job ppid:%d\n", cmd.Process.Pid)
 				if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
+					fmt.Println("syscall.Kill return err: ", err)
 					return
 				}
 			}
@@ -339,7 +349,7 @@ func (i *Ins) cmdWithStream() error {
 			return errors.Wrap(err, "cmd wait")
 		}
 		// 未超时，被执行程序主动退出
-		fmt.Printf( "stderr: %s\n", stderr.String())
+		fmt.Printf("stderr: %s\n", stderr.String())
 		if len(stderr.String()) != 0 {
 			return errors.New(stderr.String())
 		}
