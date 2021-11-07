@@ -20,7 +20,7 @@ var (
 	// Timeout where we will bail if we're not able to properly contact the
 	// plugin server.
 	defaultTimeout = 10 * time.Second
-	CoreDrivers    = []string{"k8s","virtualbox"}
+	CoreDrivers    = []string{"k8s", "virtualbox"}
 )
 
 const (
@@ -168,21 +168,10 @@ func (lbe *Executor) Start() (*bufio.Scanner, *bufio.Scanner, error) {
 	if abs == lbe.binaryPath {
 		lbe.cmd.Env = append(lbe.cmd.Env, fmt.Sprintf("%s=%s", PluginBuildIn, "true"))
 	}
-
-	go func() {
-		e := lbe.cmd.Start()
-		if e != nil {
-			log.Errorf(lbe.ctx, "Error starting plugin binary: %v", err)
-		}
-	}()
-
-	go func(ctx context.Context) {
-		<-ctx.Done()
-		e := lbe.cmd.Process.Kill()
-		if e != nil {
-			log.Errorf(lbe.ctx, "kill process : %v", err)
-		}
-	}(lbe.ctx)
+	err = lbe.cmd.Start()
+	if err != nil {
+		return nil, nil, fmt.Errorf("Error starting plugin binary: %v", err)
+	}
 
 	return outScanner, errScanner, nil
 }

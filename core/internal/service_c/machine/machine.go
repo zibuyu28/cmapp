@@ -58,7 +58,7 @@ func Create(ctx context.Context, driverid int, param interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "marshal param")
 	}
-	err = CreateAction(ctx, DefaultDriverPath, drv, md5.MD5(fmt.Sprintf("%d", time.Now().UnixNano())), string(marshal))
+	err = CreateAction(ctx, DefaultDriverPath, drv, fmt.Sprintf("VB-%s", md5.MD5(fmt.Sprintf("%d", time.Now().UnixNano()))[:8]), string(marshal))
 	if err != nil {
 		return errors.Wrap(err, "create action")
 	}
@@ -76,6 +76,9 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		}
 		return err
 	}
+	outCh := make(chan string, 10)
+	defer close(outCh)
+
 	command := fmt.Sprintf("%s ma create -u %s -p '%s'", binaryPath, uuid, param)
 	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
 		MachineEngineCoreGRPCPORT:  strconv.Itoa(DefaultGrpcPort),
@@ -85,13 +88,25 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		"BASE_CORE_ADDR":           "192.168.31.63:9009",
 		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
 		"BASE_IMAGE_STORE_PATH":    "platform",
-	}), cmd.WithTimeout(10))
-	out, err := newCmd.Run()
+	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
+	go driverOutput(ctx, outCh)
+	_, err = newCmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "fail to execute command [%s]", command)
 	}
-	log.Infof(ctx, "Currently ro create command execute result : %s", out)
+	//log.Infof(ctx, "Currently ro create command execute result : %s", out)
 	return nil
+}
+
+func driverOutput(ctx context.Context, outCh chan string) {
+	for {
+		select {
+		case l := <-outCh:
+			log.Info(ctx, l)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 type RMD struct {
