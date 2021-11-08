@@ -3,6 +3,7 @@ package fabtool
 import (
 	"context"
 	"fmt"
+	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -75,8 +76,8 @@ func downLoadTool(ctx context.Context, toolName, version string, toolFullName st
 	}
 	log.Debugf(ctx, "get os [%s] and arch [%s]", runtime.GOOS, runtime.GOARCH)
 	remoteFileName := fmt.Sprintf("fabric-%s-%s-%s-%s", toolName, runtime.GOOS, runtime.GOARCH, formatVersion)
-	var capi ag.CoreAPI
-	fc, err := capi.DownloadFile(remoteFileName)
+	core := ag.Core{ApiVersion: base.V1}
+	fc, err := core.DownloadFile(remoteFileName)
 	if err != nil {
 		return errors.Wrap(err, "download file from driver")
 	}

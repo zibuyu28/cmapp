@@ -31,7 +31,7 @@ import (
 )
 
 type Core struct {
-	apiVersion base.APIVersion
+	ApiVersion base.APIVersion
 }
 
 var coreDefaultHost = "127.0.0.1"
@@ -39,7 +39,7 @@ var coreDefaultHost = "127.0.0.1"
 var coreDefaultPort = 9008
 
 func (c Core) DownloadFile(fileName string) ([]byte, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.apiVersion), fileName), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion), fileName), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new http request")
 	}
@@ -82,7 +82,7 @@ func (c Core) UploadFile(fileName string) (string, error) {
 		_ = writer.Close()
 		_ = pw.Close()
 	}()
-	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.apiVersion), tFileName), pr)
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion), tFileName), pr)
 	if err != nil {
 		return "", errors.Wrap(err, "new post request")
 	}
