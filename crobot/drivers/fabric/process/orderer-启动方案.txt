@@ -1,0 +1,55 @@
+orderer 启动方案
+
+根目录：/Users/wanghengfang/Documents/fabricphy
+目录结构  
+.
+├── genesis.block
+├── msp
+│   ├── admincerts
+│   │   └── Admin@example.com-cert.pem
+│   ├── cacerts
+│   │   └── ca.example.com-cert.pem
+│   ├── keystore
+│   │   └── 9610264e96ca77515e118d97c54b336a7d83f0381ed99a11046884715ed0396e_sk
+│   ├── signcerts
+│   │   └── orderer.example.com-cert.pem
+│   └── tlscacerts
+│       └── tlsca.example.com-cert.pem
+├── orderer
+├── orderer.yaml
+├── pro-data
+│   ├── chains
+│   │   └── testchainid
+│   │       └── blockfile_000000
+│   └── index
+│       ├── 000002.ldb
+│       ├── 000005.ldb
+│       ├── 000006.log
+│       ├── CURRENT
+│       ├── CURRENT.bak
+│       ├── LOCK
+│       ├── LOG
+│       └── MANIFEST-000007
+└── tls
+    ├── ca.crt
+    ├── server.crt
+    └── server.key
+
+export FABRIC_CFG_PATH=/Users/wanghengfang/Documents/fabricphy 
+export ORDERER_FILELEDGER_LOCATION=/Users/wanghengfang/Documents/fabricphy/pro-data
+export ORDERER_GENERAL_GENESISFILE=/Users/wanghengfang/Documents/fabricphy/genesis.block
+export FABRIC_LOGGING_SPEC=info
+export ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+export ORDERER_GENERAL_LISTENPORT=30493
+export ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8443
+export ORDERER_GENERAL_GENESISMETHOD=file
+export ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+export ORDERER_GENERAL_LOCALMSPDIR=/Users/wanghengfang/Documents/fabricphy/msp
+export ORDERER_GENERAL_TLS_ENABLED=true
+export ORDERER_GENERAL_TLS_PRIVATEKEY=/Users/wanghengfang/Documents/fabricphy/tls/server.key
+export ORDERER_GENERAL_TLS_CERTIFICATE=/Users/wanghengfang/Documents/fabricphy/tls/server.crt
+export ORDERER_GENERAL_TLS_ROOTCAS=/Users/wanghengfang/Documents/fabricphy/tls/ca.crt
+export ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/Users/wanghengfang/Documents/fabricphy/tls/server.key
+export ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/Users/wanghengfang/Documents/fabricphy/tls/server.crt
+export ORDERER_GENERAL_CLUSTER_ROOTCAS=/Users/wanghengfang/Documents/fabricphy/tls/ca.crt
+export GODEBUG="netdns=go"

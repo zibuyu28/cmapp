@@ -124,13 +124,14 @@ func NewPlugin(ctx context.Context, driverID int, driverName, driverVersion stri
 
 	log.Debugf(ctx, "Found binary path at %s", dpabs)
 	_ = os.Chmod(dpabs, os.ModePerm)
+	value := context.WithValue(ctx, "", "")
 
 	return &Plugin{
 		Ctx:    ctx,
 		stopCh: make(chan struct{}),
 		addrCh: make(chan string, 1),
 		Executor: &Executor{
-			ctx:           ctx,
+			ctx:           value,
 			DriverVersion: driverVersion,
 			DriverName:    driverName,
 			DriverID:      driverID,
