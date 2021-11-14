@@ -32,8 +32,8 @@ var mockFabric = Fabric{
 	Name:        "mock-fab",
 	UUID:        "mock-uuid",
 	Version:     "1.4.1",
-	Consensus:   "solo",
-	CertGenType: "bin-tool",
+	Consensus:   Solo,
+	CertGenType: CertBinaryTool,
 	Channels: []Channel{
 		{
 			Name:                     "mock-channel",
@@ -70,6 +70,7 @@ var mockFabric = Fabric{
 			},
 			AnchorPeer: true,
 			Tag:        "mock-tag-peer0",
+			RMTDocker:  "tcp://10.1.41.185:2375",
 		},
 	},
 }
@@ -164,7 +165,7 @@ func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*d
 	worker := process.NewCreateChainWorker(ctx, "")
 	err := worker.CreateChainProcess(&mockFabric)
 	if err != nil {
-		return nil, errors.Wrap(err,"create chain process")
+		return nil, errors.Wrap(err, "create chain process")
 	}
 	return c, nil
 }
