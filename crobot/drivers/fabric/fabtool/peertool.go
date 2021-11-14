@@ -44,10 +44,8 @@ const (
 	FetchBlock  FetchType = "block"
 )
 
-
-func (p PeerTool) CreateNewChannel(driveruuid string,chain *fabric.Fabric, channel fabric.Channel, targetPeer *fabric.Peer, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
+func (p PeerTool) CreateNewChannel(chain *fabric.Fabric, channel fabric.Channel, targetPeer *fabric.Peer, baseDir string) error {
+	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, err := filepath.Abs(baseDir)
 	if err != nil {
@@ -114,9 +112,8 @@ func (p PeerTool) CreateNewChannel(driveruuid string,chain *fabric.Fabric, chann
 	return nil
 }
 
-func (p PeerTool) JoinChannel(driveruuid string, chain *fabric.Fabric, targetPeer *fabric.Peer, channelBlockPath, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
+func (p PeerTool) JoinChannel(chain *fabric.Fabric, targetPeer *fabric.Peer, channelBlockPath, baseDir string) error {
+	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 
 	_, err := os.Stat(channelBlockPath)
@@ -164,9 +161,8 @@ func (p PeerTool) JoinChannel(driveruuid string, chain *fabric.Fabric, targetPee
 	return nil
 }
 
-func (p PeerTool) UpdateAnchorPeer(driveruuid string, chain *fabric.Fabric, targetPeer *fabric.Peer, updatePb, baseDir string) error {
-	pwd, _ := os.Getwd()
-	peer := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/peer", chain.Version))
+func (p PeerTool) UpdateAnchorPeer(chain *fabric.Fabric, targetPeer *fabric.Peer, updatePb, baseDir string) error {
+	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, _ := filepath.Abs(baseDir)
 

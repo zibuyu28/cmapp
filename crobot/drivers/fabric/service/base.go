@@ -18,6 +18,5 @@ package service
 
 
 type BaseWorker struct {
-	driveruuid string
 	workDir string
 }

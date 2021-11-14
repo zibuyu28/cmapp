@@ -29,17 +29,16 @@ type ChannelWorker struct {
 }
 
 // NewChannelWorker new channel worker
-func NewChannelWorker(driveruuid, workDir string) *ChannelWorker {
+func NewChannelWorker(workDir string) *ChannelWorker {
 	return &ChannelWorker{
 		BaseWorker: BaseWorker{
-			driveruuid: driveruuid,
-			workDir:    workDir,
+			workDir: workDir,
 		},
 	}
 }
 
 func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "peer", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")
 	}
@@ -54,7 +53,7 @@ func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *fabric.Fab
 		return errors.New("no anchor peer")
 	}
 	for _, channel := range chain.Channels {
-		err = itool.(fabtool.PeerTool).CreateNewChannel(c.driveruuid, chain, channel, targetPeer, c.workDir)
+		err = itool.(fabtool.PeerTool).CreateNewChannel(chain, channel, targetPeer, c.workDir)
 		if err != nil {
 			return errors.Wrap(err, "generate genesis block")
 		}
@@ -63,13 +62,13 @@ func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *fabric.Fab
 }
 
 func (c *ChannelWorker) JoinInitChannel(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "peer", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")
 	}
 	for _, peer := range chain.Peers {
 		for _, channel := range chain.Channels {
-			err = itool.(fabtool.PeerTool).JoinChannel(c.driveruuid, chain, &peer, fmt.Sprintf("%s/%s.block", c.workDir, channel.UUID), c.workDir)
+			err = itool.(fabtool.PeerTool).JoinChannel(chain, &peer, fmt.Sprintf("%s/%s.block", c.workDir, channel.UUID), c.workDir)
 			if err != nil {
 				return errors.Wrap(err, "generate genesis block")
 			}
@@ -78,16 +77,15 @@ func (c *ChannelWorker) JoinInitChannel(ctx context.Context, chain *fabric.Fabri
 	return nil
 }
 
-
 func (c *ChannelWorker) UpdateAnchorPeers(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "peer", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")
 	}
 	for _, peer := range chain.Peers {
 		if peer.AnchorPeer {
 			for _, channel := range chain.Channels {
-				err = itool.(fabtool.PeerTool).UpdateAnchorPeer(c.driveruuid, chain, &peer, fmt.Sprintf("%s/%s-%sMSPAnchors.tx", c.workDir, channel.UUID, peer.Organization.UUID), c.workDir)
+				err = itool.(fabtool.PeerTool).UpdateAnchorPeer(chain, &peer, fmt.Sprintf("%s/%s-%sMSPAnchors.tx", c.workDir, channel.UUID, peer.Organization.UUID), c.workDir)
 				if err != nil {
 					return errors.Wrap(err, "generate genesis block")
 				}
@@ -96,4 +94,3 @@ func (c *ChannelWorker) UpdateAnchorPeers(ctx context.Context, chain *fabric.Fab
 	}
 	return nil
 }
-

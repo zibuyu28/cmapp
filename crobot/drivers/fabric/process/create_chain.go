@@ -31,14 +31,12 @@ import (
 
 type CreateChainWorker struct {
 	ctx        context.Context
-	driveruuid string
 	baseDir    string
 }
 
-func NewCreateChainWorker(ctx context.Context, driveruuid, baseDir string) *CreateChainWorker {
+func NewCreateChainWorker(ctx context.Context, baseDir string) *CreateChainWorker {
 	return &CreateChainWorker{
 		ctx:        ctx,
-		driveruuid: driveruuid,
 		baseDir:    baseDir,
 	}
 }
@@ -58,14 +56,14 @@ func (c *CreateChainWorker) CreateChainProcess(chain *fabric.Fabric) error {
 	// 生成证书
 	basePath, _ := filepath.Abs(fmt.Sprintf("chain_certs/%s_%s", chain.Name, chain.UUID))
 	_ = os.MkdirAll(basePath, os.ModePerm)
-	certWorker := service.NewCertWorker(c.driveruuid, basePath)
+	certWorker := service.NewCertWorker(basePath)
 	err = certWorker.InitCert(c.ctx, chain)
 	if err != nil {
 		return errors.Wrap(err, "init cert")
 	}
 	log.Debugf(c.ctx, "init cert success")
 	// 生成configtx.yaml
-	configWorker := service.NewConfigWorker(c.driveruuid, basePath)
+	configWorker := service.NewConfigWorker(basePath)
 	err = configWorker.InitTxFile(c.ctx, chain)
 	if err != nil {
 		return errors.Wrap(err, "init config tx file")
@@ -124,7 +122,7 @@ func (c *CreateChainWorker) CreateChainProcess(chain *fabric.Fabric) error {
 	log.Debugf(c.ctx, "construct peer app success")
 
 	// 创建初始通道
-	channelWorker := service.NewChannelWorker(c.driveruuid, basePath)
+	channelWorker := service.NewChannelWorker(basePath)
 	err = channelWorker.CreateInitChannel(c.ctx, chain)
 	if err != nil {
 		return errors.Wrap(err, "create init channel")
@@ -191,31 +189,34 @@ func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
 			return errors.Wrap(err, "set app health")
 		}
 		var envs = make(map[string]string)
-		envs["CORE_LEDGER_STATE_STATEDATABASE"] = "CouchDB"
-		for i, network := range peer.CouchDB.Networks {
-			if network.PortInfo.Port != 5984 {
-				continue
-			}
-			for _, s := range peer.CouchDB.Networks[i].RouteInfo {
-				if s.RouteType == ag.OUT {
-					envs["CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS"] = s.Router
-				}
-			}
-		}
-		envs["CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME"] = ""
-		envs["CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD"] = ""
-		envs["CORE_CHAINCODE_BUILDER"] = ""
-		envs["CORE_CHAINCODE_GOLANG_RUNTIME"] = ""
-		envs["CORE_VM_ENDPOINT"] = ""
+		envs["FABRIC_CFG_PATH"] = peer.APP.Workspace.Workspace
+		envs["CORE_PEER_FILESYSTEMPATH"] = fmt.Sprintf("%s/pro-data",peer.APP.Workspace.Workspace)
+		envs["CORE_LEDGER_STATE_STATEDATABASE"] = "goleveldb"
+		//envs["CORE_LEDGER_STATE_STATEDATABASE"] = "CouchDB"
+		//for i, network := range peer.CouchDB.Networks {
+		//	if network.PortInfo.Port != 5984 {
+		//		continue
+		//	}
+		//	for _, s := range peer.CouchDB.Networks[i].RouteInfo {
+		//		if s.RouteType == ag.OUT {
+		//			envs["CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS"] = s.Router
+		//		}
+		//	}
+		//}
+		//envs["CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME"] = ""
+		//envs["CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD"] = ""
+		//envs["CORE_CHAINCODE_BUILDER"] = ""
+		//envs["CORE_CHAINCODE_GOLANG_RUNTIME"] = ""
+		envs["CORE_VM_ENDPOINT"] = peer.RMTDocker
 		envs["FABRIC_LOGGING_SPEC"] = peer.LogLevel
 		envs["CORE_PEER_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
 		envs["CORE_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.HealthPort)
 		envs["CORE_PEER_GOSSIP_USELEADERELECTION"] = "true"
 		envs["CORE_PEER_GOSSIP_ORGLEADER"] = "false"
 		envs["CORE_PEER_PROFILE_ENABLED"] = "true"
-		envs["CORE_PEER_TLS_CERT_FILE"] = fmt.Sprintf("%s/config/tls/cert.pem", peer.APP.Workspace.Workspace)
-		envs["CORE_PEER_TLS_KEY_FILE"] = fmt.Sprintf("%s/config/tls/key.pem", peer.APP.Workspace.Workspace)
-		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = fmt.Sprintf("%s/config/tls/tls.pem", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_CERT_FILE"] = fmt.Sprintf("%s/config/tls/server.crt", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_KEY_FILE"] = fmt.Sprintf("%s/config/tls/server.key", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = fmt.Sprintf("%s/config/tls/ca.crt", peer.APP.Workspace.Workspace)
 		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
 		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = "0.0.0.0:7052" // 链码监听地址
 		for i, network := range peer.APP.Networks {
@@ -309,20 +310,23 @@ func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
 		}
 		var envs = make(map[string]string)
 		envs["FABRIC_LOGGING_SPEC"] = order.LogLevel
+		envs["FABRIC_CFG_PATH"] = order.APP.Workspace.Workspace
+		envs["ORDERER_FILELEDGER_LOCATION"] = fmt.Sprintf("%s/pro-data",order.APP.Workspace.Workspace)
 		envs["ORDERER_GENERAL_LISTENADDRESS"] = "0.0.0.0"
+		envs["ORDERER_GENERAL_LISTENPORT"] = fmt.Sprintf("%d",order.GRPCPort)
 		envs["ORDERER_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", order.HealthPort)
 		envs["ORDERER_GENERAL_GENESISMETHOD"] = "file"
 		envs["ORDERER_GENERAL_GENESISFILE"] = fmt.Sprintf("%s/orderer.genesis.block", order.APP.Workspace.Workspace)
 		envs["ORDERER_GENERAL_LOCALMSPID"] = "OrdererMSP"
 		envs["ORDERER_GENERAL_LOCALMSPDIR"] = fmt.Sprintf("%s/config/msp", order.APP.Workspace.Workspace)
 		envs["ORDERER_GENERAL_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
-		envs["ORDERER_GENERAL_TLS_PRIVATEKEY"] = fmt.Sprintf("%s/config/tls/keystore/key.pem", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_TLS_CERTIFICATE"] = fmt.Sprintf("%s/config/tls/signcerts/cert.pem", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_TLS_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/tlscacerts/tls.pem]", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_TLS_PRIVATEKEY"] = fmt.Sprintf("%s/config/tls/server.key", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_TLS_CERTIFICATE"] = fmt.Sprintf("%s/config/tls/server.crt", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_TLS_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/ca.crt]", order.APP.Workspace.Workspace)
 		envs["ORDERER_KAFKA_VERBOSE"] = "true"
-		envs["ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY"] = fmt.Sprintf("%s/config/tls/keystore/key.pem", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE"] = fmt.Sprintf("%s/config/tls/signcerts/cert.pem", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_CLUSTER_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/tlscacerts/tls.pem]", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY"] = fmt.Sprintf("%s/config/tls/server.key", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE"] = fmt.Sprintf("%s/config/tls/server.crt", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_CLUSTER_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/ca.crt]", order.APP.Workspace.Workspace)
 		envs["GODEBUG"] = "netdns=go"
 		for k, v := range envs {
 			log.Debugf(ctx, "set env key [%s], val [%s]", k, v)
@@ -351,10 +355,10 @@ func newApp(chain *fabric.Fabric) error {
 		if err != nil {
 			return errors.Wrap(err, "new peer app")
 		}
-		err = newCouchDBApp(&chain.Peers[i])
-		if err != nil {
-			return errors.Wrap(err, "new peer couchdb app")
-		}
+		//err = newCouchDBApp(&chain.Peers[i])
+		//if err != nil {
+		//	return errors.Wrap(err, "new peer couchdb app")
+		//}
 	}
 	return nil
 }

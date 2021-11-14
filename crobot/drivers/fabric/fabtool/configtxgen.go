@@ -56,9 +56,8 @@ func newConfigTXGen(ctx context.Context) RT {
 //	return nil
 //}
 
-func (c ConfigtxgenTool) GenerateAllChainChannelTx(driveruuid string, chain *fabric.Fabric, baseDir string) error {
-	pwd, _ := os.Getwd()
-	configtxgen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/configtxgen", chain.Version))
+func (c ConfigtxgenTool) GenerateAllChainChannelTx(chain *fabric.Fabric, baseDir string) error {
+	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 	configtxPath, _ := filepath.Abs(baseDir)
 	for _, ch := range chain.Channels {
 		channeltxPath := filepath.Join(configtxPath, fmt.Sprintf("%s.tx", ch.UUID))
@@ -78,9 +77,8 @@ func (c ConfigtxgenTool) GenerateAllChainChannelTx(driveruuid string, chain *fab
 	return nil
 }
 
-func (c ConfigtxgenTool) GenerateGenesisBlock(driveruuid string, chain *fabric.Fabric, baseDir string) error {
-	pwd, _ := os.Getwd()
-	configtxgen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/configtxgen", chain.Version))
+func (c ConfigtxgenTool) GenerateGenesisBlock(chain *fabric.Fabric, baseDir string) error {
+	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 	configtxPath, _ := filepath.Abs(baseDir)
 	genesisBlockPath := filepath.Join(configtxPath, "orderer.genesis.block")
 	command := fmt.Sprintf("-profile OrdererGenesis --configPath=%s/ -outputBlock %s", configtxPath, genesisBlockPath)
@@ -130,9 +128,8 @@ func (c ConfigtxgenTool) GenerateGenesisBlock(driveruuid string, chain *fabric.F
 // configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPAnchors.tx -channelID mychannel -asOrg Org1
 
 // GenerateAnchorPeerArtifacts generate anchor peer artifacts
-func (c ConfigtxgenTool) GenerateAnchorPeerArtifacts(driveruuid string, chain *fabric.Fabric, baseDir string) error {
-	pwd, _ := os.Getwd()
-	configtxgen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/configtxgen", chain.Version))
+func (c ConfigtxgenTool) GenerateAnchorPeerArtifacts(chain *fabric.Fabric, baseDir string) error {
+	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 
 	configtxPath, _ := filepath.Abs(baseDir)
 	// 二进制识别的是 configtx.yaml 这个文件

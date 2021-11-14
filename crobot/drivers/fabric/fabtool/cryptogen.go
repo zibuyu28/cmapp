@@ -179,9 +179,8 @@ func newCryptoGen(ctx context.Context) RT {
 //	return nil
 //}
 
-func (c CryptoGenTool) GenerateInitCert(driveruuid string, chain *fabric.Fabric, baseDir string) error {
-	pwd, _ := os.Getwd()
-	cryptogen := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/cryptogen", chain.Version))
+func (c CryptoGenTool) GenerateInitCert(chain *fabric.Fabric, baseDir string) error {
+	cryptogen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/cryptogen", chain.Version))
 	cryptogenConfigPath, _ := filepath.Abs(fmt.Sprintf("%s/crypto.yaml", baseDir))
 	certPath, _ := filepath.Abs(baseDir)
 

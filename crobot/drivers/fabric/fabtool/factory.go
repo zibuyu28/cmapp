@@ -41,9 +41,8 @@ var mf = map[string]instanceTool{
 	//"configtxlator": newConfigTXLator,
 }
 
-func NewTool(ctx context.Context, driveruuid, toolName, version string) (RT, error) {
-	pwd, _ := os.Getwd()
-	toolFullName := filepath.Join(pwd, "drivers", driveruuid, fmt.Sprintf("tool/%s/%s", version, toolName))
+func NewTool(ctx context.Context, toolName, version string) (RT, error) {
+	toolFullName := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/%s", version, toolName))
 	_, err := os.Stat(toolFullName)
 	if err != nil {
 		if os.IsNotExist(err) {

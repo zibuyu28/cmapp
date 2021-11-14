@@ -76,6 +76,7 @@ type Peer struct {
 	LogLevel            string
 	APP                 *ag.App
 	CouchDB             *ag.App
+	RMTDocker           string
 }
 
 // Fabric fabric chain info

@@ -32,22 +32,21 @@ type CertWorker struct {
 }
 
 // NewCertWorker new cert worker
-func NewCertWorker(driveruuid, workDir string) *CertWorker {
+func NewCertWorker(workDir string) *CertWorker {
 	return &CertWorker{
 		BaseWorker: BaseWorker{
-			driveruuid: driveruuid,
 			workDir:    workDir,
 		},
 	}
 }
 
 func (c *CertWorker) InitCert(ctx context.Context, chain *fabric.Fabric) error {
-	newTool, err := fabtool.NewTool(ctx, c.driveruuid, "cryptogen", chain.Version)
+	newTool, err := fabtool.NewTool(ctx, "cryptogen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "new tool")
 	}
 
-	err = newTool.(fabtool.CryptoGenTool).GenerateInitCert(c.driveruuid, chain, c.workDir)
+	err = newTool.(fabtool.CryptoGenTool).GenerateInitCert( chain, c.workDir)
 	if err != nil {
 		return errors.Wrap(err, "generate cert")
 	}

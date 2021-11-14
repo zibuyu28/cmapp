@@ -33,11 +33,10 @@ type ConfigWorker struct {
 }
 
 // NewConfigWorker new config worker
-func NewConfigWorker(driveruuid, workDir string) *ConfigWorker {
+func NewConfigWorker(workDir string) *ConfigWorker {
 	return &ConfigWorker{
 		BaseWorker: BaseWorker{
-			driveruuid: driveruuid,
-			workDir:    workDir,
+			workDir: workDir,
 		},
 	}
 }
@@ -299,11 +298,11 @@ func (c *ConfigWorker) InitTxFile(ctx context.Context, chain *fabric.Fabric) err
 }
 
 func (c *ConfigWorker) GenesisBlock(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "configtxgen", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
 	}
-	err = itool.(fabtool.ConfigtxgenTool).GenerateGenesisBlock(c.driveruuid, chain, c.workDir)
+	err = itool.(fabtool.ConfigtxgenTool).GenerateGenesisBlock(chain, c.workDir)
 	if err != nil {
 		return errors.Wrap(err, "generate genesis block")
 	}
@@ -311,12 +310,12 @@ func (c *ConfigWorker) GenesisBlock(ctx context.Context, chain *fabric.Fabric) e
 }
 
 func (c *ConfigWorker) AllChannelTxFile(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "configtxgen", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
 	}
 	// 生成 channel 交易
-	err = itool.(fabtool.ConfigtxgenTool).GenerateAllChainChannelTx(c.driveruuid, chain, c.workDir)
+	err = itool.(fabtool.ConfigtxgenTool).GenerateAllChainChannelTx(chain, c.workDir)
 	if err != nil {
 		return errors.Wrap(err, "generate channel tx")
 	}
@@ -324,12 +323,12 @@ func (c *ConfigWorker) AllChannelTxFile(ctx context.Context, chain *fabric.Fabri
 }
 
 func (c *ConfigWorker) AnchorPeerArtifacts(ctx context.Context, chain *fabric.Fabric) error {
-	itool, err := fabtool.NewTool(ctx, c.driveruuid, "configtxgen", chain.Version)
+	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
 	}
 	// 生成 anchor peer 交易
-	err = itool.(fabtool.ConfigtxgenTool).GenerateAnchorPeerArtifacts(c.driveruuid, chain, c.workDir)
+	err = itool.(fabtool.ConfigtxgenTool).GenerateAnchorPeerArtifacts(chain, c.workDir)
 	if err != nil {
 		return errors.Wrap(err, "generate anchor peer artifact tx")
 	}
