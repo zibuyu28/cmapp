@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2021 zibuyu28
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fabric
 
 import (
@@ -16,7 +32,7 @@ var mockFabric = Fabric{
 	Name:        "mock-fab",
 	UUID:        "mock-uuid",
 	Version:     "1.4.1",
-	Consensus:   "etcdraft",
+	Consensus:   "solo",
 	CertGenType: "bin-tool",
 	Channels: []Channel{
 		{
@@ -37,22 +53,6 @@ var mockFabric = Fabric{
 			GRPCPort:   7050,
 			HealthPort: 8443,
 			Tag:        "mock-tag-orderer0",
-		},
-		{
-			Name:       "orderer1",
-			UUID:       "orderer1",
-			MachineID:  1,
-			GRPCPort:   7051,
-			HealthPort: 8444,
-			Tag:        "mock-tag-orderer1",
-		},
-		{
-			Name:       "orderer2",
-			UUID:       "orderer2",
-			MachineID:  1,
-			GRPCPort:   7052,
-			HealthPort: 8445,
-			Tag:        "mock-tag-orderer2",
 		},
 	},
 	Peers: []Peer{
@@ -86,6 +86,10 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 
 	// get info from context
 	fmt.Printf("md : [%v]", md)
+	data := md.Get("uuid")
+	if len(data) == 0 {
+		return nil, errors.New("uuid is nil")
+	}
 
 	cb, err := json.Marshal(mockFabric.Channels)
 	if err != nil {
@@ -93,7 +97,7 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 	}
 	rc := driver.Chain{
 		Name:     mockFabric.Name,
-		UUID:     mockFabric.UUID,
+		UUID:     data[0],
 		Type:     "fabric",
 		Version:  mockFabric.Version,
 		State:    driver.Chain_Handling,
@@ -155,7 +159,7 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 	return &rc, nil
 }
 
-func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*driver.Empty, error) {
+func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*driver.Chain, error) {
 	// TODO: 开始创建链
 	/*
 			0. 生成证书

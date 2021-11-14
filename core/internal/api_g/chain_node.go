@@ -29,9 +29,11 @@ type CoreChainManager struct {
 // ReportNodes report nodes
 func (c CoreChainManager) ReportNodes(ctx context.Context, nodes *ch_manager.TypedNodes) (*ch_manager.TypedNodes, error) {
 	defer func() {
-		for _, node := range nodes.Nodes {
-			if node.ID != 0 {
-				_ = service_g.RemoveNodeRec(ctx, int(node.ID))
+		if e := recover(); e != nil {
+			for _, node := range nodes.Nodes {
+				if node.ID != 0 {
+					_ = service_g.RemoveNodeRec(ctx, int(node.ID))
+				}
 			}
 		}
 	}()

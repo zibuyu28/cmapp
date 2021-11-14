@@ -12,7 +12,7 @@ service ChainDriver {
   rpc InitChain (Empty) returns (Chain) {
   }
   // CreateChainExec execute create chain action
-  rpc CreateChainExec (Chain) returns (Empty) {
+  rpc CreateChainExec (Chain) returns (Chain) {
   }
 
   // Exit driver exit

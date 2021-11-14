@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package machine
+package chain
 
 import (
 	"context"
@@ -27,7 +27,6 @@ import (
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
 
@@ -37,10 +36,10 @@ const (
 )
 
 const (
-	MachineEngineCoreGRPCPORT  = "MACHINE_ENGINE_CORE_GRPC_PORT"
-	MachineEngineDriverID      = "MACHINE_ENGINE_DRIVER_ID"
-	MachineEngineDriverName    = "MACHINE_ENGINE_DRIVER_NAME"
-	MachineEngineDriverVersion = "MACHINE_ENGINE_DRIVER_VERSION"
+	ChainEngineCoreGRPCPORT  = "CHAIN_ENGINE_CORE_GRPC_PORT"
+	ChainEngineDriverID      = "CHAIN_ENGINE_DRIVER_ID"
+	ChainEngineDriverName    = "CHAIN_ENGINE_DRIVER_NAME"
+	ChainEngineDriverVersion = "CHAIN_ENGINE_DRIVER_VERSION"
 )
 
 // Create execute driver create command to initialization machine
@@ -49,21 +48,21 @@ func Create(ctx context.Context, driverid int, param interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "get driver by id")
 	}
-	if drv.Type != model.MachineDriver {
-		return errors.Errorf("driver id [%d]'s type not machine driver", drv.ID)
+	if drv.Type != model.ChainDriver {
+		return errors.Errorf("driver id [%d]'s type not chain driver", drv.ID)
 	}
 	marshal, err := json.Marshal(param)
 	if err != nil {
 		return errors.Wrap(err, "marshal param")
 	}
-	err = CreateAction(ctx, DefaultDriverPath, drv, machineUuid(drv.Name), string(marshal))
+	err = CreateAction(ctx, DefaultDriverPath, drv, chainUuid(drv.Name), string(marshal))
 	if err != nil {
 		return errors.Wrap(err, "create action")
 	}
 	return nil
 }
 
-func machineUuid(driverName string) string {
+func chainUuid(driverName string) string {
 	return fmt.Sprintf("%s-%s", driverName, md5.MD5(fmt.Sprintf("%d", time.Now().UnixNano()))[:8])
 }
 
@@ -80,19 +79,16 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 	}
 	outCh := make(chan string, 10)
 	defer close(outCh)
+	command := fmt.Sprintf("%s create -u %s -p %s --driver-name=%s --driver-version=%s --driver-id=%d --core-grpc-port=%d",
+		binaryPath, uuid, param, drv.Name, drv.Version, drv.ID, DefaultGrpcPort)
+	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
+		"BASE_CORE_ADDR":         "192.168.31.63:9009",
+		"BASE_IMAGE_REPOSITORY":  "harbor.hyeprchain.cn",
+		"BASE_IMAGE_STORE_PATH":  "platform",
+	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
+
 	timeout, cancelFunc := context.WithTimeout(ctx, 600*time.Second)
 	defer cancelFunc()
-
-	command := fmt.Sprintf("%s ma create -u %s -p '%s'", binaryPath, uuid, param)
-	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
-		MachineEngineCoreGRPCPORT:  strconv.Itoa(DefaultGrpcPort),
-		MachineEngineDriverName:    drv.Name,
-		MachineEngineDriverVersion: drv.Version,
-		MachineEngineDriverID:      strconv.Itoa(drv.ID),
-		"BASE_CORE_ADDR":           "192.168.31.63:9009",
-		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
-		"BASE_IMAGE_STORE_PATH":    "platform",
-	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
 	go driverOutput(timeout, outCh)
 	_, err = newCmd.Run()
 	if err != nil {

@@ -32,8 +32,8 @@ import (
 var cfgFile string
 
 const (
-	MachinePluginEnvDriverName = "MACHINE_PLUGIN_DRIVER_NAME"
-	MachinePluginBuildIn       = "MACHINE_PLUGIN_BUILD_IN"
+	PluginDriverName = "PLUGIN_DRIVER_NAME"
+	PluginBuildIn    = "PLUGIN_BUILD_IN"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -49,7 +49,7 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pbi := os.Getenv(MachinePluginBuildIn)
+		pbi := os.Getenv(PluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
 			return RunAsMachinePlugin(args)
 		}
@@ -59,7 +59,7 @@ to quickly create a Cobra application.`,
 
 // RunAsMachinePlugin run as machine plugin
 func RunAsMachinePlugin(args []string) error {
-	driverName := os.Getenv(MachinePluginEnvDriverName)
+	driverName := os.Getenv(PluginDriverName)
 	if len(driverName) == 0 {
 		return errors.New("set to plugin mode, driver name not found")
 	}

@@ -23,15 +23,22 @@ import (
 
 // Driver driver definition in db
 type Driver struct {
-	ID          int       `xorm:"int(11) pk autoincr 'id'"`
-	CreateTime  time.Time `xorm:"datetime created 'create_time'"`
-	UpdateTime  time.Time `xorm:"datetime updated 'update_time'"`
-	DeleteTime  time.Time `xorm:"datetime deleted 'delete_time'"`
-	Name        string    `xorm:"varchar(256) 'name'"`
-	Type        int8      `xorm:"tinyint(8) 'type'"`
-	Version     string    `xorm:"char(32) 'version'"`
-	Description string    `xorm:"text 'description'"`
+	ID          int        `xorm:"int(11) pk autoincr 'id'"`
+	CreateTime  time.Time  `xorm:"datetime created 'create_time'"`
+	UpdateTime  time.Time  `xorm:"datetime updated 'update_time'"`
+	DeleteTime  time.Time  `xorm:"datetime deleted 'delete_time'"`
+	Name        string     `xorm:"varchar(256) 'name'"`
+	Type        DriverType `xorm:"tinyint(8) 'type'"`
+	Version     string     `xorm:"char(32) 'version'"`
+	Description string     `xorm:"text 'description'"`
 }
+
+type DriverType int8
+
+const (
+	MachineDriver DriverType = 1
+	ChainDriver   DriverType = 2
+)
 
 // InsertDriver insert driver to db
 func InsertDriver(driver *Driver) error {

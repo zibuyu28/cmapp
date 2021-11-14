@@ -10,9 +10,9 @@ import (
 )
 
 type MDReq struct {
-	AppUUID string      `json:"app_uuid" validate:"required"`
-	Fnc     string      `json:"fnc" validate:"required"`
-	Param   interface{} `json:"param" validate:"required"`
+	AppUUID string      `json:"app_uuid" binding:"required"`
+	Fnc     string      `json:"fnc" binding:"required"`
+	Param   interface{} `json:"param" binding:"required"`
 }
 
 func mdExec(g *gin.Context) {

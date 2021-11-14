@@ -21,18 +21,18 @@ var (
 	// Timeout where we will bail if we're not able to properly contact the
 	// plugin server.
 	defaultTimeout = 10 * time.Second
-	CoreDrivers    = []string{"k8s", "virtualbox"}
+	CoreDrivers    = []string{"k8s", "virtualbox","fabric"}
 )
 
 const (
 	pluginOut              = "(%s) %s"
 	pluginErr              = "(%s) DBG | %s"
-	PluginEnvKey           = "MACHINE_PLUGIN_TOKEN"
+	PluginEnvKey           = "PLUGIN_TOKEN"
 	PluginEnvVal           = "42"
-	PluginEnvDriverName    = "MACHINE_PLUGIN_DRIVER_NAME"
-	PluginEnvDriverVersion = "MACHINE_PLUGIN_DRIVER_VERSION"
-	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
-	PluginBuildIn          = "MACHINE_PLUGIN_BUILD_IN"
+	PluginEnvDriverName    = "PLUGIN_DRIVER_NAME"
+	PluginEnvDriverVersion = "PLUGIN_DRIVER_VERSION"
+	PluginEnvDriverID      = "PLUGIN_DRIVER_ID"
+	PluginBuildIn          = "PLUGIN_BUILD_IN"
 )
 
 type PluginStreamer interface {

@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package app
 
 import (
+	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/crobot/drivers"
+	"github.com/zibuyu28/cmapp/crobot/pkg/plugin"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +33,14 @@ import (
 )
 
 var cfgFile string
+
+
+const ChainPluginBuildIn string = ""
+
+const (
+	PluginDriverName = "PLUGIN_DRIVER_NAME"
+	PluginBuildIn       = "PLUGIN_BUILD_IN"
+)
 
 var (
 	appNameSplit = strings.Split(filepath.Base(os.Args[0]), "/")
@@ -45,7 +59,28 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	//Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		pbi := os.Getenv(PluginBuildIn)
+		if len(pbi) != 0 && pbi == "true" {
+			err :=RunAsChainPlugin(args)
+			if err != nil {
+				log.Fatal(context.Background(), err.Error())
+			}
+		}
+	},
+}
+
+func RunAsChainPlugin(args []string) error {
+	dName := os.Getenv(PluginDriverName)
+	if len(dName) == 0 {
+		return errors.New("set to plugin mode, driver name not found")
+	}
+	driver, err := drivers.ParseDriver(dName)
+	if err != nil {
+		return errors.Wrap(err, "parse build driver")
+	}
+	plugin.RegisterDriver(*driver)
+	return nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

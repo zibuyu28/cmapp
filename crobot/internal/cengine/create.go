@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -41,7 +42,7 @@ type InitInfo struct {
 
 // TODO: 如果需要穿参数，肯定是从这里传入
 // CreateChain create chain action
-func CreateChain(ctx context.Context, info InitInfo) error {
+func CreateChain(ctx context.Context, info InitInfo, uuid, param string) error {
 	log.Debugf(ctx, "create chain process")
 	// 初始化链的参数
 	err := validator.New().Struct(&info)
@@ -60,7 +61,8 @@ func CreateChain(ctx context.Context, info InitInfo) error {
 		return errors.Wrap(err, "get core grpc client")
 	}
 	log.Debugf(ctx, "init chain")
-	chain, err := cmIns.InitChain(ctx, &driver.Empty{})
+	outgoingContext := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"uuid": uuid}))
+	chain, err := cmIns.InitChain(outgoingContext, &driver.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "init chain")
 	}
@@ -108,7 +110,7 @@ func CreateChain(ctx context.Context, info InitInfo) error {
 	}
 
 	log.Debugf(ctx, "driver execute create chain")
-	_, err = cmIns.CreateChainExec(ctx, chain)
+	chain, err = cmIns.CreateChainExec(ctx, chain)
 	if err != nil {
 		return errors.Wrap(err, "create chain exec")
 	}

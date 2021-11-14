@@ -9,22 +9,22 @@ import (
 type MachineAction string
 
 const (
-	Create MachineAction = "create"
-	Stop   MachineAction = "stop"
-	Start  MachineAction = "start"
-	Remove MachineAction = "remove"
+	CreateMachine MachineAction = "create"
+	StopMachine   MachineAction = "stop"
+	StartMachine  MachineAction = "start"
+	RemoveMachine MachineAction = "remove"
 )
 
 type MWReq struct {
-	DriverID  int           `json:"driver_id"`
+	DriverID  int           `json:"driver_id" binding:"required"`
 	MachineID int           `json:"machine_id"`
-	Action    MachineAction `json:"action" validate:"required"`
-	Param     interface{}   `json:"param" validate:"required"`
+	Action    MachineAction `json:"action" binding:"required"`
+	Param     interface{}   `json:"param" binding:"required"`
 }
 
 func mwExec(g *gin.Context) {
 	var p = MWReq{}
-	err := g.BindJSON(&p)
+	err := g.ShouldBindJSON(&p)
 	if err != nil {
 		fail(g, err)
 		return
@@ -38,7 +38,7 @@ func mwExec(g *gin.Context) {
 
 func mwExecHandler(g *gin.Context, req *MWReq) error {
 	switch req.Action {
-	case Create:
+	case CreateMachine:
 		if req.DriverID == 0 {
 			return errors.New("create action: driver id is nil")
 		}
