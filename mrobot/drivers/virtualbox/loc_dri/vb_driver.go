@@ -37,9 +37,9 @@ import (
 )
 
 const (
-	PluginEnvDriverName    = "MACHINE_PLUGIN_DRIVER_NAME"
-	PluginEnvDriverVersion = "MACHINE_PLUGIN_DRIVER_VERSION"
-	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
+	PluginEnvDriverName    = "PLUGIN_DRIVER_NAME"
+	PluginEnvDriverVersion = "PLUGIN_DRIVER_VERSION"
+	PluginEnvDriverID      = "PLUGIN_DRIVER_ID"
 )
 
 const (

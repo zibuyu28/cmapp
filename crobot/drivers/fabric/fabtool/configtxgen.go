@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"os"
 	"path/filepath"
 )
@@ -56,7 +56,7 @@ func newConfigTXGen(ctx context.Context) RT {
 //	return nil
 //}
 
-func (c ConfigtxgenTool) GenerateAllChainChannelTx(chain *fabric.Fabric, baseDir string) error {
+func (c ConfigtxgenTool) GenerateAllChainChannelTx(chain *model.Fabric, baseDir string) error {
 	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 	configtxPath, _ := filepath.Abs(baseDir)
 	for _, ch := range chain.Channels {
@@ -77,7 +77,7 @@ func (c ConfigtxgenTool) GenerateAllChainChannelTx(chain *fabric.Fabric, baseDir
 	return nil
 }
 
-func (c ConfigtxgenTool) GenerateGenesisBlock(chain *fabric.Fabric, baseDir string) error {
+func (c ConfigtxgenTool) GenerateGenesisBlock(chain *model.Fabric, baseDir string) error {
 	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 	configtxPath, _ := filepath.Abs(baseDir)
 	genesisBlockPath := filepath.Join(configtxPath, "orderer.genesis.block")
@@ -128,7 +128,7 @@ func (c ConfigtxgenTool) GenerateGenesisBlock(chain *fabric.Fabric, baseDir stri
 // configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPAnchors.tx -channelID mychannel -asOrg Org1
 
 // GenerateAnchorPeerArtifacts generate anchor peer artifacts
-func (c ConfigtxgenTool) GenerateAnchorPeerArtifacts(chain *fabric.Fabric, baseDir string) error {
+func (c ConfigtxgenTool) GenerateAnchorPeerArtifacts(chain *model.Fabric, baseDir string) error {
 	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 
 	configtxPath, _ := filepath.Abs(baseDir)

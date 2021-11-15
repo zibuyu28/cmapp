@@ -20,13 +20,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/cmd"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
 	"gopkg.in/yaml.v2"
 )
 
@@ -179,7 +180,7 @@ func newCryptoGen(ctx context.Context) RT {
 //	return nil
 //}
 
-func (c CryptoGenTool) GenerateInitCert(chain *fabric.Fabric, baseDir string) error {
+func (c CryptoGenTool) GenerateInitCert(chain *model.Fabric, baseDir string) error {
 	cryptogen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/cryptogen", chain.Version))
 	cryptogenConfigPath, _ := filepath.Abs(fmt.Sprintf("%s/crypto.yaml", baseDir))
 	certPath, _ := filepath.Abs(baseDir)
@@ -219,9 +220,9 @@ func (c CryptoGenTool) GenerateInitCert(chain *fabric.Fabric, baseDir string) er
 	return nil
 }
 
-func checkCertRight(chain *fabric.Fabric, certPath string) (bool, error) {
+func checkCertRight(chain *model.Fabric, certPath string) (bool, error) {
 	for _, peer := range chain.Peers {
-		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", peer.Organization.UUID))
+		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.zibuyufab.cn", peer.Organization.UUID))
 		_, err := os.Stat(orgCertPath)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -267,20 +268,20 @@ func checkCertRight(chain *fabric.Fabric, certPath string) (bool, error) {
 //}
 
 // constructConfig construct config from fabric chain
-func constructInitConfig(chain *fabric.Fabric) *Config {
+func constructInitConfig(chain *model.Fabric) *Config {
 	// 构建orderer结构
 	ordererOrgSpec := OrgSpec{
 		Name:          "Orderer",
-		Domain:        "orderer.fabric.com",
+		Domain:        "orderer.zibuyufab.cn",
 		EnableNodeOUs: true,
 	}
 	var ordererNodes []NodeSpec
 	for _, orderer := range chain.Orderers {
-
+		split := strings.Split(orderer.NodeHostName, ":")
 		odns := NodeSpec{
-			Hostname:   fmt.Sprintf("orderer%s", orderer.UUID),
-			CommonName: fmt.Sprintf("orderer%s.orderer.fabric.com", orderer.UUID),
-			SANS:       []string{orderer.NodeHostName},
+			Hostname:   split[0],
+			//CommonName: fmt.Sprintf("orderer%s.orderer.fabric.com", orderer.UUID),
+			//SANS:       []string{orderer.NodeHostName},
 		}
 
 		ordererNodes = append(ordererNodes, odns)
@@ -290,27 +291,28 @@ func constructInitConfig(chain *fabric.Fabric) *Config {
 
 	// 构建peer组织结构
 	var peerOrgSpecs []OrgSpec
-	var peerOrgs = make(map[string][]fabric.Peer)
+	var peerOrgs = make(map[string][]model.Peer)
 	for i, p := range chain.Peers {
 		if _, ok := peerOrgs[p.Organization.Name]; ok {
 			peerOrgs[p.Organization.Name] = append(peerOrgs[p.Organization.Name], chain.Peers[i])
 		} else {
-			peerOrgs[p.Organization.Name] = []fabric.Peer{chain.Peers[i]}
+			peerOrgs[p.Organization.Name] = []model.Peer{chain.Peers[i]}
 		}
 	}
 
 	for org, ps := range peerOrgs {
 		peerOrgSpec := OrgSpec{
 			Name:          org,
-			Domain:        org + ".fabric.com",
+			Domain:        org + ".zibuyufab.cn",
 			EnableNodeOUs: true,
 		}
 		var peerNodes []NodeSpec
 		for _, peer := range ps {
+			split := strings.Split(peer.NodeHostName, ":")
 			prns := NodeSpec{
-				Hostname:   fmt.Sprintf("peer%s", peer.UUID),
-				CommonName: fmt.Sprintf("peer%s.%s.fabric.com", peer.UUID, org),
-				SANS:       []string{peer.NodeHostName},
+				Hostname:   split[0],
+				//CommonName: fmt.Sprintf("peer%s.%s.fabric.com", peer.UUID, org),
+				//SANS:       []string{peer.NodeHostName},
 			}
 			peerNodes = append(peerNodes, prns)
 		}

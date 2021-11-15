@@ -23,7 +23,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/service"
 	"os"
 	"path/filepath"
@@ -44,12 +44,15 @@ func NewCreateChainWorker(ctx context.Context, baseDir string) *CreateChainWorke
 var hmd = ag.HMD{Version: base.V1}
 
 // CreateChainProcess create chain
-func (c *CreateChainWorker) CreateChainProcess(chain *fabric.Fabric) error {
+func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	log.Debug(c.ctx, "create chain process")
 
 	err := newApp(chain)
 	if err != nil {
 		return errors.Wrap(err, "new app for chain")
+	}
+	if chain.Name == "mock-fab" {
+		return nil
 	}
 	// 主机开端口，主要是为了将端口外部路由给记录下
 	// 处理主机的 HostName 字段
@@ -141,11 +144,10 @@ func (c *CreateChainWorker) CreateChainProcess(chain *fabric.Fabric) error {
 	}
 	log.Debugf(c.ctx, "update anchor peer success")
 	// 完成过程
-
 	return nil
 }
 
-func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
+func constructPeer(ctx context.Context, chain *model.Fabric) error {
 	for _, peer := range chain.Peers {
 		if peer.APP == nil {
 			return errors.New("app is nil")
@@ -255,7 +257,7 @@ func constructPeer(ctx context.Context, chain *fabric.Fabric) error {
 	return nil
 }
 
-func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
+func constructOrder(ctx context.Context, chain *model.Fabric) error {
 	for _, order := range chain.Orderers {
 		if order.APP == nil {
 			return errors.New("app is nil")
@@ -343,7 +345,7 @@ func constructOrder(ctx context.Context, chain *fabric.Fabric) error {
 	return nil
 }
 
-func newApp(chain *fabric.Fabric) error {
+func newApp(chain *model.Fabric) error {
 	for i := range chain.Orderers {
 		err := newOrdererApp(&chain.Orderers[i])
 		if err != nil {
@@ -363,7 +365,7 @@ func newApp(chain *fabric.Fabric) error {
 	return nil
 }
 
-func newOrdererApp(orderer *fabric.Orderer) error {
+func newOrdererApp(orderer *model.Orderer) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: orderer.MachineID,
 		Name:      "orderer",
@@ -412,7 +414,7 @@ func newOrdererApp(orderer *fabric.Orderer) error {
 	return nil
 }
 
-func newCouchDBApp(peer *fabric.Peer) error {
+func newCouchDBApp(peer *model.Peer) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: peer.MachineID,
 		Name:      "couchdb",
@@ -441,7 +443,7 @@ func newCouchDBApp(peer *fabric.Peer) error {
 	return nil
 }
 
-func newPeerApp(peer *fabric.Peer) error {
+func newPeerApp(peer *model.Peer) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: peer.MachineID,
 		Name:      "peer",
@@ -520,7 +522,7 @@ func newPeerApp(peer *fabric.Peer) error {
 	return nil
 }
 
-func uploadNodeCert(capi ag.CoreAPI, chain *fabric.Fabric, certMap map[string]string) error {
+func uploadNodeCert(capi ag.CoreAPI, chain *model.Fabric, certMap map[string]string) error {
 	for i, orderer := range chain.Orderers {
 		if s, ok := certMap[orderer.UUID]; ok {
 			file, err := capi.UploadFile(s)

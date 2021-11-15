@@ -21,20 +21,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/process"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+	"os"
+	"path/filepath"
 
 	"github.com/zibuyu28/cmapp/crobot/pkg"
 	"google.golang.org/grpc/metadata"
 )
 
-var mockFabric = Fabric{
+var mockFabric = model.Fabric{
 	Name:        "mock-fab",
 	UUID:        "mock-uuid",
 	Version:     "1.4.1",
-	Consensus:   Solo,
-	CertGenType: CertBinaryTool,
-	Channels: []Channel{
+	Consensus:   model.Solo,
+	CertGenType: model.CertBinaryTool,
+	Channels: []model.Channel{
 		{
 			Name:                     "mock-channel",
 			UUID:                     "channel",
@@ -45,26 +49,26 @@ var mockFabric = Fabric{
 		},
 	},
 	TLSEnable: true,
-	Orderers: []Orderer{
+	Orderers: []model.Orderer{
 		{
 			Name:       "orderer0",
 			UUID:       "orderer0",
-			MachineID:  1,
+			MachineID:  21,
 			GRPCPort:   7050,
 			HealthPort: 8443,
 			Tag:        "mock-tag-orderer0",
 		},
 	},
-	Peers: []Peer{
+	Peers: []model.Peer{
 		{
 			Name:                "mock-peer0",
 			UUID:                "mock-peer0",
-			MachineID:           1,
+			MachineID:           21,
 			GRPCPort:            7053,
 			ChainCodeListenPort: 7054,
 			EventPort:           7055,
 			HealthPort:          8446,
-			Organization: Organization{
+			Organization: model.Organization{
 				Name: "Org1",
 				UUID: "Org1",
 			},
@@ -161,9 +165,16 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 }
 
 func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*driver.Chain, error) {
-	// TODO: basedir
-	worker := process.NewCreateChainWorker(ctx, "")
-	err := worker.CreateChainProcess(&mockFabric)
+	baseDir := fmt.Sprintf("%s/workspace/%s", filepath.Dir(os.Args[0]), c.UUID)
+	err := os.MkdirAll(baseDir, os.ModePerm)
+	if err != nil {
+		return nil, errors.Wrapf(err, "mkdir for basedir [%s]", baseDir)
+	}
+	worker := process.NewCreateChainWorker(ctx, baseDir)
+
+	marshal, _ := json.Marshal(mockFabric)
+	log.Infof(ctx, "mock fab : [%s]", string(marshal))
+	err = worker.CreateChainProcess(&mockFabric)
 	if err != nil {
 		return nil, errors.Wrap(err, "create chain process")
 	}

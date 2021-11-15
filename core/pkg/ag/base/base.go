@@ -82,5 +82,5 @@ func getURL(version APIVersion) string {
 	if port == 0 {
 		port = coreDefaultPort
 	}
-	return fmt.Sprintf("%s:%d/api/%s/md/exec", host, port, version)
+	return fmt.Sprintf("http://%s:%d/api/%s/md/exec", host, port, version)
 }

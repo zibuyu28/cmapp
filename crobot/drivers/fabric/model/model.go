@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fabric
+package model
 
 import "github.com/zibuyu28/cmapp/core/pkg/ag"
 

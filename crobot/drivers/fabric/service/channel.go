@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/fabtool"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 )
 
 type ChannelWorker struct {
@@ -37,12 +37,12 @@ func NewChannelWorker(workDir string) *ChannelWorker {
 	}
 }
 
-func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")
 	}
-	var targetPeer *fabric.Peer
+	var targetPeer *model.Peer
 	for _, peer := range chain.Peers {
 		if peer.AnchorPeer {
 			targetPeer = &peer
@@ -61,7 +61,7 @@ func (c *ChannelWorker) CreateInitChannel(ctx context.Context, chain *fabric.Fab
 	return nil
 }
 
-func (c *ChannelWorker) JoinInitChannel(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ChannelWorker) JoinInitChannel(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")
@@ -77,7 +77,7 @@ func (c *ChannelWorker) JoinInitChannel(ctx context.Context, chain *fabric.Fabri
 	return nil
 }
 
-func (c *ChannelWorker) UpdateAnchorPeers(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ChannelWorker) UpdateAnchorPeers(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "peer", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init peer tool")

@@ -81,7 +81,7 @@ func (R *RMD) NewApp(ctx context.Context, in *ag.NewAppReq) (*ag.App, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get machine by id")
 	}
-	log.Debugf(ctx, "machine id [%s], get agent grpc addr [%s]", in.MachineID, machine.AGGRPCAddr)
+	log.Debugf(ctx, "machine id [%d], get agent grpc addr [%s]", in.MachineID, machine.AGGRPCAddr)
 	rpc, err := connAG(ctx, machine.AGGRPCAddr)
 	if err != nil {
 		return nil, errors.Wrap(err, "connect to machine agent")

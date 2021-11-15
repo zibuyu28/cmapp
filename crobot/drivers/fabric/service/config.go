@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/fabtool"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -273,7 +273,7 @@ const (
 	ConsensusEtcdRaft ConsensusType = "etcdraft"
 )
 
-func (c *ConfigWorker) InitTxFile(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ConfigWorker) InitTxFile(ctx context.Context, chain *model.Fabric) error {
 	caFileRootPath := c.workDir
 
 	configtx := &Configtx{}
@@ -297,7 +297,7 @@ func (c *ConfigWorker) InitTxFile(ctx context.Context, chain *fabric.Fabric) err
 	return err
 }
 
-func (c *ConfigWorker) GenesisBlock(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ConfigWorker) GenesisBlock(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
@@ -309,7 +309,7 @@ func (c *ConfigWorker) GenesisBlock(ctx context.Context, chain *fabric.Fabric) e
 	return nil
 }
 
-func (c *ConfigWorker) AllChannelTxFile(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ConfigWorker) AllChannelTxFile(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
@@ -322,7 +322,7 @@ func (c *ConfigWorker) AllChannelTxFile(ctx context.Context, chain *fabric.Fabri
 	return nil
 }
 
-func (c *ConfigWorker) AnchorPeerArtifacts(ctx context.Context, chain *fabric.Fabric) error {
+func (c *ConfigWorker) AnchorPeerArtifacts(ctx context.Context, chain *model.Fabric) error {
 	itool, err := fabtool.NewTool(ctx, "configtxgen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "init configtxgen tool")
@@ -413,7 +413,7 @@ func setChannel(configtx *Configtx) {
 }
 
 //setOrderer 设置Orderer
-func setOrderer(chain *fabric.Fabric, configtx *Configtx, caFileRootPath string) error {
+func setOrderer(chain *model.Fabric, configtx *Configtx, caFileRootPath string) error {
 	if len(chain.Channels) == 0 {
 		return errors.New("channel info is empty")
 	}
@@ -622,7 +622,7 @@ func setCapabilities(configtx *Configtx) {
 //}
 
 //setOrganizations 设置organization
-func setOrganizations(chain *fabric.Fabric, configtx *Configtx, caFileRootPath string) error {
+func setOrganizations(chain *model.Fabric, configtx *Configtx, caFileRootPath string) error {
 	orgs := make([]Organization, 0)
 	orderOrg := Organization{
 		Name:   "Orderer",

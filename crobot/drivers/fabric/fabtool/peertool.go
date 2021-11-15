@@ -23,7 +23,7 @@ import (
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -44,7 +44,7 @@ const (
 	FetchBlock  FetchType = "block"
 )
 
-func (p PeerTool) CreateNewChannel(chain *fabric.Fabric, channel fabric.Channel, targetPeer *fabric.Peer, baseDir string) error {
+func (p PeerTool) CreateNewChannel(chain *model.Fabric, channel model.Channel, targetPeer *model.Peer, baseDir string) error {
 	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, err := filepath.Abs(baseDir)
@@ -112,7 +112,7 @@ func (p PeerTool) CreateNewChannel(chain *fabric.Fabric, channel fabric.Channel,
 	return nil
 }
 
-func (p PeerTool) JoinChannel(chain *fabric.Fabric, targetPeer *fabric.Peer, channelBlockPath, baseDir string) error {
+func (p PeerTool) JoinChannel(chain *model.Fabric, targetPeer *model.Peer, channelBlockPath, baseDir string) error {
 	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 
@@ -161,7 +161,7 @@ func (p PeerTool) JoinChannel(chain *fabric.Fabric, targetPeer *fabric.Peer, cha
 	return nil
 }
 
-func (p PeerTool) UpdateAnchorPeer(chain *fabric.Fabric, targetPeer *fabric.Peer, updatePb, baseDir string) error {
+func (p PeerTool) UpdateAnchorPeer(chain *model.Fabric, targetPeer *model.Peer, updatePb, baseDir string) error {
 	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, _ := filepath.Abs(baseDir)
@@ -388,7 +388,7 @@ func (p PeerTool) UpdateAnchorPeer(chain *fabric.Fabric, targetPeer *fabric.Peer
 //	return nil
 //}
 
-func getEnv(chain *fabric.Fabric, node *fabric.Peer, baseDir string) (map[string]string, error) {
+func getEnv(chain *model.Fabric, node *model.Peer, baseDir string) (map[string]string, error) {
 
 	//export FABRIC_CFG_PATH=/Users/wujiajia/go/src/github.com/hyperledger/fabric-samples/first-network/config
 	//export CORE_PEER_ID=Org2cli

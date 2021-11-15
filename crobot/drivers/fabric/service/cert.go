@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/file"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/fabtool"
 )
 
@@ -35,18 +35,18 @@ type CertWorker struct {
 func NewCertWorker(workDir string) *CertWorker {
 	return &CertWorker{
 		BaseWorker: BaseWorker{
-			workDir:    workDir,
+			workDir: workDir,
 		},
 	}
 }
 
-func (c *CertWorker) InitCert(ctx context.Context, chain *fabric.Fabric) error {
+func (c *CertWorker) InitCert(ctx context.Context, chain *model.Fabric) error {
 	newTool, err := fabtool.NewTool(ctx, "cryptogen", chain.Version)
 	if err != nil {
 		return errors.Wrap(err, "new tool")
 	}
 
-	err = newTool.(fabtool.CryptoGenTool).GenerateInitCert( chain, c.workDir)
+	err = newTool.(fabtool.CryptoGenTool).GenerateInitCert(chain, c.workDir)
 	if err != nil {
 		return errors.Wrap(err, "generate cert")
 	}
@@ -72,7 +72,7 @@ func (c *CertWorker) GetOrganizationCertMap() (map[string]string, error) {
 	return c.organizationCertMap, nil
 }
 
-func (c *CertWorker) PathMap(chain *fabric.Fabric) {
+func (c *CertWorker) PathMap(chain *model.Fabric) {
 	c.nodeCertMap = make(map[string]string)
 	c.organizationCertMap = make(map[string]string)
 	for _, orderer := range chain.Orderers {
@@ -91,7 +91,7 @@ func (c *CertWorker) PathMap(chain *fabric.Fabric) {
 	}
 }
 
-func (c *CertWorker) certCompress(chain *fabric.Fabric) error {
+func (c *CertWorker) certCompress(chain *model.Fabric) error {
 	for _, orderer := range chain.Orderers {
 		orderOrgCertPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com", c.workDir)
 		orderOrgCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com.tar.gz", c.workDir)
