@@ -34,6 +34,11 @@ var GMR = map[RouterGroup]map[MethodPath]func(g *gin.Context){
 		mpf(http.MethodPost, "/:file_name"): fileExec,
 		mpf(http.MethodGet, "/:file_name"):  fileExec,
 	},
+	RouterGroup(fmt.Sprintf("%s/package", V1.string())): {
+		mpf(http.MethodPost, "/register"):            packageRegisterExec,
+		mpf(http.MethodGet, "/:name/:version"):       packageInfoExec,
+		mpf(http.MethodGet, "/:name/:version/:file"): packageDownloadExec,
+	},
 }
 
 func mpf(httpMethod, relativePath string) MethodPath {

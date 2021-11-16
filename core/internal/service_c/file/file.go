@@ -12,7 +12,7 @@ type RFD struct {
 	baseDir string
 }
 
-const fileDBDir = "./fileDB"
+const fileDBDir = "./filedb"
 
 var RFDi = RFD{baseDir: fileDBDir}
 

@@ -8,7 +8,6 @@ import (
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/service_c/file"
 	"net/http"
-	"path/filepath"
 )
 
 func fileExec(g *gin.Context) {
@@ -23,7 +22,6 @@ func fileExecHandler(g *gin.Context, fileName string) error {
 	if len(fileName) == 0 {
 		return errors.New("file name is nil")
 	}
-	filepath.Join()
 	switch g.Request.Method {
 	case http.MethodPost:
 		f, err := g.FormFile("file")

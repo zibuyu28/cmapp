@@ -42,5 +42,5 @@ func InitORMEngine() error {
 }
 
 func InitTable() error {
-	return ormEngine.Sync2(new(Machine), new(Driver), new(Chain), new(Node))
+	return ormEngine.Sync2(new(Machine), new(Driver), new(Chain), new(Node), new(Package))
 }
