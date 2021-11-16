@@ -95,6 +95,9 @@ func PackageInfo(ctx context.Context, name, version string) (*Package, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal resp to package")
 	}
+	if res.Code != 200 {
+		return nil, errors.New(res.Message)
+	}
 	p := res.Data
 	validate := v.New()
 	err = validate.Struct(p)
