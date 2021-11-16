@@ -86,12 +86,16 @@ func PackageInfo(ctx context.Context, name, version string) (*Package, error) {
 		return nil, errors.Wrap(err, "http do get")
 	}
 	log.Debugf(ctx, "Currently get package info from core. resp [%s]", string(resp))
-
-	p := Package{}
-	err = json.Unmarshal(resp, &p)
+	var res = struct {
+		Code    int     `json:"code"`
+		Message string  `json:"message"`
+		Data    Package `json:"data"`
+	}{}
+	err = json.Unmarshal(resp, &res)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal resp to package")
 	}
+	p := res.Data
 	validate := v.New()
 	err = validate.Struct(p)
 	if err != nil {
