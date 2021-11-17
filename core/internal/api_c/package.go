@@ -81,7 +81,6 @@ func packageDownloadExec(g *gin.Context) {
 		"Content-Disposition": fmt.Sprintf(`attachment; filename="%s"`, filen),
 	}
 	g.DataFromReader(http.StatusOK, contentLength, contentType, f, extraHeaders)
-	ok(g, "success")
 }
 
 func packageInfoExec(g *gin.Context) {
