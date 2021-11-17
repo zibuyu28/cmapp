@@ -46,7 +46,8 @@ func (p *PM) RegisterPackage(tar string) error {
 	dir := filepath.Dir(tar)
 	defer os.RemoveAll(dir)
 	// 必须是 tar 包, 解压
-	err := file.Untargz(tar, dir)
+	split, f := filepath.Split(dir)
+	err := file.UntargzWithName(tar, split, f)
 	if err != nil {
 		return errors.Wrap(err, "un tar file")
 	}
@@ -77,8 +78,8 @@ func (p *PM) RegisterPackage(tar string) error {
 		if err != nil {
 			return errors.Wrapf(err, "get file [%s] md5", pkg.Binary.FileName)
 		}
-		if fileMD5 != pkg.Binary.FileName {
-			return errors.Errorf("file md5 [%s] not equal to checksum [%s]", fileMD5, pkg.Binary.FileName)
+		if fileMD5 != pkg.Binary.CheckSum {
+			return errors.Errorf("file md5 [%s] not equal to checksum [%s]", fileMD5, pkg.Binary.CheckSum)
 		}
 		mp := model.Package{
 			Name:                      pkg.Name,
@@ -115,7 +116,8 @@ func (p *PM) RegisterPackage(tar string) error {
 		_ = os.MkdirAll(pkp, os.ModePerm)
 		_ = os.Rename(filepath.Join(dir, pk.Binary.FileName), filepath.Join(pkp, pk.Binary.FileName))
 		_ = os.Rename(filepath.Join(dir, pk.Image.FileName), filepath.Join(pkp, pk.Image.FileName))
-		_ = os.Rename(filepath.Join(dir, "info.json"), filepath.Join(pkp, "info.json"))
+		marshal, _ := json.Marshal(pk)
+		_ = ioutil.WriteFile(filepath.Join(pkp,"info.json"), marshal, os.ModePerm)
 	}
 	return nil
 }
@@ -139,7 +141,7 @@ type Binary struct {
 type Image struct {
 	FileName      string   `json:"file_name" validate:"required"`
 	WorkDir       string   `json:"work_dir" validate:"required"`
-	StartCommands []string `json:"start_command" validate:"required"`
+	StartCommands []string `json:"start_commands" validate:"required"`
 }
 
 func (p *PM) GetPackageInfo(name, version string) (*PackageInfo, error) {

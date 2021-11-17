@@ -34,7 +34,7 @@ type Package struct {
 	BinaryPackageHandleShells []string  `xorm:"varchar(2048) 'binary_package_handle_shells'"`
 	BinaryStartCommands       []string  `xorm:"varchar(2048) 'binary_start_commands'"`
 	ImageFullName             string    `xorm:"varchar(1024) 'image_full_name'"`
-	ImageTag            string    `xorm:"varchar(1024) 'image_tag'"`
+	ImageTag                  string    `xorm:"varchar(1024) 'image_tag'"`
 	ImageWorkDir              string    `xorm:"varchar(1024) 'image_work_dir'"`
 	ImageStartCommands        []string  `xorm:"varchar(2048) 'image_start_commands'"`
 }

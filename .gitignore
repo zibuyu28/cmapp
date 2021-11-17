@@ -8,3 +8,4 @@ mrobot/bin/boot2docker.iso
 /mrobot/drivers/virtualbox/vboxm/sshkey/
 /core/drv.DriverPath/
 /core/sshkey/
+/core/package/

@@ -180,10 +180,11 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-// Untargz 解压 tar.gz
+// UntargzWithName decompression tar.gz
 // @archive : the compress file's path , such as - "./test.tar.gz"
 // @dest    : the file Untar dest, such as "./ttt", and you will get fold named "test" under the ttt
-func Untargz(archive, dest string) error {
+// @fileName : the new name for the extracted file. If your compressed file is xxx.tar.gz which contains /xxx/ss.text, and your dest=./driver and fileName=aaa, then you will get /driver/aaa/ss.text
+func UntargzWithName(archive, dest string, fileName string) error {
 	if exist, _ := PathExists(archive); !exist {
 		return fmt.Errorf("archive not found: %s", archive)
 	}
@@ -207,6 +208,23 @@ func Untargz(archive, dest string) error {
 	}
 	defer gr.Close()
 	tr := tar.NewReader(gr)
+
+	hdr, err := tr.Next()
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	if !hdr.FileInfo().IsDir() {
+		// create path before create file in <create> func, continue here
+		return fmt.Errorf("compressed file must contains a dir in the root path")
+	}
+
+	rootName := hdr.Name
+
 	for {
 		hdr, err := tr.Next()
 		if err != nil {
@@ -216,7 +234,14 @@ func Untargz(archive, dest string) error {
 				return err
 			}
 		}
-		filename := path.Join(dest, hdr.Name) // dest + hdr.Name
+
+		hdrName := hdr.Name
+		if !strings.HasPrefix(hdrName, rootName) {
+			return fmt.Errorf("compressed file must in a root file while file=%s not in root file=%s", hdrName, rootName)
+		}
+		hdrName = path.Join(fileName, hdrName[len(rootName):])
+
+		filename := path.Join(dest, hdrName) // dest + hdr.Name
 
 		if hdr.FileInfo().IsDir() {
 			// create path before create file in <create> func, continue here
@@ -233,9 +258,10 @@ func Untargz(archive, dest string) error {
 		}
 		_ = file.Close()
 	}
-	return nil
-}
 
+	return nil
+
+}
 func create(name string) (*os.File, error) {
 	dir, _ := filepath.Split(name)
 	// create dir before create file
