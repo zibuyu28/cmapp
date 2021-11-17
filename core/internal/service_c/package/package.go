@@ -117,7 +117,7 @@ func (p *PM) RegisterPackage(tar string) error {
 		_ = os.Rename(filepath.Join(dir, pk.Binary.FileName), filepath.Join(pkp, pk.Binary.FileName))
 		_ = os.Rename(filepath.Join(dir, pk.Image.FileName), filepath.Join(pkp, pk.Image.FileName))
 		marshal, _ := json.Marshal(pk)
-		_ = ioutil.WriteFile(filepath.Join(pkp,"info.json"), marshal, os.ModePerm)
+		_ = ioutil.WriteFile(filepath.Join(pkp, "info.json"), marshal, os.ModePerm)
 	}
 	return nil
 }
@@ -150,7 +150,18 @@ func (p *PM) GetPackageInfo(name, version string) (*PackageInfo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "get package info")
 	}
+	protocol := viper.GetString("protocol")
+	if len(protocol) == 0 {
+		return nil, errors.New("protocol is nil")
+	}
 	domain := viper.GetString("domain")
+	if len(domain) == 0 {
+		return nil, errors.New("domain is nil")
+	}
+	port := viper.GetInt("http.port")
+	if port == 0 {
+		return nil, errors.New("http port is nil")
+	}
 	return &PackageInfo{
 		Name:    pkg.Name,
 		Version: pkg.Version,
@@ -171,7 +182,7 @@ func (p *PM) GetPackageInfo(name, version string) (*PackageInfo, error) {
 			PackageHandleShells []string `json:"package_handle_shells"`
 			StartCommands       []string `json:"start_command" validate:"required"`
 		}{
-			Download:            fmt.Sprintf("%s/api/v1/package/%s/%s/%s", domain, pkg.Name, pkg.Version, pkg.BinaryName),
+			Download:            fmt.Sprintf("%s://%s:%d/api/v1/package/%s/%s/%s", protocol, domain, port, pkg.Name, pkg.Version, pkg.BinaryName),
 			CheckSum:            pkg.BinaryCheckSum,
 			PackageHandleShells: pkg.BinaryPackageHandleShells,
 			StartCommands:       pkg.BinaryStartCommands,
