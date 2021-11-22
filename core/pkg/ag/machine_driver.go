@@ -17,9 +17,12 @@
 package ag
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
+	"github.com/zibuyu28/cmapp/common/httputil"
+	"github.com/zibuyu28/cmapp/common/log"
 )
 
 type function string
@@ -154,7 +157,8 @@ type FileMount struct {
 
 // HMD MachineDriver implement with HTTP
 type HMD struct {
-	Version base.APIVersion
+	V            APIVersion
+	CoreHttpAddr string
 }
 
 type NewAppReq struct {
@@ -170,13 +174,13 @@ type Req struct {
 }
 
 // NewApp new app to core
-func (m *HMD) NewApp(nar *NewAppReq) (*App, error) {
+func (h *HMD) NewApp(nar *NewAppReq) (*App, error) {
 	req := Req{
 		AppUUID: "init",
 		Fnc:     newApp.String(),
 		Param:   nar,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "send new app request")
 	}
@@ -188,52 +192,52 @@ func (m *HMD) NewApp(nar *NewAppReq) (*App, error) {
 	return &app, nil
 }
 
-func (m *HMD) StartApp(appUUID string, a *App) error {
+func (h *HMD) StartApp(appUUID string, a *App) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     startApp.String(),
 		Param:   a,
 	}
-	_, err := base.SendPost(m.Version, req)
+	_, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send new app request")
 	}
 	return nil
 }
 
-func (m *HMD) StopApp(appUUID string, a *App) error {
+func (h *HMD) StopApp(appUUID string, a *App) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     stopApp.String(),
 		Param:   a,
 	}
-	_, err := base.SendPost(m.Version, req)
+	_, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send stop app request")
 	}
 	return nil
 }
 
-func (m *HMD) DestroyApp(appUUID string, a *App) error {
+func (h *HMD) DestroyApp(appUUID string, a *App) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     destroyApp.String(),
 		Param:   a,
 	}
-	_, err := base.SendPost(m.Version, req)
+	_, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send destroy app request")
 	}
 	return nil
 }
 
-func (m *HMD) TagEx(appUUID string, t *Tag) error {
+func (h *HMD) TagEx(appUUID string, t *Tag) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     tagEx.String(),
 		Param:   t,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set tag request")
 	}
@@ -244,13 +248,13 @@ func (m *HMD) TagEx(appUUID string, t *Tag) error {
 	return nil
 }
 
-func (m *HMD) FileMountEx(appUUID string, mount *FileMount) error {
+func (h *HMD) FileMountEx(appUUID string, mount *FileMount) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     fileMountEx.String(),
 		Param:   mount,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set file mount request")
 	}
@@ -261,13 +265,13 @@ func (m *HMD) FileMountEx(appUUID string, mount *FileMount) error {
 	return nil
 }
 
-func (m *HMD) EnvEx(appUUID string, ev *EnvVar) error {
+func (h *HMD) EnvEx(appUUID string, ev *EnvVar) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     envEx.String(),
 		Param:   ev,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set env request")
 	}
@@ -278,13 +282,13 @@ func (m *HMD) EnvEx(appUUID string, ev *EnvVar) error {
 	return nil
 }
 
-func (m *HMD) NetworkEx(appUUID string, nw *Network) error {
+func (h *HMD) NetworkEx(appUUID string, nw *Network) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     networkEx.String(),
 		Param:   nw,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set network request")
 	}
@@ -295,13 +299,13 @@ func (m *HMD) NetworkEx(appUUID string, nw *Network) error {
 	return nil
 }
 
-func (m *HMD) FilePremiseEx(appUUID string, file *File) error {
+func (h *HMD) FilePremiseEx(appUUID string, file *File) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     filePremiseEx.String(),
 		Param:   file,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set file premise request")
 	}
@@ -312,13 +316,13 @@ func (m *HMD) FilePremiseEx(appUUID string, file *File) error {
 	return nil
 }
 
-func (m *HMD) LimitEx(appUUID string, limit *Limit) error {
+func (h *HMD) LimitEx(appUUID string, limit *Limit) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     limitEx.String(),
 		Param:   limit,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set limit request")
 	}
@@ -329,13 +333,13 @@ func (m *HMD) LimitEx(appUUID string, limit *Limit) error {
 	return nil
 }
 
-func (m *HMD) HealthEx(appUUID string, health *Health) error {
+func (h *HMD) HealthEx(appUUID string, health *Health) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     healthEx.String(),
 		Param:   health,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set health request")
 	}
@@ -346,13 +350,13 @@ func (m *HMD) HealthEx(appUUID string, health *Health) error {
 	return nil
 }
 
-func (m *HMD) LogEx(appUUID string, log *Log) error {
+func (h *HMD) LogEx(appUUID string, log *Log) error {
 	req := Req{
 		AppUUID: appUUID,
 		Fnc:     logEx.String(),
 		Param:   log,
 	}
-	ins, err := base.SendPost(m.Version, req)
+	ins, err := h.SendPost(req)
 	if err != nil {
 		return errors.Wrap(err, "send set log request")
 	}
@@ -361,4 +365,56 @@ func (m *HMD) LogEx(appUUID string, log *Log) error {
 		return errors.Wrap(err, "unmarshal log")
 	}
 	return nil
+}
+
+type coreReq struct {
+	Fnc   string      `json:"fnc"`
+	Param interface{} `json:"param"`
+}
+
+type coreResp struct {
+	Code    CoreCode    `json:"code"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
+}
+
+type CoreCode int
+
+const (
+	SUCCESS CoreCode = 200
+	FAILED  CoreCode = 400
+)
+
+type APIVersion string
+
+const (
+	V1 APIVersion = "v1"
+)
+
+func (h *HMD) SendPost(req interface{}) ([]byte, error) {
+	respb, err := httputil.HTTPDoPost(req, getURL(h.V, h.CoreHttpAddr))
+	if err != nil {
+		return nil, errors.Wrap(err, "send req to core")
+	}
+	resp := coreResp{Data: struct{}{}}
+	err = json.Unmarshal(respb, &resp)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unmarshal resp [%s]", string(respb))
+	}
+	if resp.Code != SUCCESS {
+		return nil, errors.Errorf("fail to call with req [%v], message [%s]", req, resp.Message)
+	}
+	datab, err := json.Marshal(resp.Data)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal response's data info")
+	}
+	return datab, nil
+}
+
+func getURL(version APIVersion, addr string) string {
+	if len(addr) == 0 {
+		log.Debugf(context.Background(), "use default core addr [%s]", coreDefaultHttpAddr)
+		addr = coreDefaultHttpAddr
+	}
+	return fmt.Sprintf("%s/api/%s/md/exec", addr, version)
 }

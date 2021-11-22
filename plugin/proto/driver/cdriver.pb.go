@@ -398,18 +398,24 @@ var file_cdriver_proto_rawDesc = []byte{
 	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x30, 0x0a, 0x06, 0x53, 0x74, 0x61,
 	0x74, 0x65, 0x45, 0x12, 0x0c, 0x0a, 0x08, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x69, 0x6e, 0x67, 0x10,
 	0x00, 0x12, 0x0a, 0x0a, 0x06, 0x4e, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x10, 0x01, 0x12, 0x0c, 0x0a,
-	0x08, 0x41, 0x62, 0x6e, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x10, 0x02, 0x32, 0x95, 0x01, 0x0a, 0x0b,
-	0x43, 0x68, 0x61, 0x69, 0x6e, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x2b, 0x0a, 0x09, 0x49,
-	0x6e, 0x69, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x12, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65,
-	0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72,
-	0x2e, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x22, 0x00, 0x12, 0x31, 0x0a, 0x0f, 0x43, 0x72, 0x65, 0x61,
-	0x74, 0x65, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x45, 0x78, 0x65, 0x63, 0x12, 0x0d, 0x2e, 0x64, 0x72,
-	0x69, 0x76, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69,
-	0x76, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x22, 0x00, 0x12, 0x26, 0x0a, 0x04, 0x45,
-	0x78, 0x69, 0x74, 0x12, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74,
-	0x79, 0x22, 0x00, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x2f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x08, 0x41, 0x62, 0x6e, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x10, 0x02, 0x32, 0xfd, 0x01, 0x0a, 0x0b,
+	0x43, 0x68, 0x61, 0x69, 0x6e, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x30, 0x0a, 0x0e, 0x47,
+	0x65, 0x74, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x12, 0x0d, 0x2e,
+	0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0d, 0x2e, 0x64,
+	0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x46, 0x6c, 0x61, 0x67, 0x73, 0x22, 0x00, 0x12, 0x34, 0x0a,
+	0x12, 0x53, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x46, 0x72, 0x6f, 0x6d, 0x46, 0x6c,
+	0x61, 0x67, 0x73, 0x12, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x46, 0x6c, 0x61,
+	0x67, 0x73, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74,
+	0x79, 0x22, 0x00, 0x12, 0x2b, 0x0a, 0x09, 0x49, 0x6e, 0x69, 0x74, 0x43, 0x68, 0x61, 0x69, 0x6e,
+	0x12, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a,
+	0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x22, 0x00,
+	0x12, 0x31, 0x0a, 0x0f, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x45,
+	0x78, 0x65, 0x63, 0x12, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x61,
+	0x69, 0x6e, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x2e, 0x43, 0x68, 0x61, 0x69,
+	0x6e, 0x22, 0x00, 0x12, 0x26, 0x0a, 0x04, 0x45, 0x78, 0x69, 0x74, 0x12, 0x0d, 0x2e, 0x64, 0x72,
+	0x69, 0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x0d, 0x2e, 0x64, 0x72, 0x69,
+	0x76, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22, 0x00, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
+	0x2f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -434,24 +440,29 @@ var file_cdriver_proto_goTypes = []interface{}{
 	nil,               // 4: driver.Node.CustomInfoEntry
 	nil,               // 5: driver.Chain.CustomInfoEntry
 	(*Empty)(nil),     // 6: driver.Empty
+	(*Flags)(nil),     // 7: driver.Flags
 }
 var file_cdriver_proto_depIdxs = []int32{
-	0, // 0: driver.Node.State:type_name -> driver.Node.StateE
-	4, // 1: driver.Node.CustomInfo:type_name -> driver.Node.CustomInfoEntry
-	1, // 2: driver.Chain.State:type_name -> driver.Chain.StateE
-	5, // 3: driver.Chain.CustomInfo:type_name -> driver.Chain.CustomInfoEntry
-	2, // 4: driver.Chain.Nodes:type_name -> driver.Node
-	6, // 5: driver.ChainDriver.InitChain:input_type -> driver.Empty
-	3, // 6: driver.ChainDriver.CreateChainExec:input_type -> driver.Chain
-	6, // 7: driver.ChainDriver.Exit:input_type -> driver.Empty
-	3, // 8: driver.ChainDriver.InitChain:output_type -> driver.Chain
-	3, // 9: driver.ChainDriver.CreateChainExec:output_type -> driver.Chain
-	6, // 10: driver.ChainDriver.Exit:output_type -> driver.Empty
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	0,  // 0: driver.Node.State:type_name -> driver.Node.StateE
+	4,  // 1: driver.Node.CustomInfo:type_name -> driver.Node.CustomInfoEntry
+	1,  // 2: driver.Chain.State:type_name -> driver.Chain.StateE
+	5,  // 3: driver.Chain.CustomInfo:type_name -> driver.Chain.CustomInfoEntry
+	2,  // 4: driver.Chain.Nodes:type_name -> driver.Node
+	6,  // 5: driver.ChainDriver.GetCreateFlags:input_type -> driver.Empty
+	7,  // 6: driver.ChainDriver.SetConfigFromFlags:input_type -> driver.Flags
+	6,  // 7: driver.ChainDriver.InitChain:input_type -> driver.Empty
+	3,  // 8: driver.ChainDriver.CreateChainExec:input_type -> driver.Chain
+	6,  // 9: driver.ChainDriver.Exit:input_type -> driver.Empty
+	7,  // 10: driver.ChainDriver.GetCreateFlags:output_type -> driver.Flags
+	6,  // 11: driver.ChainDriver.SetConfigFromFlags:output_type -> driver.Empty
+	3,  // 12: driver.ChainDriver.InitChain:output_type -> driver.Chain
+	3,  // 13: driver.ChainDriver.CreateChainExec:output_type -> driver.Chain
+	6,  // 14: driver.ChainDriver.Exit:output_type -> driver.Empty
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_cdriver_proto_init() }
@@ -519,6 +530,10 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ChainDriverClient interface {
+	// GetCreateFlags get create flags
+	GetCreateFlags(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Flags, error)
+	// SetConfigFromFlags set driver config from flags
+	SetConfigFromFlags(ctx context.Context, in *Flags, opts ...grpc.CallOption) (*Empty, error)
 	// InitChain create a chain to store
 	InitChain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Chain, error)
 	// CreateChainExec execute create chain action
@@ -533,6 +548,24 @@ type chainDriverClient struct {
 
 func NewChainDriverClient(cc grpc.ClientConnInterface) ChainDriverClient {
 	return &chainDriverClient{cc}
+}
+
+func (c *chainDriverClient) GetCreateFlags(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Flags, error) {
+	out := new(Flags)
+	err := c.cc.Invoke(ctx, "/driver.ChainDriver/GetCreateFlags", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chainDriverClient) SetConfigFromFlags(ctx context.Context, in *Flags, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/driver.ChainDriver/SetConfigFromFlags", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chainDriverClient) InitChain(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Chain, error) {
@@ -564,6 +597,10 @@ func (c *chainDriverClient) Exit(ctx context.Context, in *Empty, opts ...grpc.Ca
 
 // ChainDriverServer is the server API for ChainDriver service.
 type ChainDriverServer interface {
+	// GetCreateFlags get create flags
+	GetCreateFlags(context.Context, *Empty) (*Flags, error)
+	// SetConfigFromFlags set driver config from flags
+	SetConfigFromFlags(context.Context, *Flags) (*Empty, error)
 	// InitChain create a chain to store
 	InitChain(context.Context, *Empty) (*Chain, error)
 	// CreateChainExec execute create chain action
@@ -576,6 +613,12 @@ type ChainDriverServer interface {
 type UnimplementedChainDriverServer struct {
 }
 
+func (*UnimplementedChainDriverServer) GetCreateFlags(context.Context, *Empty) (*Flags, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCreateFlags not implemented")
+}
+func (*UnimplementedChainDriverServer) SetConfigFromFlags(context.Context, *Flags) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfigFromFlags not implemented")
+}
 func (*UnimplementedChainDriverServer) InitChain(context.Context, *Empty) (*Chain, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitChain not implemented")
 }
@@ -588,6 +631,42 @@ func (*UnimplementedChainDriverServer) Exit(context.Context, *Empty) (*Empty, er
 
 func RegisterChainDriverServer(s *grpc.Server, srv ChainDriverServer) {
 	s.RegisterService(&_ChainDriver_serviceDesc, srv)
+}
+
+func _ChainDriver_GetCreateFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChainDriverServer).GetCreateFlags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/driver.ChainDriver/GetCreateFlags",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChainDriverServer).GetCreateFlags(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChainDriver_SetConfigFromFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Flags)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChainDriverServer).SetConfigFromFlags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/driver.ChainDriver/SetConfigFromFlags",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChainDriverServer).SetConfigFromFlags(ctx, req.(*Flags))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ChainDriver_InitChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -648,6 +727,14 @@ var _ChainDriver_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "driver.ChainDriver",
 	HandlerType: (*ChainDriverServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetCreateFlags",
+			Handler:    _ChainDriver_GetCreateFlags_Handler,
+		},
+		{
+			MethodName: "SetConfigFromFlags",
+			Handler:    _ChainDriver_SetConfigFromFlags_Handler,
+		},
 		{
 			MethodName: "InitChain",
 			Handler:    _ChainDriver_InitChain_Handler,

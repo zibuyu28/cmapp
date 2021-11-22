@@ -1,5 +1,5 @@
 protocol: http
-domain: 10.1.41.185
+domain: 192.168.31.63
 http:
   port: 9008
 grpc:

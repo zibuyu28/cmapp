@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
-	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/service"
 	"os"
@@ -30,18 +29,23 @@ import (
 )
 
 type CreateChainWorker struct {
-	ctx        context.Context
-	baseDir    string
+	ctx     context.Context
+	baseDir string
 }
 
-func NewCreateChainWorker(ctx context.Context, baseDir string) *CreateChainWorker {
-	return &CreateChainWorker{
-		ctx:        ctx,
-		baseDir:    baseDir,
+func NewCreateChainWorker(ctx context.Context, coreHttpAddr, baseDir string) *CreateChainWorker {
+	cw := &CreateChainWorker{
+		ctx:     ctx,
+		baseDir: baseDir,
 	}
+	hmd = &ag.HMD{
+		V:            ag.V1,
+		CoreHttpAddr: coreHttpAddr,
+	}
+	return cw
 }
 
-var hmd = ag.HMD{Version: base.V1}
+var hmd *ag.HMD
 
 // CreateChainProcess create chain
 func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
@@ -117,7 +121,6 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	}
 	log.Debugf(c.ctx, "construct order app success")
 
-
 	err = constructPeer(c.ctx, chain)
 	if err != nil {
 		return errors.Wrap(err, "construct peers")
@@ -192,7 +195,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		}
 		var envs = make(map[string]string)
 		envs["FABRIC_CFG_PATH"] = peer.APP.Workspace.Workspace
-		envs["CORE_PEER_FILESYSTEMPATH"] = fmt.Sprintf("%s/pro-data",peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_FILESYSTEMPATH"] = fmt.Sprintf("%s/pro-data", peer.APP.Workspace.Workspace)
 		envs["CORE_LEDGER_STATE_STATEDATABASE"] = "goleveldb"
 		//envs["CORE_LEDGER_STATE_STATEDATABASE"] = "CouchDB"
 		//for i, network := range peer.CouchDB.Networks {
@@ -239,7 +242,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 			}
 		}
 		envs["CORE_PEER_ID"] = peer.UUID
-		envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP",peer.Organization.UUID)
+		envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP", peer.Organization.UUID)
 
 		for k, v := range envs {
 			log.Debugf(ctx, "set env key [%s], val [%s]", k, v)
@@ -313,9 +316,9 @@ func constructOrder(ctx context.Context, chain *model.Fabric) error {
 		var envs = make(map[string]string)
 		envs["FABRIC_LOGGING_SPEC"] = order.LogLevel
 		envs["FABRIC_CFG_PATH"] = order.APP.Workspace.Workspace
-		envs["ORDERER_FILELEDGER_LOCATION"] = fmt.Sprintf("%s/pro-data",order.APP.Workspace.Workspace)
+		envs["ORDERER_FILELEDGER_LOCATION"] = fmt.Sprintf("%s/pro-data", order.APP.Workspace.Workspace)
 		envs["ORDERER_GENERAL_LISTENADDRESS"] = "0.0.0.0"
-		envs["ORDERER_GENERAL_LISTENPORT"] = fmt.Sprintf("%d",order.GRPCPort)
+		envs["ORDERER_GENERAL_LISTENPORT"] = fmt.Sprintf("%d", order.GRPCPort)
 		envs["ORDERER_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", order.HealthPort)
 		envs["ORDERER_GENERAL_GENESISMETHOD"] = "file"
 		envs["ORDERER_GENERAL_GENESISFILE"] = fmt.Sprintf("%s/orderer.genesis.block", order.APP.Workspace.Workspace)
@@ -369,7 +372,7 @@ func newOrdererApp(orderer *model.Orderer) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: orderer.MachineID,
 		Name:      "orderer",
-		Version:   "1.4.3",
+		Version:   "1.4",
 	})
 	if err != nil {
 		return errors.Wrap(err, "new app")
@@ -447,7 +450,7 @@ func newPeerApp(peer *model.Peer) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: peer.MachineID,
 		Name:      "peer",
-		Version:   "1.4.3",
+		Version:   "1.4",
 	})
 	if err != nil {
 		return errors.Wrap(err, "new app")

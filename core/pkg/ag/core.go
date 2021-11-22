@@ -17,11 +17,11 @@
 package ag
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"github.com/zibuyu28/cmapp/core/pkg/ag/base"
+	"github.com/zibuyu28/cmapp/common/log"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -31,15 +31,18 @@ import (
 )
 
 type Core struct {
-	ApiVersion base.APIVersion
+	ApiVersion   APIVersion
+	coreHttpAddr string
 }
 
 var coreDefaultHost = "127.0.0.1"
 
 var coreDefaultPort = 9008
 
+var coreDefaultHttpAddr = "http://127.0.0.1:9008"
+
 func (c Core) DownloadFile(fileName string) ([]byte, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion), fileName), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.coreHttpAddr), fileName), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new http request")
 	}
@@ -82,13 +85,13 @@ func (c Core) UploadFile(fileName string) (string, error) {
 		_ = writer.Close()
 		_ = pw.Close()
 	}()
-	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion), tFileName), pr)
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.coreHttpAddr), tFileName), pr)
 	if err != nil {
 		return "", errors.Wrap(err, "new post request")
 	}
 	res, err := http.DefaultClient.Do(request)
 	if err != nil {
-		return "",errors.Wrap(err, "do http request")
+		return "", errors.Wrap(err, "do http request")
 	}
 	defer res.Body.Close()
 
@@ -115,15 +118,16 @@ func (c Core) UploadFile(fileName string) (string, error) {
 	}
 }
 
-func getFileURL(version base.APIVersion) string {
-	host := viper.GetString("CORE_HOST")
-	if len(host) == 0 {
-		host = coreDefaultHost
+func getFileURL(version APIVersion, coreHttpAddr string) string {
+	//host := viper.GetString("CORE_HOST")
+	if len(coreHttpAddr) == 0 {
+		log.Debugf(context.Background(), "use default core addr [%s]", coreDefaultHttpAddr)
+		coreHttpAddr = coreDefaultHttpAddr
 	}
 
-	port := viper.GetInt("CORE_PORT")
-	if port == 0 {
-		port = coreDefaultPort
-	}
-	return fmt.Sprintf("%s:%d/api/%s/file", host, port, version)
+	//port := viper.GetInt("CORE_PORT")
+	//if port == 0 {
+	//	port = coreDefaultPort
+	//}
+	return fmt.Sprintf("%s/api/%s/file", coreHttpAddr, version)
 }

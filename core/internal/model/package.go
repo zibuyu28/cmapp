@@ -60,12 +60,12 @@ func DeletePackage(pkg *Package) error {
 // GetPackageByNameVersion get package by name version
 func GetPackageByNameVersion(name, version string) (*Package, error) {
 	var drv = &Package{}
-	has, err := ormEngine.Table(&Package{}).Where("name = ? and version = ?", name, version).Get(drv)
+	_, err := ormEngine.Table(&Package{}).Where("name = ? and version = ?", name, version).Get(drv)
 	if err != nil {
 		return nil, errors.Wrap(err, "query package from db")
 	}
-	if !has {
-		return nil, errors.Errorf("record not exist which name [%s], version [%s]", name, version)
-	}
+	//if !has {
+	//	return nil, errors.Errorf("record not exist which name [%s], version [%s]", name, version)
+	//}
 	return drv, nil
 }

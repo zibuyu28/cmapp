@@ -28,6 +28,8 @@ type BaseDriver struct {
 	DriverVersion string
 	DriverID      int
 
+	CoreHTTPAddr    string          `validate:"required"`
+	CoreGRPCAddr    string          `validate:"required"`
 	CoreAddr        string          `validate:"required"`
 	ImageRepository ImageRepository `validate:"required"`
 }
@@ -39,6 +41,18 @@ type ImageRepository struct {
 
 func (b *BaseDriver) GetFlags() []*driver.Flag {
 	return []*driver.Flag{
+		{
+			Name:   "CoreHTTPAddr",
+			Usage:  "core http addr",
+			EnvVar: "BASE_CORE_HTTP_ADDR",
+			Value:  nil,
+		},
+		{
+			Name:   "CoreGRPCAddr",
+			Usage:  "core grpc addr",
+			EnvVar: "BASE_CORE_GRPC_ADDR",
+			Value:  nil,
+		},
 		{
 			Name:   "CoreAddr",
 			Usage:  "core http addr",
@@ -59,7 +73,6 @@ func (b *BaseDriver) GetFlags() []*driver.Flag {
 		},
 	}
 }
-
 
 func (b *BaseDriver) ConvertFlags(flags *driver.Flags) map[string]string {
 	var fls = make(map[string]string)

@@ -19,7 +19,6 @@ package cengine
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc/metadata"
 	"time"
 
@@ -37,12 +36,23 @@ type InitInfo struct {
 	DriverName    string `json:"driver_name" validate:"required"`
 	DriverVersion string `json:"driver_version" validate:"required"`
 	DriverID      int    `json:"driver_id" validate:"required"`
-	CoreGRPCPort  int    `json:"core_grpc_port" validate:"required"`
+	CoreHttpAddr  string `json:"core_http_addr" validate:"required"`
+	CoreGrpcAddr  string `json:"core_grpc_addr" validate:"required"`
 }
+
+const (
+	BaseCoreHTTPAddr = "CoreHTTPAddr"
+	BaseCoreGRPCAddr = "CoreGRPCAddr"
+	BaseCoreAddr     = "CoreAddr"
+	BaseRepository   = "Repository"
+	BaseStorePath    = "StorePath"
+)
 
 // TODO: 如果需要穿参数，肯定是从这里传入
 // CreateChain create chain action
 func CreateChain(ctx context.Context, info InitInfo, uuid, param string) error {
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
 	log.Debugf(ctx, "create chain process")
 	// 初始化链的参数
 	err := validator.New().Struct(&info)
@@ -55,8 +65,34 @@ func CreateChain(ctx context.Context, info InitInfo, uuid, param string) error {
 	if err != nil {
 		return errors.Wrap(err, "get chain engine plugin client")
 	}
-	log.Debugf(ctx, "get connect with core [:%d]", info.CoreGRPCPort)
-	corecli, err := getCoreGrpcClient(ctx, info.CoreGRPCPort)
+
+	flags, err := cmIns.GetCreateFlags(ctx, &driver.Empty{})
+	if err != nil {
+		return errors.Wrap(err, "get create flags")
+	}
+	var p = make(map[string]string)
+	err = json.Unmarshal([]byte(param), &p)
+	if err != nil {
+		return errors.Wrap(err, "param not in json format")
+	}
+	p[BaseCoreHTTPAddr] = info.CoreHttpAddr
+	p[BaseCoreGRPCAddr] = info.CoreGrpcAddr
+	p[BaseCoreAddr] = info.CoreHttpAddr
+	p[BaseRepository] = "testrepo" // TODO: check need
+	p[BaseStorePath] = "testpath"  // TODO: check need
+
+	for i, flag := range flags.Flags {
+		if v, ok := p[flag.Name]; ok {
+			flags.Flags[i].Value = []string{v}
+		}
+	}
+	_, err = cmIns.SetConfigFromFlags(ctx, flags)
+	if err != nil {
+		return errors.Wrap(err, "set config flags")
+	}
+
+	log.Debugf(ctx, "get connect with core [%s]", info.CoreGrpcAddr)
+	corecli, err := getCoreGrpcClient(ctx, info.CoreGrpcAddr)
 	if err != nil {
 		return errors.Wrap(err, "get core grpc client")
 	}
@@ -118,12 +154,12 @@ func CreateChain(ctx context.Context, info InitInfo, uuid, param string) error {
 	return nil
 }
 
-func getCoreGrpcClient(ctx context.Context, grpcPort int) (coreproto.ChainManageClient, error) {
+func getCoreGrpcClient(ctx context.Context, grpcAddr string) (coreproto.ChainManageClient, error) {
 	// get grpc connect
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(10))
 	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
-	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, grpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, errors.Wrap(err, "conn grpc")
 	}

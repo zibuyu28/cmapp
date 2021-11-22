@@ -19,8 +19,10 @@ package machine
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
+	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/core/internal/model"
 	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
@@ -46,8 +48,12 @@ var defaultTimeout = 3
 
 func contextBuild(ctx context.Context, appuid string) context.Context {
 	return metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
-		"UUID": appuid,
+		"MA_UUID": appuid,
 	}))
+}
+
+func generateAPPUUID() string {
+	return fmt.Sprintf("APP-%s", md5.MD5(fmt.Sprintf("%d", time.Now().Unix()))[:8])
 }
 
 func connAG(ctx context.Context, addr string) (worker0.Worker0Client, error) {
@@ -87,8 +93,8 @@ func (R *RMD) NewApp(ctx context.Context, in *ag.NewAppReq) (*ag.App, error) {
 		return nil, errors.Wrap(err, "connect to machine agent")
 	}
 
-	//outctx := contextBuild(ctx, "initapp")
-	app, err := rpc.NewApp(ctx, &worker0.NewAppReq{Name: in.Name, Version: in.Version})
+	outctx := contextBuild(ctx, generateAPPUUID())
+	app, err := rpc.NewApp(outctx, &worker0.NewAppReq{Name: in.Name, Version: in.Version})
 	if err != nil {
 		return nil, errors.Wrap(err, "rpc request new app")
 	}
@@ -96,14 +102,14 @@ func (R *RMD) NewApp(ctx context.Context, in *ag.NewAppReq) (*ag.App, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal app")
 	}
-	log.Debugf(ctx, "app json [%s]", string(marshal))
+	log.Debugf(outctx, "app json [%s]", string(marshal))
 	if len(app.UUID) == 0 {
 		return nil, errors.Errorf("app uuid is nil")
 	}
 	ags := appstruct(app)
 	RMDIns.appRepo.Store(app.UUID, ags)
 	RMDIns.appConnRepo.Store(app.UUID, &clientIns{rpcClient: rpc})
-	log.Debugf(ctx, "store app [%s] to repo", app.UUID)
+	log.Debugf(outctx, "store app [%s] to repo", app.UUID)
 	return ags, nil
 }
 
@@ -438,4 +444,3 @@ func (R *RMD) LogEx(ctx context.Context, appUUID string, in *ag.Log) error {
 	log.Infof(ctx, "app exec set log info success")
 	return nil
 }
-

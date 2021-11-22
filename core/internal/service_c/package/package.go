@@ -69,6 +69,14 @@ func (p *PM) RegisterPackage(tar string) error {
 	// 检查每个 package
 	var mps []model.Package
 	for _, pkg := range pkgs.Packages {
+		// 查询数据库
+		dbp, e := model.GetPackageByNameVersion(pkg.Name, pkg.Version)
+		if e != nil {
+			return errors.Wrap(e, "get package")
+		}
+		if dbp != nil {
+			return errors.Errorf("package name [%s] and version [%s] already registered", pkg.Name, pkg.Version)
+		}
 		fileName := filepath.Join(dir, pkg.Binary.FileName)
 		_, err = os.Stat(fileName)
 		if err != nil {
@@ -149,6 +157,9 @@ func (p *PM) GetPackageInfo(name, version string) (*PackageInfo, error) {
 	pkg, err := model.GetPackageByNameVersion(name, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "get package info")
+	}
+	if pkg == nil {
+		return nil, errors.Errorf("can not get package info by name [%s] and version [%s]", name, version)
 	}
 	protocol := viper.GetString("protocol")
 	if len(protocol) == 0 {

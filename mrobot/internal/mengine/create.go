@@ -80,11 +80,13 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	if len(grpcAddr) == 0 {
 		return errors.Errorf("fail to get core grpc addr from env, please check env [%s]", MachineEngineCoreGRPCAddr)
 	}
+	log.Debugf(ctx, "get core grpc addr [%s]", grpcAddr)
 
 	httpAddr := os.Getenv(MachineEngineCoreHttpAddr)
 	if len(httpAddr) == 0 {
 		return errors.Errorf("fail to get core http addr from env, please check env [%s]", MachineEngineCoreHttpAddr)
 	}
+	log.Debugf(ctx, "get core http addr [%s]", httpAddr)
 
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"UUID": uuid,
@@ -139,7 +141,7 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	// grpc.WithBlock() : use to make sure the connection is up
 	conn, err := grpc.DialContext(ctx, grpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return errors.Wrap(err, "conn grpc")
+		return errors.Wrap(err, "conn core grpc")
 	}
 
 	var cli = coreproto.NewMachineManageClient(conn)
