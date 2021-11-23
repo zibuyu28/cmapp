@@ -17,6 +17,7 @@
 package ag
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -76,40 +77,44 @@ func (c Core) UploadFile(fileName string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "get file absolute path")
 	}
-	pr, pw := io.Pipe()
-	writer := multipart.NewWriter(pw)
-	open, err := os.Open(fph)
+	//pr, pw := io.Pipe()
+	//writer := multipart.NewWriter(pw)
+	//open, err := os.Open(fph)
+	//if err != nil {
+	//	return "", errors.Wrapf(err, "open file [%s]", fph)
+	//}
+	//_, tFileName := fp.Split(fileName)
+	//go func() {
+	//	defer open.Close()
+	//	fw1, _ := writer.CreateFormFile("file", tFileName)
+	//	//h := make(textproto.MIMEHeader)
+	//	//h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes("file"), escapeQuotes(fileName)))
+	//	//h.Set("Content-Type", "text/plain")
+	//	//fw1, _ := writer.CreatePart(h)
+	//	_, _ = io.Copy(fw1, open)
+	//	_ = writer.Close()
+	//	_ = pw.Close()
+	//}()
+	//request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.CoreHttpAddr), tFileName), pr)
+	//if err != nil {
+	//	return "", errors.Wrap(err, "new post request")
+	//}
+	//res, err := http.DefaultClient.Do(request)
+	//if err != nil {
+	//	return "", errors.Wrap(err, "do http request")
+	//}
+	//defer res.Body.Close()
+	//
+	//if res.StatusCode != http.StatusOK {
+	//	return "", fmt.Errorf("http response code : %d", res.StatusCode)
+	//}
+	//all, err := ioutil.ReadAll(res.Body)
+	//if err != nil {
+	//	return "", errors.Wrap(err, "read body")
+	//}
+	all, err := c.uploadfile(fph)
 	if err != nil {
-		return "", errors.Wrapf(err, "open file [%s]", fph)
-	}
-	_, tFileName := fp.Split(fileName)
-	go func() {
-		defer open.Close()
-		fw1, _ := writer.CreateFormFile("file", tFileName)
-		//h := make(textproto.MIMEHeader)
-		//h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes("file"), escapeQuotes(fileName)))
-		//h.Set("Content-Type", "text/plain")
-		//fw1, _ := writer.CreatePart(h)
-		_, _ = io.Copy(fw1, open)
-		_ = writer.Close()
-		_ = pw.Close()
-	}()
-	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.CoreHttpAddr), tFileName), pr)
-	if err != nil {
-		return "", errors.Wrap(err, "new post request")
-	}
-	res, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return "", errors.Wrap(err, "do http request")
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("http response code : %d", res.StatusCode)
-	}
-	all, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "read body")
+		return "", errors.Wrap(err, "upload file")
 	}
 	log.Debugf(context.Background(), "upload file res [%s]", string(all))
 	var resp = struct {
@@ -140,4 +145,30 @@ func getFileURL(version APIVersion, coreHttpAddr string) string {
 	//	port = coreDefaultPort
 	//}
 	return fmt.Sprintf("%s/api/%s/file", coreHttpAddr, version)
+}
+
+func (c *Core) uploadfile(filename string) ([]byte, error) {
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	file, errFile1 := os.Open(filename)
+	defer file.Close()
+	part1, errFile1 := writer.CreateFormFile("file", fp.Base(filename))
+	_, errFile1 = io.Copy(part1, file)
+	if errFile1 != nil {
+		return nil, errors.Wrap(errFile1, "copy file")
+	}
+	err := writer.Close()
+	if err != nil {
+		return nil, errors.Wrap(err, "close writer")
+	}
+	_, tFileName := fp.Split(filename)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.CoreHttpAddr), tFileName), payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "new request")
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res, err := http.DefaultClient.Do(req)
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	return body, nil
 }
