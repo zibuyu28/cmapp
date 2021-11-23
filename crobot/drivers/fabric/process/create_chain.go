@@ -18,6 +18,7 @@ package process
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
@@ -26,6 +27,7 @@ import (
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/service"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type CreateChainWorker struct {
@@ -42,6 +44,7 @@ func NewCreateChainWorker(ctx context.Context, coreHttpAddr, baseDir string) *Cr
 		V:            ag.V1,
 		CoreHttpAddr: coreHttpAddr,
 	}
+	ag.NewCore(ag.V1, coreHttpAddr)
 	return cw
 }
 
@@ -54,9 +57,6 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	err := newApp(chain)
 	if err != nil {
 		return errors.Wrap(err, "new app for chain")
-	}
-	if chain.Name == "mock-fab" {
-		return nil
 	}
 	// 主机开端口，主要是为了将端口外部路由给记录下
 	// 处理主机的 HostName 字段
@@ -100,19 +100,22 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 		return errors.Wrap(err, "get node cert map")
 	}
 	// 上传证书，创世区块
-	var capi ag.CoreAPI
-	err = uploadNodeCert(capi, chain, certMap)
+	err = uploadNodeCert(ag.CoreIns, chain, certMap)
 	if err != nil {
 		return errors.Wrap(err, "upload node cert")
 	}
 	log.Debugf(c.ctx, "upload node cert success")
 	genesisBlock := fmt.Sprintf("%s/orderer.genesis.block", basePath)
-	gb, err := capi.UploadFile(genesisBlock)
+	gb, err := ag.CoreIns.UploadFile(genesisBlock)
 	if err != nil {
 		return errors.Wrap(err, "upload genesis block file")
 	}
 	chain.RemoteGenesisBlock = gb
 	log.Debugf(c.ctx, "upload genesis block success")
+
+	if chain.Name == "mock-fab" {
+		return nil
+	}
 
 	// 构建几个节点的配置，并启动
 	err = constructOrder(c.ctx, chain)
@@ -393,6 +396,8 @@ func newOrdererApp(orderer *model.Orderer) error {
 	if err != nil {
 		return errors.Wrap(err, "net work set ex")
 	}
+	marshal, _ := json.Marshal(grpc)
+	log.Debugf(context.Background(), "grpc network exec result [%s]", string(marshal))
 	health := &ag.Network{
 		PortInfo: struct {
 			Port         int         `json:"port"`
@@ -408,10 +413,13 @@ func newOrdererApp(orderer *model.Orderer) error {
 	if err != nil {
 		return errors.Wrap(err, "net work set ex")
 	}
+	marshal, _ = json.Marshal(health)
+	log.Debugf(context.Background(), "health network exec result [%s]", string(marshal))
 	app.Networks = []ag.Network{*grpc, *health}
 	for _, s := range grpc.RouteInfo {
 		if s.RouteType == ag.OUT {
-			orderer.NodeHostName = s.Router
+			split := strings.Split(s.Router, ":")
+			orderer.NodeHostName = split[0]
 		}
 	}
 	return nil
@@ -519,7 +527,8 @@ func newPeerApp(peer *model.Peer) error {
 	app.Networks = []ag.Network{*grpc, *health, *ccport, *event}
 	for _, s := range grpc.RouteInfo {
 		if s.RouteType == ag.OUT {
-			peer.NodeHostName = s.Router
+			split := strings.Split(s.Router, ":")
+			peer.NodeHostName = split[0]
 		}
 	}
 	return nil

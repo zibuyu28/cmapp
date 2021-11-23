@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/file"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/fabtool"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 )
 
 type CertWorker struct {
@@ -76,15 +76,15 @@ func (c *CertWorker) PathMap(chain *model.Fabric) {
 	c.nodeCertMap = make(map[string]string)
 	c.organizationCertMap = make(map[string]string)
 	for _, orderer := range chain.Orderers {
-		orderCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com/orderers/orderer%s.orderer.fabric.com.tar.gz", c.workDir, orderer.UUID)
-		orderOrgCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com.tar.gz", c.workDir)
+		orderCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn.tar.gz", c.workDir, orderer.NodeHostName)
+		orderOrgCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn.tar.gz", c.workDir)
 		c.nodeCertMap[orderer.UUID] = orderCertTarPath
 		c.organizationCertMap["orderer"] = orderOrgCertTarPath
 	}
 	for _, peer := range chain.Peers {
-		peerCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com/peers/peer%s.%s.fabric.com.tar.gz",
-			c.workDir, peer.Organization.UUID, peer.UUID, peer.Organization.UUID)
-		peerOrgCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com.tar.gz",
+		peerCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn/peers/%s.%s.zibuyufab.cn.tar.gz",
+			c.workDir, peer.Organization.UUID, peer.NodeHostName, peer.Organization.UUID)
+		peerOrgCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn.tar.gz",
 			c.workDir, peer.Organization.UUID)
 		c.nodeCertMap[peer.UUID] = peerCertTarPath
 		c.organizationCertMap[peer.Organization.UUID] = peerOrgCertTarPath
@@ -93,34 +93,34 @@ func (c *CertWorker) PathMap(chain *model.Fabric) {
 
 func (c *CertWorker) certCompress(chain *model.Fabric) error {
 	for _, orderer := range chain.Orderers {
-		orderOrgCertPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com", c.workDir)
-		orderOrgCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com.tar.gz", c.workDir)
+		orderOrgCertPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn", c.workDir)
+		orderOrgCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn.tar.gz", c.workDir)
 		err := file.TarGzDir(orderOrgCertPath, orderOrgCertTarPath, true)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("compress file(%s)", orderOrgCertPath))
 		}
 
-		orderCertPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com/orderers/orderer%s.orderer.fabric.com", c.workDir, orderer.UUID)
-		orderCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com/orderers/orderer%s.orderer.fabric.com.tar.gz", c.workDir, orderer.UUID)
+		orderCertPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn", c.workDir, orderer.NodeHostName)
+		orderCertTarPath := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn.tar.gz", c.workDir, orderer.NodeHostName)
 		err = file.TarGzDir(orderCertPath, orderCertTarPath, true)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("compress file(%s)", orderCertPath))
 		}
 	}
 	for _, peer := range chain.Peers {
-		peerOrgCertPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com",
+		peerOrgCertPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn",
 			c.workDir, peer.Organization.UUID)
-		peerOrgCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com.tar.gz",
+		peerOrgCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn.tar.gz",
 			c.workDir, peer.Organization.UUID)
 		err := file.TarGzDir(peerOrgCertPath, peerOrgCertTarPath, true)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("compress file(%s)", peerOrgCertPath))
 		}
 
-		peerCertPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com/peers/peer%s.%s.fabric.com",
-			c.workDir, peer.Organization.UUID, peer.UUID, peer.Organization.UUID)
-		peerCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.fabric.com/peers/peer%s.%s.fabric.com.tar.gz",
-			c.workDir, peer.Organization.UUID, peer.UUID, peer.Organization.UUID)
+		peerCertPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn/peers/%s.%s.zibuyufab.cn",
+			c.workDir, peer.Organization.UUID, peer.NodeHostName, peer.Organization.UUID)
+		peerCertTarPath := fmt.Sprintf("%s/peerOrganizations/%s.zibuyufab.cn/peers/%s.%s.zibuyufab.cn.tar.gz",
+			c.workDir, peer.Organization.UUID, peer.NodeHostName, peer.Organization.UUID)
 		err = file.TarGzDir(peerCertPath, peerCertTarPath, true)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("compress file(%s)", peerCertPath))

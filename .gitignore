@@ -9,3 +9,5 @@ mrobot/bin/boot2docker.iso
 /core/drv.DriverPath/
 /core/sshkey/
 /core/package/
+/core/filedb/
+/core/chain_certs/

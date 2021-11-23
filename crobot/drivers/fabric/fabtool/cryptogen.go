@@ -18,17 +18,16 @@ package fabtool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/common/cmd"
-	"gopkg.in/yaml.v2"
 )
 
 type HostnameData struct {
@@ -185,6 +184,8 @@ func (c CryptoGenTool) GenerateInitCert(chain *model.Fabric, baseDir string) err
 	cryptogenConfigPath, _ := filepath.Abs(fmt.Sprintf("%s/crypto.yaml", baseDir))
 	certPath, _ := filepath.Abs(baseDir)
 
+	marshal, _ := json.Marshal(chain)
+	log.Debugf(c.ctx, "chain [%s]", string(marshal))
 	config := constructInitConfig(chain)
 	if config == nil {
 		return errors.New("config is nil")
@@ -202,9 +203,9 @@ func (c CryptoGenTool) GenerateInitCert(chain *model.Fabric, baseDir string) err
 		return err
 	}
 
-	command := fmt.Sprintf("generate --config=%s --output=%s/", cryptogenConfigPath, certPath)
-	log.Debugf(c.ctx, "GenerateInitCert command [%s %s]", cryptogen, command)
-	output, err := cmd.NewDefaultCMD(cryptogen, []string{command}).Run()
+	command := fmt.Sprintf("%s generate --config=%s --output=%s/", cryptogen, cryptogenConfigPath, certPath)
+	log.Debugf(c.ctx, "GenerateInitCert command [%s]", command)
+	output, err := cmd.NewDefaultCMD(command, []string{}).Run()
 	log.Debugf(c.ctx, "output : %s", output)
 	if err != nil {
 		return errors.Wrap(err, "exec crypto generate cert")
@@ -223,6 +224,7 @@ func (c CryptoGenTool) GenerateInitCert(chain *model.Fabric, baseDir string) err
 func checkCertRight(chain *model.Fabric, certPath string) (bool, error) {
 	for _, peer := range chain.Peers {
 		orgCertPath := filepath.Join(certPath, fmt.Sprintf("peerOrganizations/%s.zibuyufab.cn", peer.Organization.UUID))
+		log.Debugf(context.Background(), "check cert path [%s]", orgCertPath)
 		_, err := os.Stat(orgCertPath)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -277,9 +279,8 @@ func constructInitConfig(chain *model.Fabric) *Config {
 	}
 	var ordererNodes []NodeSpec
 	for _, orderer := range chain.Orderers {
-		split := strings.Split(orderer.NodeHostName, ":")
 		odns := NodeSpec{
-			Hostname:   split[0],
+			Hostname:   orderer.NodeHostName,
 			//CommonName: fmt.Sprintf("orderer%s.orderer.fabric.com", orderer.UUID),
 			//SANS:       []string{orderer.NodeHostName},
 		}
@@ -308,9 +309,8 @@ func constructInitConfig(chain *model.Fabric) *Config {
 		}
 		var peerNodes []NodeSpec
 		for _, peer := range ps {
-			split := strings.Split(peer.NodeHostName, ":")
 			prns := NodeSpec{
-				Hostname:   split[0],
+				Hostname:   peer.NodeHostName,
 				//CommonName: fmt.Sprintf("peer%s.%s.fabric.com", peer.UUID, org),
 				//SANS:       []string{peer.NodeHostName},
 			}

@@ -102,6 +102,11 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 		PackageHandleShells: pkg.Binary.PackageHandleShells,
 		StartCMD:            pkg.Binary.StartCommands,
 		Tags:                map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", v.MachineID)},
+
+		Environments:        make(map[string]string),
+		FilePremises:        make(map[string]FilePremise),
+		FileMounts:          make(map[string]FileMount),
+		Ports:               make(map[int]PortInfo),
 	}
 	err = repo.new(ctx, app)
 	if err != nil {

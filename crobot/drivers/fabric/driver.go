@@ -55,7 +55,7 @@ var mockFabric = model.Fabric{
 		{
 			Name:       "orderer0",
 			UUID:       "orderer0",
-			MachineID:  32,
+			MachineID:  36,
 			GRPCPort:   7050,
 			HealthPort: 8443,
 			Tag:        "mock-tag-orderer0",
@@ -65,7 +65,7 @@ var mockFabric = model.Fabric{
 		{
 			Name:                "mock-peer0",
 			UUID:                "mock-peer0",
-			MachineID:           32,
+			MachineID:           36,
 			GRPCPort:            7053,
 			ChainCodeListenPort: 7054,
 			EventPort:           7055,

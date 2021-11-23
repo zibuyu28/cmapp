@@ -20,12 +20,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
+	"github.com/zibuyu28/cmapp/core/pkg/ag"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/fabtool"
+	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type ConfigWorker struct {
@@ -453,21 +456,52 @@ func setOrderer(chain *model.Fabric, configtx *Configtx, caFileRootPath string) 
 		if len(chain.Orderers) == 0 {
 			return errors.New("solo consensus type must has one orderer")
 		}
-		domain := fmt.Sprintf("%s:%d", chain.Orderers[0].NodeHostName, chain.Orderers[0].GRPCPort)
+		//var domain string
+		for _, net := range chain.Orderers[0].APP.Networks {
+			if net.PortInfo.Port == chain.Orderers[0].GRPCPort {
+				for _, s := range net.RouteInfo {
+					if s.RouteType == ag.OUT {
+						orderer.Addresses = []string{s.Router}
+					}
+				}
+			}
+		}
+		//domain := fmt.Sprintf("%s:%d", chain.Orderers[0].NodeHostName, chain.Orderers[0].GRPCPort)
 		//domain := chain.Orderers[0].NodeHostName + ":7050"
-		orderer.Addresses = []string{domain}
+		//orderer.Addresses = []string{domain}
 	case ConsensusKafka:
 		return errors.New("not support consensus type kafka")
 	case ConsensusEtcdRaft:
 		domains := make([]string, 0)
 		consenters := make([]Consenter, 0)
 		for _, o := range chain.Orderers {
-			ordererAddr := fmt.Sprintf("%s:%d", o.NodeHostName, o.GRPCPort)
-			domains = append(domains, ordererAddr)
-			tls := fmt.Sprintf("%s/ordererOrganizations/orderer.fabric.com/orderers/%s.orderer.fabric.com/tls/signcerts/cert.pem", caFileRootPath, o.UUID)
+			//ordererAddr := fmt.Sprintf("%s:%d", o.NodeHostName, o.GRPCPort)
+			var port int = 80
+			var host string = o.NodeHostName
+			for _, net := range o.APP.Networks {
+				if net.PortInfo.Port == o.GRPCPort {
+					for _, s := range net.RouteInfo {
+						if s.RouteType == ag.OUT {
+							host = s.Router
+							domains = append(domains, s.Router)
+							split := strings.Split(s.Router, ":")
+							if len(split) == 2 {
+								atoi, err := strconv.Atoi(split[1])
+								if err != nil {
+									return errors.Errorf("grpc router [%s] is not correct", s.Router)
+								}
+								port = atoi
+								host = split[0]
+							}
+						}
+					}
+				}
+			}
+			//domains = append(domains, ordererAddr)
+			tls := fmt.Sprintf("%s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn/tls/signcerts/cert.pem", caFileRootPath, o.NodeHostName)
 			consenter := Consenter{
-				Host:          o.NodeHostName,
-				Port:          o.GRPCPort,
+				Host:          host,
+				Port:          port,
 				ClientTLSCert: tls,
 				ServerTLSCert: tls,
 			}
@@ -627,7 +661,7 @@ func setOrganizations(chain *model.Fabric, configtx *Configtx, caFileRootPath st
 	orderOrg := Organization{
 		Name:   "Orderer",
 		ID:     OrdererMsp,
-		MSPDir: caFileRootPath + "/ordererOrganizations/orderer.fabric.com/msp",
+		MSPDir: caFileRootPath + "/ordererOrganizations/orderer.zibuyufab.cn/msp",
 		Policies: Policies{
 			Readers: TypeRule{
 				Type: TypeSignature,
@@ -660,10 +694,30 @@ func setOrganizations(chain *model.Fabric, configtx *Configtx, caFileRootPath st
 			readRule := fmt.Sprintf("OR('%s.admin', '%s.peer', '%s.client')", mspT, mspT, mspT)
 			writeRule := fmt.Sprintf("OR('%s.admin', '%s.client')", mspT, mspT)
 			adminRule := fmt.Sprintf("OR('%s.admin')", mspT)
+			var port int = 80
+			var host string = peer.NodeHostName
+			for _, network := range peer.APP.Networks {
+				if network.PortInfo.Port == peer.GRPCPort {
+					for _, s := range network.RouteInfo {
+						if s.RouteType == ag.OUT {
+							host = s.Router
+							split := strings.Split(s.Router, ":")
+							if len(split) == 2 {
+								atoi, err := strconv.Atoi(split[1])
+								if err != nil {
+									return errors.Errorf("grpc router [%s] is not correct", s.Router)
+								}
+								port = atoi
+								host = split[0]
+							}
+						}
+					}
+				}
+			}
 			peerOrg := Organization{
 				Name:   peer.Organization.UUID,
 				ID:     fmt.Sprintf("%sMSP", peer.Organization.UUID),
-				MSPDir: filepath.Join(caFileRootPath, fmt.Sprintf("peerOrganizations/%s.fabric.com", peer.Organization.UUID), "msp"),
+				MSPDir: filepath.Join(caFileRootPath, fmt.Sprintf("peerOrganizations/%s.zibuyufab.cn", peer.Organization.UUID), "msp"),
 				Policies: Policies{
 					Readers: TypeRule{
 						Type: TypeSignature,
@@ -680,8 +734,8 @@ func setOrganizations(chain *model.Fabric, configtx *Configtx, caFileRootPath st
 				},
 				AnchorPeers: []AnchorPeer{
 					{
-						Host: peer.NodeHostName,
-						Port: peer.GRPCPort,
+						Host: host,
+						Port: port,
 					},
 				},
 			}

@@ -73,7 +73,7 @@ func NewTool(ctx context.Context, toolName, version string) (RT, error) {
 func extractVersionInFormat(version string) (fv string, err error) {
 	// xxxxx-v1.3.4
 	// [\d]+\.[\d]+\.[\d]+
-	compile := regexp.MustCompile("[\\d]+\\.[\\d]+\\.[\\d]+")
+	compile := regexp.MustCompile("[\\d]+\\.[\\d]+[.]?[\\d]*")
 	findString := compile.FindString(version)
 	if len(findString) == 0 {
 		err = errors.Errorf("version(%s) not in format", version)
@@ -90,8 +90,7 @@ func downLoadTool(ctx context.Context, toolName, version string, toolFullName st
 	}
 	log.Debugf(ctx, "get os [%s] and arch [%s]", runtime.GOOS, runtime.GOARCH)
 	remoteFileName := fmt.Sprintf("fabric-%s-%s-%s-%s", toolName, runtime.GOOS, runtime.GOARCH, formatVersion)
-	core := ag.Core{ApiVersion: ag.V1}
-	fc, err := core.DownloadFile(remoteFileName)
+	fc, err := ag.CoreIns.DownloadFile(remoteFileName)
 	if err != nil {
 		return errors.Wrap(err, "download file from driver")
 	}

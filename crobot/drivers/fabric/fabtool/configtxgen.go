@@ -61,9 +61,9 @@ func (c ConfigtxgenTool) GenerateAllChainChannelTx(chain *model.Fabric, baseDir 
 	configtxPath, _ := filepath.Abs(baseDir)
 	for _, ch := range chain.Channels {
 		channeltxPath := filepath.Join(configtxPath, fmt.Sprintf("%s.tx", ch.UUID))
-		command := fmt.Sprintf("-profile OrgsChannel --configPath=%s/ -outputCreateChannelTx %s -channelID %s", configtxPath, channeltxPath, ch.UUID)
-		log.Debugf(c.ctx, "GenerateAllChainChannelTx command [%s %s]", configtxgen, command)
-		output, err := cmd.NewDefaultCMD(configtxgen, []string{command}, cmd.WithTimeout(10)).Run()
+		command := fmt.Sprintf("%s -profile OrgsChannel --configPath=%s/ -outputCreateChannelTx %s -channelID %s",configtxgen, configtxPath, channeltxPath, ch.UUID)
+		log.Debugf(c.ctx, "GenerateAllChainChannelTx command [%s]", command)
+		output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithTimeout(10)).Run()
 		log.Debugf(c.ctx, "output : %s", output)
 		if err != nil {
 			err = errors.Wrap(err, "exec configtxgen create channel tx")
@@ -81,9 +81,9 @@ func (c ConfigtxgenTool) GenerateGenesisBlock(chain *model.Fabric, baseDir strin
 	configtxgen := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/configtxgen", chain.Version))
 	configtxPath, _ := filepath.Abs(baseDir)
 	genesisBlockPath := filepath.Join(configtxPath, "orderer.genesis.block")
-	command := fmt.Sprintf("-profile OrdererGenesis --configPath=%s/ -outputBlock %s", configtxPath, genesisBlockPath)
-	log.Debugf(c.ctx, "GenerateGenesisBlock command [%s %s]", configtxgen, command)
-	output, err := cmd.NewDefaultCMD(configtxgen, []string{command}, cmd.WithTimeout(10)).Run()
+	command := fmt.Sprintf("%s -profile OrdererGenesis --configPath=%s/ -outputBlock %s", configtxgen, configtxPath, genesisBlockPath)
+	log.Debugf(c.ctx, "GenerateGenesisBlock command [%s]", command)
+	output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithTimeout(10)).Run()
 	log.Debugf(c.ctx, "output : %s", output)
 	if err != nil {
 		return errors.Wrap(err, "exec configtxgen create genesis block")
@@ -149,9 +149,9 @@ func (c ConfigtxgenTool) GenerateAnchorPeerArtifacts(chain *model.Fabric, baseDi
 		om[orgName] = struct{}{}
 		for _, channel := range chain.Channels {
 			anchorPeerArtifactTX, _ := filepath.Abs(fmt.Sprintf("%s/%s-%sMSPAnchors.tx", configtxPath, channel.UUID, orgName))
-			command := fmt.Sprintf("-profile OrgsChannel -outputAnchorPeersUpdate %s --configPath=%s/ -channelID %s -asOrg %s", anchorPeerArtifactTX, configtxPath, channel.UUID, orgName)
-			log.Debugf(c.ctx, "GenerateAnchorPeerArtifacts command [%s %s]", configtxgen, command)
-			output, err := cmd.NewDefaultCMD(configtxgen, []string{command}, cmd.WithTimeout(10)).Run()
+			command := fmt.Sprintf("%s -profile OrgsChannel -outputAnchorPeersUpdate %s --configPath=%s/ -channelID %s -asOrg %s",configtxgen, anchorPeerArtifactTX, configtxPath, channel.UUID, orgName)
+			log.Debugf(c.ctx, "GenerateAnchorPeerArtifacts command [%s]", command)
+			output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithTimeout(10)).Run()
 			log.Debugf(c.ctx, "output : %s", output)
 			if err != nil {
 				return errors.Wrap(err, "exec configtxgen create anchor peer artifacts")

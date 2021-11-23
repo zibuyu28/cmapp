@@ -32,7 +32,16 @@ import (
 
 type Core struct {
 	ApiVersion   APIVersion
-	coreHttpAddr string
+	CoreHttpAddr string
+}
+
+var CoreIns *Core
+
+func NewCore(version APIVersion, coreHttpAddr string) {
+	CoreIns = &Core{
+		ApiVersion:   version,
+		CoreHttpAddr: coreHttpAddr,
+	}
 }
 
 var coreDefaultHost = "127.0.0.1"
@@ -42,7 +51,7 @@ var coreDefaultPort = 9008
 var coreDefaultHttpAddr = "http://127.0.0.1:9008"
 
 func (c Core) DownloadFile(fileName string) ([]byte, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.coreHttpAddr), fileName), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.CoreHttpAddr), fileName), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new http request")
 	}
@@ -85,7 +94,7 @@ func (c Core) UploadFile(fileName string) (string, error) {
 		_ = writer.Close()
 		_ = pw.Close()
 	}()
-	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.coreHttpAddr), tFileName), pr)
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", getFileURL(c.ApiVersion, c.CoreHttpAddr), tFileName), pr)
 	if err != nil {
 		return "", errors.Wrap(err, "new post request")
 	}
@@ -102,6 +111,7 @@ func (c Core) UploadFile(fileName string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "read body")
 	}
+	log.Debugf(context.Background(), "upload file res [%s]", string(all))
 	var resp = struct {
 		Code    int         `json:"code"`
 		Message string      `json:"message"`

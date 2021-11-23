@@ -292,30 +292,29 @@ func (R *RMD) NetworkEx(ctx context.Context, appUUID string, in *ag.Network) err
 		networkset(app, []*worker0.App_Network{net})
 	}
 
-	network := &ag.Network{
-		PortInfo: struct {
-			Port         int         `json:"port"`
-			Name         string      `json:"name"`
-			ProtocolType ag.Protocol `json:"protocol_type"`
-		}{
-			Port:         int(net.PortInfo.Port),
-			Name:         net.PortInfo.Name,
-			ProtocolType: ag.Protocol(int(net.PortInfo.ProtocolType)),
-		},
-		RouteInfo: []struct {
-			RouteType ag.Route `json:"route_type"`
-			Router    string   `json:"router"`
-		}{},
-	}
+	//network := &ag.Network{
+	//	PortInfo: struct {
+	//		Port         int         `json:"port"`
+	//		Name         string      `json:"name"`
+	//		ProtocolType ag.Protocol `json:"protocol_type"`
+	//	}{
+	//		Port:         int(net.PortInfo.Port),
+	//		Name:         net.PortInfo.Name,
+	//		ProtocolType: ag.Protocol(int(net.PortInfo.ProtocolType)),
+	//	},
+	//	RouteInfo: []struct {
+	//		RouteType ag.Route `json:"route_type"`
+	//		Router    string   `json:"router"`
+	//	}{},
+	//}
 	if net.RouteInfo != nil {
 		for _, inf := range net.RouteInfo {
-			network.RouteInfo = append(network.RouteInfo, struct {
+			in.RouteInfo = append(in.RouteInfo, struct {
 				RouteType ag.Route `json:"route_type"`
 				Router    string   `json:"router"`
 			}{RouteType: ag.Route(int(inf.RouteType)), Router: inf.Router})
 		}
 	}
-	in = network
 	log.Infof(ctx, "app exec config network success")
 	return nil
 }

@@ -408,6 +408,7 @@ func (h *HMD) SendPost(req interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal response's data info")
 	}
+	log.Debugf(context.Background(),"post res [%s]", string(datab))
 	return datab, nil
 }
 
