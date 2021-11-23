@@ -8,6 +8,14 @@ import "mdriver.proto";
 
 // ChainDriver chain driver service
 service ChainDriver {
+  // GetCreateFlags get create flags
+  rpc GetCreateFlags (Empty) returns (Flags) {
+  }
+
+  // SetConfigFromFlags set driver config from flags
+  rpc SetConfigFromFlags (Flags) returns (Empty) {
+  }
+
   // InitChain create a chain to store
   rpc InitChain (Empty) returns (Chain) {
   }

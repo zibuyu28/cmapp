@@ -28,8 +28,9 @@ var (
 	driverName    string
 	driverVersion string
 	driverID      int
-	coreGRPCPort  int
-	param string
+	coreHttpAddr  string
+	coreGrpcAddr  string
+	param         string
 )
 
 // createCmd create command
@@ -50,9 +51,10 @@ to quickly create a Cobra application.`,
 			DriverName:    driverName,
 			DriverVersion: driverVersion,
 			DriverID:      driverID,
-			CoreGRPCPort:  coreGRPCPort,
+			CoreHttpAddr:  coreHttpAddr,
+			CoreGrpcAddr:  coreGrpcAddr,
 		}
-		err := cengine.CreateChain(context.Background(),inf, createUUID, param)
+		err := cengine.CreateChain(context.Background(), inf, createUUID, param)
 		if err != nil {
 			return errors.Wrap(err, "create chain command")
 		}
@@ -70,5 +72,6 @@ func init() {
 	createCmd.Flags().StringVarP(&driverVersion, "driver-version", "", "", "version of the driver which use to create chain")
 	createCmd.Flags().IntVarP(&driverID, "driver-id", "", 0, "id of the driver which use to create chain")
 
-	createCmd.Flags().IntVarP(&coreGRPCPort, "core-grpc-port", "", 0, "core grpc port")
+	createCmd.Flags().StringVarP(&coreGrpcAddr, "core-grpc-addr", "", "", "core grpc addr")
+	createCmd.Flags().StringVarP(&coreHttpAddr, "core-http-addr", "", "", "core http addr")
 }

@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	driAgentCoreHTTPAddr string = "COREHTTPADDR"
+	driAgentCoreHTTPAddr string = "CORE_HTTP_ADDR"
 	driverPrefix         string = "DRIAGENT_"
 )
 
@@ -45,8 +45,8 @@ func init() {
 			}
 			if kvs[0] == driAgentCoreHTTPAddr {
 				cli = &client{coreAddr: kvs[1]}
+				break
 			}
-			break
 		}
 	}
 }
@@ -79,7 +79,8 @@ func PackageInfo(ctx context.Context, name, version string) (*Package, error) {
 		return nil, errors.New("core client is nil")
 	}
 	// "/api/v1/package"
-	packageUrl := fmt.Sprintf("http://%s/api/v1/packege/%s/%s", cli.coreAddr, name, version)
+	packageUrl := fmt.Sprintf("%s/api/v1/package/%s/%s", cli.coreAddr, name, version)
+	log.Debugf(ctx, "package get url [%s]", packageUrl)
 
 	resp, err := httputil.HTTPDoGet(packageUrl)
 	if err != nil {

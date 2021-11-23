@@ -35,9 +35,19 @@ import (
 
 const (
 	MachineEngineCoreGRPCPORT  = "MACHINE_ENGINE_CORE_GRPC_PORT"
+	MachineEngineCoreGRPCAddr  = "MACHINE_ENGINE_CORE_GRPC_ADDR"
+	MachineEngineCoreHttpAddr = "MACHINE_ENGINE_CORE_HTTP_ADDR"
 	MachineEngineDriverName    = "MACHINE_ENGINE_DRIVER_NAME"
 	MachineEngineDriverID      = "MACHINE_ENGINE_DRIVER_ID"
 	MachineEngineDriverVersion = "MACHINE_ENGINE_DRIVER_VERSION"
+)
+
+const (
+	BaseCoreHTTPAddr = "CoreHTTPAddr"
+	BaseCoreGRPCAddr = "CoreGRPCAddr"
+	BaseCoreAddr = "CoreAddr"
+	BaseRepository = "Repository"
+	BaseStorePath = "StorePath"
 )
 
 // CreateMachine create machine
@@ -66,14 +76,17 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 		return errors.Errorf("fail to parse driver id by driverStr [%s], please check env [%s]", driverIDStr, MachineEngineDriverID)
 	}
 
-	grpcPortStr := os.Getenv(MachineEngineCoreGRPCPORT)
-	if len(grpcPortStr) == 0 {
-		return errors.Errorf("fail to get core grpc port from env, please check env [%s]", MachineEngineCoreGRPCPORT)
+	grpcAddr := os.Getenv(MachineEngineCoreGRPCAddr)
+	if len(grpcAddr) == 0 {
+		return errors.Errorf("fail to get core grpc addr from env, please check env [%s]", MachineEngineCoreGRPCAddr)
 	}
-	grpcPort, err := strconv.Atoi(grpcPortStr)
-	if err != nil {
-		return errors.Wrapf(err, "parse grpc port str [%s] to number", grpcPortStr)
+	log.Debugf(ctx, "get core grpc addr [%s]", grpcAddr)
+
+	httpAddr := os.Getenv(MachineEngineCoreHttpAddr)
+	if len(httpAddr) == 0 {
+		return errors.Errorf("fail to get core http addr from env, please check env [%s]", MachineEngineCoreHttpAddr)
 	}
+	log.Debugf(ctx, "get core http addr [%s]", httpAddr)
 
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"UUID": uuid,
@@ -95,6 +108,12 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	if err != nil {
 		return errors.Wrap(err, "param not in json format")
 	}
+	p[BaseCoreHTTPAddr] = httpAddr
+	p[BaseCoreGRPCAddr] = grpcAddr
+	p[BaseCoreAddr] = httpAddr
+	p[BaseRepository] = "testrepo" // TODO: check need
+	p[BaseStorePath] = "testpath" // TODO: check need
+
 	for i, flag := range flags.Flags {
 		if v, ok := p[flag.Name]; ok {
 			flags.Flags[i].Value = []string{v}
@@ -120,9 +139,9 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(600))
 	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
-	conn, err := grpc.DialContext(ctx, fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, grpcAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return errors.Wrap(err, "conn grpc")
+		return errors.Wrap(err, "conn core grpc")
 	}
 
 	var cli = coreproto.NewMachineManageClient(conn)

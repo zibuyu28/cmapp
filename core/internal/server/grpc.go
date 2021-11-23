@@ -36,7 +36,7 @@ var grpcserver *grpc.Server
 func grpcServerStart(ctx context.Context) {
 	port := viper.GetInt("grpc.port")
 	if port == 0 {
-		port = defaultGrpcPort
+		log.Fatalf(ctx, "fail to get grpc port")
 	}
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {

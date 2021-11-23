@@ -348,10 +348,6 @@ func (v *VirtualboxWorker) NetworkEx(ctx context.Context, network *worker0.App_N
 	}
 	vbm := virtualbox.NewRMTDriver(ctx, v.VBUUID, v.StorePath, v.HostIP, cli)
 
-	localIP, err := vbm.GetIP()
-	if err != nil {
-		return nil, errors.Wrap(err, "get local ip")
-	}
 	log.Debugf(ctx, "Currently get enum name [%s]", network.PortInfo.ProtocolType.String())
 	actualPort, err := vbm.ExportPort(network.PortInfo.Name, network.PortInfo.ProtocolType.String(), int(network.PortInfo.Port))
 	if err != nil {
@@ -365,6 +361,11 @@ func (v *VirtualboxWorker) NetworkEx(ctx context.Context, network *worker0.App_N
 		HostPortMapping: actualPort,
 	}
 	app.Ports[int(network.PortInfo.Port)] = pi
+
+	localIP, err := getLocalIP()
+	if err != nil {
+		return nil, errors.Wrap(err, "get local ip")
+	}
 
 	inRoute := &worker0.App_Network_RouteInf{
 		RouteType: worker0.App_Network_RouteInf_IN,

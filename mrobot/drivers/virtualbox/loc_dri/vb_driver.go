@@ -101,6 +101,8 @@ func (d *DriverVB) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*dr
 func (d *DriverVB) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) (*driver.Empty, error) {
 	m := d.ConvertFlags(flags)
 	d.CoreAddr = m["CoreAddr"]
+	d.CoreHTTPAddr = m["CoreHTTPAddr"]
+	d.CoreGRPCAddr = m["CoreGRPCAddr"]
 	d.ImageRepository.Repository = m["Repository"]
 	d.ImageRepository.StorePath = m["StorePath"]
 
@@ -299,6 +301,9 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, m *driver.Machine) (*drive
 		DriAgentHostStorePath = "DRIAGENT_HOST_STORE_PATH"
 		DriAgentVBUUID        = "DRIAGENT_VBUUID"
 		DriAgentMachineID     = "DRIAGENT_MACHINE_ID"
+
+		DriCoreHttpAddr = "DRIAGENT_CORE_HTTP_ADDR"
+		DriCoreGrpcAddr = "DRIAGENT_CORE_GRPC_ADDR"
 	)
 
 	mrobotEnvs := map[string]string{
@@ -308,6 +313,8 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, m *driver.Machine) (*drive
 		DriAgentHostUsername:  d.ServerSSHUsername,
 		DriAgentHostPassword:  d.ServerSSHPassword,
 		DriAgentHostStorePath: d.ServerVMStorePath,
+		DriCoreHttpAddr:       d.CoreHTTPAddr,
+		DriCoreGrpcAddr:       d.CoreGRPCAddr,
 		DriAgentVBUUID:        datas[0],
 		AgentPluginBuildIn:    "true",
 		AgentPluginName:       "virtualbox",

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"github.com/zibuyu28/cmapp/common/cmd"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
@@ -38,6 +39,8 @@ const (
 
 const (
 	MachineEngineCoreGRPCPORT  = "MACHINE_ENGINE_CORE_GRPC_PORT"
+	MachineEngineCoreGRPCAddr  = "MACHINE_ENGINE_CORE_GRPC_ADDR"
+	MachineEngineCoreHttpAddr  = "MACHINE_ENGINE_CORE_HTTP_ADDR"
 	MachineEngineDriverID      = "MACHINE_ENGINE_DRIVER_ID"
 	MachineEngineDriverName    = "MACHINE_ENGINE_DRIVER_NAME"
 	MachineEngineDriverVersion = "MACHINE_ENGINE_DRIVER_VERSION"
@@ -83,13 +86,19 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 	timeout, cancelFunc := context.WithTimeout(ctx, 600*time.Second)
 	defer cancelFunc()
 
+	httpAddr, grpcAddr, err := getHttpGrpcAddr()
+	if err != nil {
+		return errors.Wrap(err, "get http grpc addr")
+	}
+
 	command := fmt.Sprintf("%s ma create -u %s -p '%s'", binaryPath, uuid, param)
 	newCmd := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(map[string]string{
-		MachineEngineCoreGRPCPORT:  strconv.Itoa(DefaultGrpcPort),
+		MachineEngineCoreHttpAddr:  httpAddr,
+		MachineEngineCoreGRPCAddr:  grpcAddr,
 		MachineEngineDriverName:    drv.Name,
 		MachineEngineDriverVersion: drv.Version,
 		MachineEngineDriverID:      strconv.Itoa(drv.ID),
-		"BASE_CORE_ADDR":           "192.168.31.63:9009",
+		"BASE_CORE_ADDR":           "",
 		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
 		"BASE_IMAGE_STORE_PATH":    "platform",
 	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
@@ -100,6 +109,32 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 	}
 	//log.Infof(ctx, "Currently ro create command execute result : %s", out)
 	return nil
+}
+
+func getHttpGrpcAddr() (http, grpc string, err error) {
+	protocol := viper.GetString("protocol")
+	if len(protocol) == 0 {
+		err = errors.New("protocol is nil")
+		return
+	}
+	domain := viper.GetString("domain")
+	if len(domain) == 0 {
+		err = errors.New("domain is nil")
+		return
+	}
+	httpPort := viper.GetInt("http.port")
+	if httpPort == 0 {
+		err = errors.New("http port is nil")
+		return
+	}
+	grpcPort := viper.GetInt("grpc.port")
+	if grpcPort == 0 {
+		err = errors.New("grpc port is nil")
+		return
+	}
+	http = fmt.Sprintf("%s://%s:%d", protocol, domain, httpPort)
+	grpc = fmt.Sprintf("%s:%d", domain, grpcPort)
+	return
 }
 
 func driverOutput(ctx context.Context, outCh chan string) {

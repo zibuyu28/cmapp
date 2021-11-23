@@ -81,7 +81,7 @@ func (r *rmtSSHKeyGenerator) uploadFile(file, rmtFile string) error {
 		return errors.Errorf("fail to exec create dir [%s] command, res [%s]", rdir, out)
 	}
 
-	err = client.CopyFile(f, rmtFile, "0777")
+	err = client.CopyFile(f, rmtFile, "0600")
 	if err != nil {
 		return errors.Wrap(err, "copying file to remote")
 	}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
@@ -27,6 +28,7 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/zibuyu28/cmapp/crobot/pkg"
 	"google.golang.org/grpc/metadata"
@@ -35,7 +37,7 @@ import (
 var mockFabric = model.Fabric{
 	Name:        "mock-fab",
 	UUID:        "mock-uuid",
-	Version:     "1.4.1",
+	Version:     "1.4",
 	Consensus:   model.Solo,
 	CertGenType: model.CertBinaryTool,
 	Channels: []model.Channel{
@@ -53,7 +55,7 @@ var mockFabric = model.Fabric{
 		{
 			Name:       "orderer0",
 			UUID:       "orderer0",
-			MachineID:  21,
+			MachineID:  32,
 			GRPCPort:   7050,
 			HealthPort: 8443,
 			Tag:        "mock-tag-orderer0",
@@ -63,7 +65,7 @@ var mockFabric = model.Fabric{
 		{
 			Name:                "mock-peer0",
 			UUID:                "mock-peer0",
-			MachineID:           21,
+			MachineID:           32,
 			GRPCPort:            7053,
 			ChainCodeListenPort: 7054,
 			EventPort:           7055,
@@ -79,8 +81,60 @@ var mockFabric = model.Fabric{
 	},
 }
 
+const (
+	PluginEnvDriverName    = "PLUGIN_DRIVER_NAME"
+	PluginEnvDriverVersion = "PLUGIN_DRIVER_VERSION"
+	PluginEnvDriverID      = "PLUGIN_DRIVER_ID"
+)
+
 type FabricDriver struct {
-	BaseDriver pkg.BaseDriver
+	pkg.BaseDriver
+}
+
+func (f *FabricDriver) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*driver.Flags, error) {
+	baseFlags := &driver.Flags{Flags: f.GetFlags()}
+	return baseFlags, nil
+}
+
+func (f *FabricDriver) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) (*driver.Empty, error) {
+	m := f.ConvertFlags(flags)
+	f.CoreAddr = m["CoreAddr"]
+	f.CoreHTTPAddr = m["CoreHTTPAddr"]
+	f.CoreGRPCAddr = m["CoreGRPCAddr"]
+	f.ImageRepository.Repository = m["Repository"]
+	f.ImageRepository.StorePath = m["StorePath"]
+
+	validate := v.New()
+	err := validate.Struct(f)
+	if err != nil {
+		return nil, errors.Wrap(err, "validate param")
+	}
+
+	driverName := os.Getenv(PluginEnvDriverName)
+	if len(driverName) == 0 {
+		return nil, errors.Errorf("fail to get driver name from env, please check env [%s]", PluginEnvDriverName)
+	}
+
+	driverVersion := os.Getenv(PluginEnvDriverVersion)
+	if len(driverVersion) == 0 {
+		return nil, errors.Errorf("fail to get driver version from env, please check env [%s]", PluginEnvDriverVersion)
+	}
+
+	driverIDStr := os.Getenv(PluginEnvDriverID)
+	if len(driverIDStr) == 0 {
+		return nil, errors.Errorf("fail to get driver id from env, please check env [%s]", PluginEnvDriverID)
+	}
+
+	driverID, err := strconv.Atoi(driverIDStr)
+	if err != nil {
+		return nil, errors.Errorf("fail to parse driver id by driverStr [%s], please check env [%s]", driverIDStr, PluginEnvDriverID)
+	}
+
+	f.DriverName = driverName
+	f.DriverVersion = driverVersion
+	f.DriverID = driverID
+
+	return &driver.Empty{}, nil
 }
 
 func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.Chain, error) {
@@ -170,7 +224,7 @@ func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*d
 	if err != nil {
 		return nil, errors.Wrapf(err, "mkdir for basedir [%s]", baseDir)
 	}
-	worker := process.NewCreateChainWorker(ctx, baseDir)
+	worker := process.NewCreateChainWorker(ctx, f.CoreHTTPAddr, baseDir)
 
 	marshal, _ := json.Marshal(mockFabric)
 	log.Infof(ctx, "mock fab : [%s]", string(marshal))

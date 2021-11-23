@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/core/internal/api_c"
 	"github.com/zibuyu28/cmapp/core/internal/server/mid"
@@ -42,8 +43,12 @@ func httpServerStart(ctx context.Context) {
 	//})
 	log.Infof(ctx, "register api")
 	registerApi()
-	log.Infof(ctx, "server listening at :%d", defaultHttpPort)
-	err := httpserver.Run(fmt.Sprintf(":%d", defaultHttpPort))
+	port := viper.GetInt("http.port")
+	if port == 0 {
+		log.Fatalf(ctx, "fail to get http port")
+	}
+	log.Infof(ctx, "server listening at :%d", port)
+	err := httpserver.Run(fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf(ctx, "failed to listen: %v", err)
 	}
