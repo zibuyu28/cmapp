@@ -55,17 +55,18 @@ var mockFabric = model.Fabric{
 		{
 			Name:       "orderer0",
 			UUID:       "orderer0",
-			MachineID:  36,
+			MachineID:  41,
 			GRPCPort:   7050,
 			HealthPort: 8443,
 			Tag:        "mock-tag-orderer0",
+			LogLevel: "INFO",
 		},
 	},
 	Peers: []model.Peer{
 		{
 			Name:                "mock-peer0",
 			UUID:                "mock-peer0",
-			MachineID:           36,
+			MachineID:           41,
 			GRPCPort:            7053,
 			ChainCodeListenPort: 7054,
 			EventPort:           7055,
@@ -77,6 +78,7 @@ var mockFabric = model.Fabric{
 			AnchorPeer: true,
 			Tag:        "mock-tag-peer0",
 			RMTDocker:  "tcp://10.1.41.185:2375",
+			LogLevel: "INFO",
 		},
 	},
 }

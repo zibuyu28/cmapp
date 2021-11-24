@@ -113,10 +113,6 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	chain.RemoteGenesisBlock = gb
 	log.Debugf(c.ctx, "upload genesis block success")
 
-	if chain.Name == "mock-fab" {
-		return nil
-	}
-
 	// 构建几个节点的配置，并启动
 	err = constructOrder(c.ctx, chain)
 	if err != nil {
@@ -169,7 +165,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		err = hmd.FilePremiseEx(peer.APP.UUID, &ag.File{
 			Name:        "msp.tar.gz",
 			AcquireAddr: peer.RemoteCert,
-			Shell:       "mkdir cert && tar -zxvf msp.tar.gz --strip-components 1",
+			Shell:       "mkdir config && tar -zxvf msp.tar.gz -C config/ --strip-components 1",
 		})
 		if err != nil {
 			return errors.Wrap(err, "set cert file premise")
@@ -197,8 +193,8 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 			return errors.Wrap(err, "set app health")
 		}
 		var envs = make(map[string]string)
-		envs["FABRIC_CFG_PATH"] = peer.APP.Workspace.Workspace
-		envs["CORE_PEER_FILESYSTEMPATH"] = fmt.Sprintf("%s/pro-data", peer.APP.Workspace.Workspace)
+		//envs["FABRIC_CFG_PATH"] = peer.APP.Workspace.Workspace
+		envs["CORE_PEER_FILESYSTEMPATH"] = "pro-data"
 		envs["CORE_LEDGER_STATE_STATEDATABASE"] = "goleveldb"
 		//envs["CORE_LEDGER_STATE_STATEDATABASE"] = "CouchDB"
 		//for i, network := range peer.CouchDB.Networks {
@@ -222,9 +218,9 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		envs["CORE_PEER_GOSSIP_USELEADERELECTION"] = "true"
 		envs["CORE_PEER_GOSSIP_ORGLEADER"] = "false"
 		envs["CORE_PEER_PROFILE_ENABLED"] = "true"
-		envs["CORE_PEER_TLS_CERT_FILE"] = fmt.Sprintf("%s/config/tls/server.crt", peer.APP.Workspace.Workspace)
-		envs["CORE_PEER_TLS_KEY_FILE"] = fmt.Sprintf("%s/config/tls/server.key", peer.APP.Workspace.Workspace)
-		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = fmt.Sprintf("%s/config/tls/ca.crt", peer.APP.Workspace.Workspace)
+		envs["CORE_PEER_TLS_CERT_FILE"] = "config/tls/server.crt"
+		envs["CORE_PEER_TLS_KEY_FILE"] = "config/tls/server.key"
+		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = "config/tls/ca.crt"
 		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
 		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = "0.0.0.0:7052" // 链码监听地址
 		for i, network := range peer.APP.Networks {
@@ -246,6 +242,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		}
 		envs["CORE_PEER_ID"] = peer.UUID
 		envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP", peer.Organization.UUID)
+		envs["CORE_PEER_MSPCONFIGPATH"] = "config/msp"
 
 		for k, v := range envs {
 			log.Debugf(ctx, "set env key [%s], val [%s]", k, v)
@@ -318,23 +315,23 @@ func constructOrder(ctx context.Context, chain *model.Fabric) error {
 		}
 		var envs = make(map[string]string)
 		envs["FABRIC_LOGGING_SPEC"] = order.LogLevel
-		envs["FABRIC_CFG_PATH"] = order.APP.Workspace.Workspace
-		envs["ORDERER_FILELEDGER_LOCATION"] = fmt.Sprintf("%s/pro-data", order.APP.Workspace.Workspace)
+		//envs["FABRIC_CFG_PATH"] = order.APP.Workspace.Workspace
+		envs["ORDERER_FILELEDGER_LOCATION"] = "pro-data"
 		envs["ORDERER_GENERAL_LISTENADDRESS"] = "0.0.0.0"
 		envs["ORDERER_GENERAL_LISTENPORT"] = fmt.Sprintf("%d", order.GRPCPort)
 		envs["ORDERER_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", order.HealthPort)
 		envs["ORDERER_GENERAL_GENESISMETHOD"] = "file"
-		envs["ORDERER_GENERAL_GENESISFILE"] = fmt.Sprintf("%s/orderer.genesis.block", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_GENESISFILE"] = "orderer.genesis.block"
 		envs["ORDERER_GENERAL_LOCALMSPID"] = "OrdererMSP"
-		envs["ORDERER_GENERAL_LOCALMSPDIR"] = fmt.Sprintf("%s/config/msp", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_LOCALMSPDIR"] = "config/msp"
 		envs["ORDERER_GENERAL_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
-		envs["ORDERER_GENERAL_TLS_PRIVATEKEY"] = fmt.Sprintf("%s/config/tls/server.key", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_TLS_CERTIFICATE"] = fmt.Sprintf("%s/config/tls/server.crt", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_TLS_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/ca.crt]", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_TLS_PRIVATEKEY"] = "config/tls/server.key"
+		envs["ORDERER_GENERAL_TLS_CERTIFICATE"] = "config/tls/server.crt"
+		envs["ORDERER_GENERAL_TLS_ROOTCAS"] = "config/tls/ca.crt"
 		envs["ORDERER_KAFKA_VERBOSE"] = "true"
-		envs["ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY"] = fmt.Sprintf("%s/config/tls/server.key", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE"] = fmt.Sprintf("%s/config/tls/server.crt", order.APP.Workspace.Workspace)
-		envs["ORDERER_GENERAL_CLUSTER_ROOTCAS"] = fmt.Sprintf("[%s/config/tls/ca.crt]", order.APP.Workspace.Workspace)
+		envs["ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY"] = "config/tls/server.key"
+		envs["ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE"] = "config/tls/server.crt"
+		envs["ORDERER_GENERAL_CLUSTER_ROOTCAS"] = "config/tls/ca.crt"
 		envs["GODEBUG"] = "netdns=go"
 		for k, v := range envs {
 			log.Debugf(ctx, "set env key [%s], val [%s]", k, v)

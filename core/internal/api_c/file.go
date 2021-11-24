@@ -39,7 +39,9 @@ func fileExecHandler(g *gin.Context, fileName string) error {
 		log.Debugf(g.Request.Context(), "get domain [%s]", domain)
 		protocol := viper.GetString("protocol")
 		log.Debugf(g.Request.Context(), "get protocol [%s]", protocol)
-		ok(g, fmt.Sprintf("%s://%s%s", protocol, domain, g.Request.RequestURI))
+		port := viper.GetInt("http.port")
+		log.Debugf(g.Request.Context(), "get http.port [%d]", port)
+		ok(g, fmt.Sprintf("%s://%s:%d%s", protocol, domain, port, g.Request.RequestURI))
 		return nil
 	case http.MethodGet:
 

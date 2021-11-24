@@ -18,6 +18,7 @@ package rmt_dri
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
@@ -124,7 +125,7 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 		Workspace: &worker0.App_WorkspaceInfo{Workspace: uid},
 	}
 	abs, _ := filepath.Abs(uid)
-	_ = os.MkdirAll(filepath.Join(abs, uid), os.ModePerm)
+	_ = os.MkdirAll(abs, os.ModePerm)
 	return wap, nil
 }
 
@@ -139,6 +140,8 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 	if err != nil {
 		return nil, errors.Wrap(err, "fail to load app from repo")
 	}
+	marshal, _ := json.Marshal(app)
+	log.Infof(ctx, "app info [%s]", string(marshal))
 
 	log.Debugf(ctx, "Currently start get main package add [%s], save to dir [%s/]", app.InstallationPackage, app.Workspace)
 	abs, _ := filepath.Abs(app.Workspace)
@@ -154,7 +157,9 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 		}
 	}
 
-	packageFile := filepath.Join(abs, "pkg.tmp")
+	split := strings.Split(app.InstallationPackage, "/")
+	fileName := split[len(split) - 1]
+	packageFile := filepath.Join(abs, fileName)
 	err = httputil.HTTPDoDownloadFile(packageFile, app.InstallationPackage)
 	if err != nil {
 		return nil, errors.Wrap(err, "download package")
@@ -249,14 +254,14 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 						log.Errorf(ctx, "Manage err when check app readness. Now to continue. Err: [%v]", err)
 						continue
 					}
-					return nil, nil
+					return &worker0.Empty{}, nil
 				case HttpPost:
 					_, err = httputil.HTTPDoPost("", readnessUrl)
 					if err != nil {
 						log.Errorf(ctx, "Manage err when check app readness. Now to continue. Err: [%v]", err)
 						continue
 					}
-					return nil, nil
+					return &worker0.Empty{}, nil
 				}
 			case <-toutctx.Done():
 				return nil, errors.New("app readness check timeout")
@@ -265,7 +270,7 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 	}
 
 	// TODO: get app pid == info
-	return nil, nil
+	return &worker0.Empty{}, nil
 }
 
 func (v *VirtualboxWorker) StopApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {

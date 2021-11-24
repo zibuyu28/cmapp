@@ -67,5 +67,8 @@ func GetPackageByNameVersion(name, version string) (*Package, error) {
 	//if !has {
 	//	return nil, errors.Errorf("record not exist which name [%s], version [%s]", name, version)
 	//}
-	return drv, nil
+	if drv.ID != 0 {
+		return drv, nil
+	}
+	return nil, nil
 }
