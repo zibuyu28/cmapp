@@ -385,7 +385,7 @@ func newOrdererApp(orderer *model.Orderer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         orderer.GRPCPort,
-			Name:         "grpc",
+			Name:         fmt.Sprintf("%s-grpc", orderer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}
@@ -402,7 +402,7 @@ func newOrdererApp(orderer *model.Orderer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         orderer.HealthPort,
-			Name:         "health",
+			Name:         fmt.Sprintf("%s-health", orderer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}
@@ -468,7 +468,7 @@ func newPeerApp(peer *model.Peer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         peer.GRPCPort,
-			Name:         "grpc",
+			Name:         fmt.Sprintf("%s-grpc", peer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}
@@ -483,7 +483,7 @@ func newPeerApp(peer *model.Peer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         peer.HealthPort,
-			Name:         "health",
+			Name:         fmt.Sprintf("%s-health", peer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}
@@ -498,7 +498,7 @@ func newPeerApp(peer *model.Peer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         peer.ChainCodeListenPort,
-			Name:         "chaincode",
+			Name:         fmt.Sprintf("%s-chaincode", peer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}
@@ -513,7 +513,7 @@ func newPeerApp(peer *model.Peer) error {
 			ProtocolType ag.Protocol `json:"protocol_type"`
 		}{
 			Port:         peer.EventPort,
-			Name:         "event",
+			Name:         fmt.Sprintf("%s-event", peer.UUID),
 			ProtocolType: ag.TCP,
 		},
 	}

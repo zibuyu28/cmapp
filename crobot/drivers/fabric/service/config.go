@@ -91,19 +91,22 @@ type Capabilities struct {
 
 // ChannelCapabilities .
 type ChannelCapabilities struct {
-	V1_3 bool `yaml:"V1_3"`
+	V1_4_3 bool `yaml:"V1_4_3"`
+	V1_3   bool `yaml:"V1_3"`
 }
 
 // OrdererCapabilities .
 type OrdererCapabilities struct {
-	V1_1 bool `yaml:"V1_1"`
+	V1_4_2 bool `yaml:"V1_4_2"`
+	V1_1   bool `yaml:"V1_1"`
 }
 
 // ApplicationCapabilities .
 type ApplicationCapabilities struct {
-	V1_3 bool `yaml:"V1_3"`
-	V1_2 bool `yaml:"V1_2"`
-	V1_1 bool `yaml:"V1_1"`
+	V1_4_2 bool `yaml:"V1_4_2"`
+	V1_3   bool `yaml:"V1_3"`
+	V1_2   bool `yaml:"V1_2"`
+	V1_1   bool `yaml:"V1_1"`
 }
 
 // Application .
@@ -545,15 +548,18 @@ func setApplication(configtx *Configtx) {
 func setCapabilities(configtx *Configtx) {
 	capabilities := Capabilities{
 		Channel: ChannelCapabilities{
-			V1_3: true,
+			V1_4_3: true,
+			V1_3:   false,
 		},
 		Orderer: OrdererCapabilities{
-			V1_1: true,
+			V1_4_2: true,
+			V1_1:   false,
 		},
 		Application: ApplicationCapabilities{
-			V1_3: true,
-			V1_2: false,
-			V1_1: false,
+			V1_4_2: true,
+			V1_3:   false,
+			V1_2:   false,
+			V1_1:   false,
 		},
 	}
 	configtx.Capabilities = capabilities

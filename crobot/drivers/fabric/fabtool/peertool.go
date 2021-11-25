@@ -93,17 +93,17 @@ func (p PeerTool) CreateNewChannel(chain *model.Fabric, channel model.Channel, t
 		return errors.New("order's app 7050 addr is nil")
 	}
 
-	command := fmt.Sprintf("channel create -o %s -c %s -f %s/%s.tx --outputBlock %s/%s.block", orderAddr, channel.UUID,
+	command := fmt.Sprintf("%s channel create -o %s -c %s -f %s/%s.tx --outputBlock %s/%s.block", peer, orderAddr, channel.UUID,
 		abs, channel.UUID, abs, channel.UUID)
 	if chain.TLSEnable {
 		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%s.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-			command, abs, chain.Orderers[0].UUID)
+		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn/msp/tlscacerts/tlsca.orderer.zibuyufab.cn-cert.pem",
+			command, abs, chain.Orderers[0].NodeHostName)
 	}
-	log.Debugf(p.ctx, "exec command : [%s %s]", peer, command)
+	log.Debugf(p.ctx, "exec command : [%s]", command)
 
 	// 增加如上环境变量
-	output, err := cmd.NewDefaultCMD(peer, []string{command}, cmd.WithEnvs(envs)).Run()
+	output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs)).Run()
 	fmt.Printf("output : %s\n", output)
 	if err != nil {
 		err = errors.Wrap(err, "exec create channel command")
@@ -196,12 +196,26 @@ func (p PeerTool) UpdateAnchorPeer(chain *model.Fabric, targetPeer *model.Peer, 
 				envs["FABRIC_CFG_PATH"] = toolPath
 			}
 
+			var orderAddr string
+			for _, network := range chain.Orderers[0].APP.Networks {
+				if network.PortInfo.Port == 7050 {
+					for _, s := range network.RouteInfo {
+						if s.RouteType == ag.OUT {
+							orderAddr = s.Router
+						}
+					}
+				}
+			}
+			if len(orderAddr) == 0 {
+				return errors.New("order's app 7050 addr is nil")
+			}
+
 			// peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA >&log.txt
-			command := fmt.Sprintf("%s channel update -f %s -o %s:7050 -c %s", peer, anchorPeerArtifactTX, chain.Orderers[0].NodeHostName, channel.UUID)
+			command := fmt.Sprintf("%s channel update -f %s -o %s -c %s", peer, anchorPeerArtifactTX, orderAddr, channel.UUID)
 			if chain.TLSEnable {
 				// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-				command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.fabric.com/orderers/orderer%d.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.fabric.com-cert.pem",
-					command, abs, chain.Orderers[0].UUID)
+				command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.zibuyufab.cn-cert.pem",
+					command, abs, chain.Orderers[0].NodeHostName)
 			}
 			log.Debugf(p.ctx, "UpdateAnchorPeer command [%s]", command)
 
@@ -420,21 +434,21 @@ func getEnv(chain *model.Fabric, node *model.Peer, baseDir string) (map[string]s
 			}
 		}
 	}
-	envs["CORE_PEER_ADDRESS"] = fmt.Sprintf("%s:7051", node.NodeHostName)
+	//envs["CORE_PEER_ADDRESS"] = fmt.Sprintf("%s:7051", node.NodeHostName)
 	envs["CORE_PEER_LOCALMSPID"] = fmt.Sprintf("%sMSP", org)
 	if chain.TLSEnable {
-		envs["CORE_PEER_TLS_ENABLED"] = "true"
+		envs["CORE_PEER_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
 		// org2.example.com/peers/peer0.org2.example.com/tls/server.crt
 		tlsPath := filepath.Join(abs,
-			fmt.Sprintf("peerOrganizations/%s.fabric.com/peers", org),
-			fmt.Sprintf("peer%s.%s.fabric.com/tls/", node.UUID, org))
-		envs["CORE_PEER_TLS_CERT_FILE"] = filepath.Join(tlsPath, "signcerts/cert.pem")
-		envs["CORE_PEER_TLS_KEY_FILE"] = filepath.Join(tlsPath, "keystore/key.pem")
-		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = filepath.Join(tlsPath, "tlscacerts/tls.pem")
+			fmt.Sprintf("peerOrganizations/%s.zibuyufab.cn/peers", org),
+			fmt.Sprintf("%s.%s.zibuyufab.cn/tls/", node.NodeHostName, org))
+		envs["CORE_PEER_TLS_CERT_FILE"] = filepath.Join(tlsPath, "server.crt")
+		envs["CORE_PEER_TLS_KEY_FILE"] = filepath.Join(tlsPath, "server.key")
+		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = filepath.Join(tlsPath, "ca.crt")
 		// peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
 		envs["CORE_PEER_MSPCONFIGPATH"] = filepath.Join(abs,
-			fmt.Sprintf("peerOrganizations/%s.fabric.com/users", org),
-			fmt.Sprintf("Admin@%s.fabric.com/msp/", org))
+			fmt.Sprintf("peerOrganizations/%s.zibuyufab.cn/users", org),
+			fmt.Sprintf("Admin@%s.zibuyufab.cn/msp/", org))
 	} else {
 		envs["CORE_PEER_TLS_ENABLED"] = "false"
 	}
