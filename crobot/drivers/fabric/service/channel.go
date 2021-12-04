@@ -85,7 +85,7 @@ func (c *ChannelWorker) UpdateAnchorPeers(ctx context.Context, chain *model.Fabr
 	for _, peer := range chain.Peers {
 		if peer.AnchorPeer {
 			for _, channel := range chain.Channels {
-				err = itool.(fabtool.PeerTool).UpdateAnchorPeer(chain, &peer, fmt.Sprintf("%s/%s-%sMSPAnchors.tx", c.workDir, channel.UUID, peer.Organization.UUID), c.workDir)
+				err = itool.(fabtool.PeerTool).UpdateChannelAnchorPeer(chain, &peer, channel.UUID, fmt.Sprintf("%s/%s-%sMSPAnchors.tx", c.workDir, channel.UUID, peer.Organization.UUID), c.workDir)
 				if err != nil {
 					return errors.Wrap(err, "generate genesis block")
 				}

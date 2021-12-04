@@ -62,6 +62,7 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	// 处理主机的 HostName 字段
 	// 生成证书
 	basePath, _ := filepath.Abs(fmt.Sprintf("chain_certs/%s_%s", chain.Name, chain.UUID))
+	_ = os.RemoveAll(basePath)
 	_ = os.MkdirAll(basePath, os.ModePerm)
 	certWorker := service.NewCertWorker(basePath)
 	err = certWorker.InitCert(c.ctx, chain)
@@ -214,6 +215,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		envs["CORE_VM_ENDPOINT"] = peer.RMTDocker
 		envs["FABRIC_LOGGING_SPEC"] = peer.LogLevel
 		envs["CORE_PEER_TLS_ENABLED"] = fmt.Sprintf("%t", chain.TLSEnable)
+		envs["CORE_PEER_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.GRPCPort)
 		envs["CORE_OPERATIONS_LISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.HealthPort)
 		envs["CORE_PEER_GOSSIP_USELEADERELECTION"] = "true"
 		envs["CORE_PEER_GOSSIP_ORGLEADER"] = "false"
@@ -222,15 +224,15 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		envs["CORE_PEER_TLS_KEY_FILE"] = "config/tls/server.key"
 		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = "config/tls/ca.crt"
 		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
-		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = "0.0.0.0:7052" // 链码监听地址
+		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.ChainCodeListenPort)// 链码监听地址
 		for i, network := range peer.APP.Networks {
-			if network.PortInfo.Port == 7052 {
+			if network.PortInfo.Port == peer.ChainCodeListenPort {
 				for _, s := range peer.APP.Networks[i].RouteInfo {
 					if s.RouteType == ag.OUT {
 						envs["CORE_PEER_CHAINCODEADDRESS"] = s.Router // 链码回调时访问的地址
 					}
 				}
-			} else if network.PortInfo.Port == 7051 {
+			} else if network.PortInfo.Port == peer.GRPCPort {
 				for _, s := range peer.APP.Networks[i].RouteInfo {
 					if s.RouteType == ag.OUT {
 						envs["CORE_PEER_GOSSIP_BOOTSTRAP"] = s.Router

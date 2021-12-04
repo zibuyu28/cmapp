@@ -93,6 +93,7 @@ type Capabilities struct {
 type ChannelCapabilities struct {
 	V1_4_3 bool `yaml:"V1_4_3"`
 	V1_3   bool `yaml:"V1_3"`
+	V1_1   bool `yaml:"V1_1"`
 }
 
 // OrdererCapabilities .
@@ -550,6 +551,7 @@ func setCapabilities(configtx *Configtx) {
 		Channel: ChannelCapabilities{
 			V1_4_3: true,
 			V1_3:   false,
+			V1_1:   false,
 		},
 		Orderer: OrdererCapabilities{
 			V1_4_2: true,

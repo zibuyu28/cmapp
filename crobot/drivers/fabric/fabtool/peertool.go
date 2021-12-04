@@ -81,7 +81,7 @@ func (p PeerTool) CreateNewChannel(chain *model.Fabric, channel model.Channel, t
 
 	var orderAddr string
 	for _, network := range chain.Orderers[0].APP.Networks {
-		if network.PortInfo.Port == 7050 {
+		if network.PortInfo.Port == chain.Orderers[0].GRPCPort {
 			for _, s := range network.RouteInfo {
 				if s.RouteType == ag.OUT {
 					orderAddr = s.Router
@@ -146,7 +146,24 @@ func (p PeerTool) JoinChannel(chain *model.Fabric, targetPeer *model.Peer, chann
 		envs["FABRIC_CFG_PATH"] = toolPath
 	}
 
-	command := fmt.Sprintf("%s channel join -b %s", peer, channelBlockPath)
+	// 获取orderer地址
+	var ordererAddr string
+	for _, orderer := range chain.Orderers {
+		for _, network := range orderer.APP.Networks {
+			if network.PortInfo.Port == orderer.GRPCPort {
+				for _, s := range network.RouteInfo {
+					if s.RouteType == ag.OUT {
+						ordererAddr = s.Router
+					}
+				}
+			}
+		}
+	}
+	if len(ordererAddr) == 0 {
+		return errors.Errorf("orderer addr is nil")
+	}
+
+	command := fmt.Sprintf("%s channel join -o %s -b %s", peer, ordererAddr, channelBlockPath)
 
 	log.Debugf(p.ctx, "JoinChannel command [%s]", command)
 
@@ -161,13 +178,18 @@ func (p PeerTool) JoinChannel(chain *model.Fabric, targetPeer *model.Peer, chann
 	return nil
 }
 
-func (p PeerTool) UpdateAnchorPeer(chain *model.Fabric, targetPeer *model.Peer, updatePb, baseDir string) error {
+func (p PeerTool) UpdateChannelAnchorPeer(chain *model.Fabric, targetPeer *model.Peer, channel, updatePb, baseDir string) error {
 	peer := filepath.Join(filepath.Dir(os.Args[0]), fmt.Sprintf("tool/%s/peer", chain.Version))
 	toolPath := filepath.Dir(peer)
 	abs, _ := filepath.Abs(baseDir)
 
+	_, err := os.Stat(updatePb)
+	if err != nil {
+		return errors.Wrapf(err, "check file [%s] exist", updatePb)
+	}
+
 	coreyaml := filepath.Join(toolPath, "core.yaml")
-	_, err := os.Stat(coreyaml)
+	_, err = os.Stat(coreyaml)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// 增加core.yaml 配置文件模板
@@ -180,54 +202,44 @@ func (p PeerTool) UpdateAnchorPeer(chain *model.Fabric, targetPeer *model.Peer, 
 			return errors.Wrap(err, "check core yaml file exist")
 		}
 	}
-	// 每个通道都更新
-	for _, channel := range chain.Channels {
-		for _, pe := range chain.Peers {
-			anchorPeerArtifactTX, _ := filepath.Abs(fmt.Sprintf("%s/%s-%sMSPAnchors.tx", abs, channel.UUID, pe.UUID))
-			_, err = os.Stat(anchorPeerArtifactTX)
-			if err != nil {
-				return errors.Wrapf(err, "check file [%s] exist", anchorPeerArtifactTX)
-			}
-			envs, err := getEnv(chain, targetPeer, baseDir)
-			if err != nil {
-				return errors.Wrap(err, "get env by peer")
-			}
-			if envs != nil {
-				envs["FABRIC_CFG_PATH"] = toolPath
-			}
+	envs, err := getEnv(chain, targetPeer, baseDir)
+	if err != nil {
+		return errors.Wrap(err, "get env by peer")
+	}
+	if envs != nil {
+		envs["FABRIC_CFG_PATH"] = toolPath
+	}
 
-			var orderAddr string
-			for _, network := range chain.Orderers[0].APP.Networks {
-				if network.PortInfo.Port == 7050 {
-					for _, s := range network.RouteInfo {
-						if s.RouteType == ag.OUT {
-							orderAddr = s.Router
-						}
-					}
+	var orderAddr string
+	for _, network := range chain.Orderers[0].APP.Networks {
+		if network.PortInfo.Port == chain.Orderers[0].GRPCPort {
+			for _, s := range network.RouteInfo {
+				if s.RouteType == ag.OUT {
+					orderAddr = s.Router
 				}
 			}
-			if len(orderAddr) == 0 {
-				return errors.New("order's app 7050 addr is nil")
-			}
-
-			// peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA >&log.txt
-			command := fmt.Sprintf("%s channel update -f %s -o %s -c %s", peer, anchorPeerArtifactTX, orderAddr, channel.UUID)
-			if chain.TLSEnable {
-				// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-				command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.fabric.com/msp/tlscacerts/tlsca.orderer.zibuyufab.cn-cert.pem",
-					command, abs, chain.Orderers[0].NodeHostName)
-			}
-			log.Debugf(p.ctx, "UpdateAnchorPeer command [%s]", command)
-
-			// 增加如上环境变量
-
-			// 执行命令
-			output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs)).Run()
-			log.Debugf(p.ctx, "output : %s", output)
-			if err != nil {
-				return errors.Wrap(err, "exec update channel command")
-			}
 		}
+	}
+	if len(orderAddr) == 0 {
+		return errors.New("order's app 7050 addr is nil")
+	}
+
+	// peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA >&log.txt
+	command := fmt.Sprintf("%s channel update -f %s -o %s -c %s", peer, updatePb, orderAddr, channel)
+	if chain.TLSEnable {
+		// ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+		command = fmt.Sprintf("%s --tls --cafile %s/ordererOrganizations/orderer.zibuyufab.cn/orderers/%s.orderer.zibuyufab.cn/msp/tlscacerts/tlsca.orderer.zibuyufab.cn-cert.pem",
+			command, abs, chain.Orderers[0].NodeHostName)
+	}
+	log.Debugf(p.ctx, "UpdateAnchorPeer command [%s]", command)
+
+	// 增加如上环境变量
+
+	// 执行命令
+	output, err := cmd.NewDefaultCMD(command, []string{}, cmd.WithEnvs(envs)).Run()
+	log.Debugf(p.ctx, "output : %s", output)
+	if err != nil {
+		return errors.Wrap(err, "exec update channel command")
 	}
 	return nil
 }
@@ -426,7 +438,7 @@ func getEnv(chain *model.Fabric, node *model.Peer, baseDir string) (map[string]s
 	var envs = make(map[string]string, 0)
 	envs["CORE_PEER_ID"] = fmt.Sprintf("%scli", org)
 	for _, network := range node.APP.Networks {
-		if network.PortInfo.Port == 7051 {
+		if network.PortInfo.Port == node.GRPCPort {
 			for _, s := range network.RouteInfo {
 				if s.RouteType == ag.OUT {
 					envs["CORE_PEER_ADDRESS"] = s.Router

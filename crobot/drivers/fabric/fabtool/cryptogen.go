@@ -281,8 +281,8 @@ func constructInitConfig(chain *model.Fabric) *Config {
 	for _, orderer := range chain.Orderers {
 		odns := NodeSpec{
 			Hostname:   orderer.NodeHostName,
-			//CommonName: fmt.Sprintf("orderer%s.orderer.fabric.com", orderer.UUID),
-			//SANS:       []string{orderer.NodeHostName},
+			CommonName: fmt.Sprintf("%s.orderer.zibuyufab.cn", orderer.NodeHostName),
+			SANS:       []string{orderer.NodeHostName},
 		}
 
 		ordererNodes = append(ordererNodes, odns)
@@ -311,8 +311,8 @@ func constructInitConfig(chain *model.Fabric) *Config {
 		for _, peer := range ps {
 			prns := NodeSpec{
 				Hostname:   peer.NodeHostName,
-				//CommonName: fmt.Sprintf("peer%s.%s.fabric.com", peer.UUID, org),
-				//SANS:       []string{peer.NodeHostName},
+				CommonName: fmt.Sprintf("%s.%s.zibuyufab.cn", peer.NodeHostName, org),
+				SANS:       []string{peer.NodeHostName},
 			}
 			peerNodes = append(peerNodes, prns)
 		}
