@@ -8,21 +8,28 @@ cmapp
 - [x] 完善`websocket`库，包括客户端和服务端
 - [x] 实现`agentfw`，实现使用`ws`协议来和本地的`grpc`服务端交互
 - [x] 实现`agentfw`和`core`进行交互
-- [ ] `core`中实现调用`machine`的逻辑，并且开放`machien api`接口给外部调用
+- [x] `core`中实现调用`machine`的逻辑，并且开放`machien api`接口给外部调用
 - [x] 实现k8s主机驱动
 - [x] 尝试通过k8s主机驱动创建`example-app`
-- [ ] 开始实现`hpc`链驱动
+- [x] 开始实现`fabric`链驱动
 ----
 
 ### 2021.08.23
 - [x] 调研`virtualbox`远程`sdk`
 - [x] 实现`virtualbox`的本地驱动
 - [x] 实现`virtualbox`远程驱动 
-- [ ] 增加`core`中创建主机的`http`接口
-- [ ] 增加`core`中查询主机、更新主机、删除主机信息接口
-- [ ] 测试创建主机
-- [ ] 增加`fabric`链驱动（TODO: 有很多工作要做）
-- [ ] 首先还是尝试创建`vb`中的`fabric`链
+- [x] 增加`core`中创建主机的`http`接口
+- [x] 增加`core`中查询主机、更新主机、删除主机信息接口
+- [x] 测试创建主机
+- [x] 增加`fabric`链驱动（TODO: 有很多工作要做）
+- [x] 首先还是尝试创建`vb`中的`fabric`链
+
+### 2021.12.05
+- [ ] 链入参动态化
+- [ ] `vb`主机启动进程需要异步子进程化，不能让`package`里面有异步命令
+- [ ] 端口检测
+- [ ] `kubernetes`主机测试
+- [ ] `kubernetes`上部署`fabric`
 
 -----
 #### 创建链流程

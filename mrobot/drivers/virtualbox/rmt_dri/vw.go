@@ -356,6 +356,7 @@ func (v *VirtualboxWorker) NetworkEx(ctx context.Context, network *worker0.App_N
 	if err != nil {
 		return nil, errors.Wrap(err, "new ssh cli")
 	}
+	defer cli.Close()
 	vbm := virtualbox.NewRMTDriver(ctx, v.VBUUID, v.StorePath, v.HostIP, cli)
 
 	log.Debugf(ctx, "Currently get enum name [%s]", network.PortInfo.ProtocolType.String())
