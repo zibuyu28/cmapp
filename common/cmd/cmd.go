@@ -107,7 +107,7 @@ func WithContext(ctx context.Context) CmdOption {
 func (i *Ins) Run() (out string, err error) {
 	for t := 0; t < i.retry; t++ {
 		if i.stream {
-			err := i.cmdWithStream()
+			err = i.cmdWithStream()
 			if err != nil {
 				fmt.Printf("fail to exe : %s\n", i.command)
 				fmt.Printf("err : %v\n", err)
@@ -339,17 +339,18 @@ func (i *Ins) cmdWithStream() error {
 				}
 			}
 		case <-waitChan:
+			fmt.Printf("收到结束消息")
 		}
 	}()
 
-	if err := cmd.Wait(); err != nil {
+	if err = cmd.Wait(); err != nil {
 		em := err.Error()
 		// 超时退出，返回调用失败
 		if strings.Contains(em, "signal: killed") {
 			return errors.Wrap(err, "cmd wait")
 		}
 		// 未超时，被执行程序主动退出
-		fmt.Printf("stderr: %s\n", stderr.String())
+		//fmt.Printf("stderr: %s\n", stderr.String())
 		if len(stderr.String()) != 0 {
 			return errors.New(stderr.String())
 		}

@@ -59,7 +59,7 @@ func cwExecHandler(g *gin.Context, req *CWReq) error {
 		}
 		err := chain.Create(g.Request.Context(), req.DriverID, req.Param)
 		if err != nil {
-			return errors.Wrap(err, "do create machine")
+			return errors.Wrap(err, "do create chain")
 		}
 		ok(g, "ok")
 	default:

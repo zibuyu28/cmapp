@@ -26,6 +26,7 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
 	agfw "github.com/zibuyu28/cmapp/mrobot/pkg/agentfw/worker"
 	"os"
+	"time"
 )
 
 const (
@@ -43,17 +44,14 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-
+	Run: func(cmd *cobra.Command, args []string) {
 		pbi := os.Getenv(AgentPluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
-			return RunAsAgentPlugin(args)
+			err := RunAsAgentPlugin(args)
+			time.Sleep(time.Second)
+			cobra.CheckErr(err)
 		}
-
 		fmt.Println("this is ag server")
-		panic("implement me")
-
-		return nil
 	},
 }
 

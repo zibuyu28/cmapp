@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zibuyu28/cmapp/crobot/internal/cengine"
+	"time"
 )
 
 var (
@@ -43,9 +44,9 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		if len(createUUID) == 0 {
-			return errors.New("'uuid' flag is required")
+			cobra.CheckErr(errors.New("'uuid' flag is required"))
 		}
 		inf := cengine.InitInfo{
 			DriverName:    driverName,
@@ -55,10 +56,8 @@ to quickly create a Cobra application.`,
 			CoreGrpcAddr:  coreGrpcAddr,
 		}
 		err := cengine.CreateChain(context.Background(), inf, createUUID, param)
-		if err != nil {
-			return errors.Wrap(err, "create chain command")
-		}
-		return nil
+		time.Sleep(time.Second)
+		cobra.CheckErr(err)
 	},
 }
 

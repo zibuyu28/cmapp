@@ -24,6 +24,7 @@ import (
 	"github.com/zibuyu28/cmapp/mrobot/drivers"
 	"github.com/zibuyu28/cmapp/mrobot/pkg/plugin"
 	"os"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -48,12 +49,13 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		pbi := os.Getenv(PluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
-			return RunAsMachinePlugin(args)
+			err := RunAsMachinePlugin(args)
+			time.Sleep(time.Second)
+			cobra.CheckErr(err)
 		}
-		return errors.New("not implement")
 	},
 }
 

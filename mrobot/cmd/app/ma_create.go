@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/mrobot/internal/mengine"
+	"time"
 )
 
 var param string
@@ -41,9 +42,8 @@ to quickly create a Cobra application.`,
 		log.Debugf(ctx, "uuid : %s", uuid)
 		log.Debugf(ctx, "param : %s", param)
 		err := mengine.CreateMachine(ctx, uuid, param)
-		if err != nil {
-			panic(err.Error())
-		}
+		time.Sleep(time.Second)
+		cobra.CheckErr(err)
 	},
 }
 

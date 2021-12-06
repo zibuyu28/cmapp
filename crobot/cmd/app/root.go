@@ -17,11 +17,9 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/crobot/drivers"
 	"github.com/zibuyu28/cmapp/crobot/pkg/plugin"
 	"os"
@@ -61,10 +59,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		pbi := os.Getenv(PluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
-			err := RunAsChainPlugin(args)
-			if err != nil {
-				log.Fatal(context.Background(), err.Error())
-			}
+			cobra.CheckErr(RunAsChainPlugin(args))
 		}
 	},
 }

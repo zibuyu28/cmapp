@@ -19,6 +19,7 @@ package app
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 // Delete the delete lifecycle of machine
@@ -38,13 +39,10 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-
+	Run: func(cmd *cobra.Command, args []string) {
 		err := Delete()
-		if err != nil {
-			return err
-		}
-		return nil
+		time.Sleep(time.Second)
+		cobra.CheckErr(err)
 	},
 }
 
