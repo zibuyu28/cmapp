@@ -61,7 +61,7 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	// 主机开端口，主要是为了将端口外部路由给记录下
 	// 处理主机的 HostName 字段
 	// 生成证书
-	basePath, _ := filepath.Abs(fmt.Sprintf("chain_certs/%s_%s", chain.Name, chain.UUID))
+	basePath, _ := filepath.Abs(filepath.Join(c.baseDir, "chain_certs",fmt.Sprintf("%s_%s", chain.Name, chain.UUID)))
 	_ = os.RemoveAll(basePath)
 	_ = os.MkdirAll(basePath, os.ModePerm)
 	certWorker := service.NewCertWorker(basePath)

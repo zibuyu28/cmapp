@@ -34,12 +34,11 @@ import (
 
 var cfgFile string
 
-
 const ChainPluginBuildIn string = ""
 
 const (
 	PluginDriverName = "PLUGIN_DRIVER_NAME"
-	PluginBuildIn       = "PLUGIN_BUILD_IN"
+	PluginBuildIn    = "PLUGIN_BUILD_IN"
 )
 
 var (
@@ -62,7 +61,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		pbi := os.Getenv(PluginBuildIn)
 		if len(pbi) != 0 && pbi == "true" {
-			err :=RunAsChainPlugin(args)
+			err := RunAsChainPlugin(args)
 			if err != nil {
 				log.Fatal(context.Background(), err.Error())
 			}

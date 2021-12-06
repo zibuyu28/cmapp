@@ -22,66 +22,64 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
-	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/model"
 	"github.com/zibuyu28/cmapp/crobot/drivers/fabric/process"
+	"github.com/zibuyu28/cmapp/crobot/pkg"
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
+	"google.golang.org/grpc/metadata"
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"github.com/zibuyu28/cmapp/crobot/pkg"
-	"google.golang.org/grpc/metadata"
 )
-
-var mockFabric = model.Fabric{
-	Name:        "mock-fab",
-	UUID:        "mock-uuid",
-	Version:     "1.4",
-	Consensus:   model.Solo,
-	CertGenType: model.CertBinaryTool,
-	Channels: []model.Channel{
-		{
-			Name:                     "mock-channel",
-			UUID:                     "channel",
-			OrdererBatchTimeout:      "2s",
-			OrdererMaxMessageCount:   500,
-			OrdererAbsoluteMaxBytes:  "99MB",
-			OrdererPreferredMaxBytes: "512KB",
-		},
-	},
-	TLSEnable: true,
-	Orderers: []model.Orderer{
-		{
-			Name:       "orderer0",
-			UUID:       "orderer0",
-			MachineID:  46,
-			GRPCPort:   7050,
-			HealthPort: 8443,
-			Tag:        "mock-tag-orderer0",
-			LogLevel: "INFO",
-		},
-	},
-	Peers: []model.Peer{
-		{
-			Name:                "mock-peer0",
-			UUID:                "mock-peer0",
-			MachineID:           46,
-			GRPCPort:            7053,
-			ChainCodeListenPort: 7054,
-			EventPort:           7055,
-			HealthPort:          8446,
-			Organization: model.Organization{
-				Name: "Org1",
-				UUID: "Org1",
-			},
-			AnchorPeer: true,
-			Tag:        "mock-tag-peer0",
-			RMTDocker:  "tcp://192.168.0.104:2375",
-			LogLevel: "INFO",
-		},
-	},
-}
+//
+//var mockFabric = model.Fabric{
+//	Name:        "mock-fab",
+//	UUID:        "mock-uuid",
+//	Version:     "1.4",
+//	Consensus:   model.Solo,
+//	CertGenType: model.CertBinaryTool,
+//	Channels: []model.Channel{
+//		{
+//			Name:                     "mock-channel",
+//			UUID:                     "channel",
+//			OrdererBatchTimeout:      "2s",
+//			OrdererMaxMessageCount:   500,
+//			OrdererAbsoluteMaxBytes:  "99MB",
+//			OrdererPreferredMaxBytes: "512KB",
+//		},
+//	},
+//	TLSEnable: true,
+//	Orderers: []model.Orderer{
+//		{
+//			Name:       "orderer0",
+//			UUID:       "orderer0",
+//			MachineID:  46,
+//			GRPCPort:   7050,
+//			HealthPort: 8443,
+//			Tag:        "mock-tag-orderer0",
+//			LogLevel: "INFO",
+//		},
+//	},
+//	Peers: []model.Peer{
+//		{
+//			Name:                "mock-peer0",
+//			UUID:                "mock-peer0",
+//			MachineID:           46,
+//			GRPCPort:            7053,
+//			ChainCodeListenPort: 7054,
+//			EventPort:           7055,
+//			HealthPort:          8446,
+//			Organization: model.Organization{
+//				Name: "Org1",
+//				UUID: "Org1",
+//			},
+//			AnchorPeer: true,
+//			Tag:        "mock-tag-peer0",
+//			RMTDocker:  "tcp://192.168.0.104:2375",
+//			LogLevel: "INFO",
+//		},
+//	},
+//}
 
 const (
 	PluginEnvDriverName    = "PLUGIN_DRIVER_NAME"
@@ -91,11 +89,19 @@ const (
 
 type FabricDriver struct {
 	pkg.BaseDriver
+	ChainInfoJson string `validate:"required"`
+	Fabric *model.Fabric
 }
 
 func (f *FabricDriver) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*driver.Flags, error) {
-	baseFlags := &driver.Flags{Flags: f.GetFlags()}
-	return baseFlags, nil
+	flags := &driver.Flags{Flags: f.GetFlags()}
+	flags.Flags = append(flags.Flags, &driver.Flag{
+		Name:   "ChainInfoJson",
+		Usage:  "chain info json",
+		EnvVar: "CHAIN_INFO_JSON",
+		Value:  nil,
+	})
+	return flags, nil
 }
 
 func (f *FabricDriver) SetConfigFromFlags(ctx context.Context, flags *driver.Flags) (*driver.Empty, error) {
@@ -105,6 +111,8 @@ func (f *FabricDriver) SetConfigFromFlags(ctx context.Context, flags *driver.Fla
 	f.CoreGRPCAddr = m["CoreGRPCAddr"]
 	f.ImageRepository.Repository = m["Repository"]
 	f.ImageRepository.StorePath = m["StorePath"]
+
+	f.ChainInfoJson = m["ChainInfoJson"]
 
 	validate := v.New()
 	err := validate.Struct(f)
@@ -152,30 +160,37 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 		return nil, errors.New("uuid is nil")
 	}
 
-	cb, err := json.Marshal(mockFabric.Channels)
+	f.Fabric = &model.Fabric{}
+	err := json.Unmarshal([]byte(f.ChainInfoJson), f.Fabric)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal fabric")
+	}
+	// TODO: check fabric param
+
+	cb, err := json.Marshal(f.Fabric.Channels)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal channels")
 	}
 	rc := driver.Chain{
-		Name:     mockFabric.Name,
+		Name:     f.Fabric.Name,
 		UUID:     data[0],
 		Type:     "fabric",
-		Version:  mockFabric.Version,
+		Version:  f.Fabric.Version,
 		State:    driver.Chain_Handling,
 		DriverID: 1,
 		Tags: []string{
 			"mock-tag-chain",
 		},
 		CustomInfo: map[string]string{
-			"Consensus":   string(mockFabric.Consensus),
-			"TLSEnable":   fmt.Sprintf("%t", mockFabric.TLSEnable),
-			"CertGenType": string(mockFabric.CertGenType),
+			"Consensus":   string(f.Fabric.Consensus),
+			"TLSEnable":   fmt.Sprintf("%t", f.Fabric.TLSEnable),
+			"CertGenType": string(f.Fabric.CertGenType),
 			"Channels":    string(cb),
 		},
 		Nodes: []*driver.Node{},
 	}
 	var ns []*driver.Node
-	for _, o := range mockFabric.Orderers {
+	for _, o := range f.Fabric.Orderers {
 		n := &driver.Node{
 			Name:      o.Name,
 			UUID:      o.UUID,
@@ -191,7 +206,7 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 		}
 		ns = append(ns, n)
 	}
-	for _, p := range mockFabric.Peers {
+	for _, p := range f.Fabric.Peers {
 		ob, err := json.Marshal(p.Organization)
 		if err != nil {
 			return nil, errors.Wrap(err, "marshal organizaton")
@@ -228,9 +243,7 @@ func (f *FabricDriver) CreateChainExec(ctx context.Context, c *driver.Chain) (*d
 	}
 	worker := process.NewCreateChainWorker(ctx, f.CoreHTTPAddr, baseDir)
 
-	marshal, _ := json.Marshal(mockFabric)
-	log.Infof(ctx, "mock fab : [%s]", string(marshal))
-	err = worker.CreateChainProcess(&mockFabric)
+	err = worker.CreateChainProcess(f.Fabric)
 	if err != nil {
 		return nil, errors.Wrap(err, "create chain process")
 	}
