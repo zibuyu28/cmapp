@@ -104,10 +104,10 @@ func (v *VirtualboxWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (
 		StartCMD:            pkg.Binary.StartCommands,
 		Tags:                map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", v.MachineID)},
 
-		Environments:        make(map[string]string),
-		FilePremises:        make(map[string]FilePremise),
-		FileMounts:          make(map[string]FileMount),
-		Ports:               make(map[int]PortInfo),
+		Environments: make(map[string]string),
+		FilePremises: make(map[string]FilePremise),
+		FileMounts:   make(map[string]FileMount),
+		Ports:        make(map[int]PortInfo),
 	}
 	err = repo.new(ctx, app)
 	if err != nil {
@@ -158,7 +158,7 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 	}
 
 	split := strings.Split(app.InstallationPackage, "/")
-	fileName := split[len(split) - 1]
+	fileName := split[len(split)-1]
 	packageFile := filepath.Join(abs, fileName)
 	err = httputil.HTTPDoDownloadFile(packageFile, app.InstallationPackage)
 	if err != nil {
@@ -221,11 +221,17 @@ func (v *VirtualboxWorker) StartApp(ctx context.Context, _ *worker0.App) (*worke
 	// start app
 	log.Debug(ctx, "Currently start to setup app")
 	setupCommand := strings.Join(app.StartCMD, " ")
-	out, err := cmd.NewDefaultCMD(setupCommand, []string{}, cmd.WithWorkDir(abs), cmd.WithEnvs(processEnvs)).Run()
-	if err != nil {
-		return nil, errors.Wrapf(err, "exec setup command [%s], Err: [%v]", setupCommand, err)
-	}
-	log.Debugf(ctx, "Currently setup app out [%s]", out)
+	go func() {
+		// TODO: 这里可以将这个 cmdins 进行存储 和 维护
+		defaultCMD := cmd.NewDefaultCMD(setupCommand, []string{}, cmd.WithWorkDir(abs),
+		cmd.WithEnvs(processEnvs), cmd.WithTimeout(-1))
+		_, err = defaultCMD.Run()
+		if err != nil {
+			log.Errorf(ctx, "Currently exec setup command failed [%s], Err: [%v]", setupCommand, err)
+			return
+		}
+		log.Debugf(ctx, "Currently setup app success")
+	}()
 
 	// health: check this app is setup success or not
 	//       : by the way, the worker need to provided

@@ -61,7 +61,7 @@ func (c *CreateChainWorker) CreateChainProcess(chain *model.Fabric) error {
 	// 主机开端口，主要是为了将端口外部路由给记录下
 	// 处理主机的 HostName 字段
 	// 生成证书
-	basePath, _ := filepath.Abs(filepath.Join(c.baseDir, "chain_certs",fmt.Sprintf("%s_%s", chain.Name, chain.UUID)))
+	basePath, _ := filepath.Abs(filepath.Join(c.baseDir, "chain_certs", fmt.Sprintf("%s_%s", chain.Name, chain.UUID)))
 	_ = os.RemoveAll(basePath)
 	_ = os.MkdirAll(basePath, os.ModePerm)
 	certWorker := service.NewCertWorker(basePath)
@@ -224,7 +224,7 @@ func constructPeer(ctx context.Context, chain *model.Fabric) error {
 		envs["CORE_PEER_TLS_KEY_FILE"] = "config/tls/server.key"
 		envs["CORE_PEER_TLS_ROOTCERT_FILE"] = "config/tls/ca.crt"
 		envs["CORE_PEER_ADDRESSAUTODETECT"] = "true"
-		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.ChainCodeListenPort)// 链码监听地址
+		envs["CORE_PEER_CHAINCODELISTENADDRESS"] = fmt.Sprintf("0.0.0.0:%d", peer.ChainCodeListenPort) // 链码监听地址
 		for i, network := range peer.APP.Networks {
 			if network.PortInfo.Port == peer.ChainCodeListenPort {
 				for _, s := range peer.APP.Networks[i].RouteInfo {
@@ -352,13 +352,13 @@ func constructOrder(ctx context.Context, chain *model.Fabric) error {
 
 func newApp(chain *model.Fabric) error {
 	for i := range chain.Orderers {
-		err := newOrdererApp(&chain.Orderers[i])
+		err := newOrdererApp(&chain.Orderers[i], chain.Version)
 		if err != nil {
 			return errors.Wrap(err, "new orderer app")
 		}
 	}
 	for i := range chain.Peers {
-		err := newPeerApp(&chain.Peers[i])
+		err := newPeerApp(&chain.Peers[i], chain.Version)
 		if err != nil {
 			return errors.Wrap(err, "new peer app")
 		}
@@ -370,11 +370,11 @@ func newApp(chain *model.Fabric) error {
 	return nil
 }
 
-func newOrdererApp(orderer *model.Orderer) error {
+func newOrdererApp(orderer *model.Orderer, version string) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: orderer.MachineID,
 		Name:      "orderer",
-		Version:   "1.4",
+		Version:   version,
 	})
 	if err != nil {
 		return errors.Wrap(err, "new app")
@@ -424,11 +424,11 @@ func newOrdererApp(orderer *model.Orderer) error {
 	return nil
 }
 
-func newCouchDBApp(peer *model.Peer) error {
+func newCouchDBApp(peer *model.Peer, version string) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: peer.MachineID,
 		Name:      "couchdb",
-		Version:   "1.4.3",
+		Version:   version,
 	})
 	if err != nil {
 		return errors.Wrap(err, "new app")
@@ -453,11 +453,11 @@ func newCouchDBApp(peer *model.Peer) error {
 	return nil
 }
 
-func newPeerApp(peer *model.Peer) error {
+func newPeerApp(peer *model.Peer, version string) error {
 	app, err := hmd.NewApp(&ag.NewAppReq{
 		MachineID: peer.MachineID,
 		Name:      "peer",
-		Version:   "1.4",
+		Version:   version,
 	})
 	if err != nil {
 		return errors.Wrap(err, "new app")

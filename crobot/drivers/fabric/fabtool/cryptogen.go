@@ -294,10 +294,10 @@ func constructInitConfig(chain *model.Fabric) *Config {
 	var peerOrgSpecs []OrgSpec
 	var peerOrgs = make(map[string][]model.Peer)
 	for i, p := range chain.Peers {
-		if _, ok := peerOrgs[p.Organization.Name]; ok {
-			peerOrgs[p.Organization.Name] = append(peerOrgs[p.Organization.Name], chain.Peers[i])
+		if _, ok := peerOrgs[p.Organization.UUID]; ok {
+			peerOrgs[p.Organization.UUID] = append(peerOrgs[p.Organization.UUID], chain.Peers[i])
 		} else {
-			peerOrgs[p.Organization.Name] = []model.Peer{chain.Peers[i]}
+			peerOrgs[p.Organization.UUID] = []model.Peer{chain.Peers[i]}
 		}
 	}
 

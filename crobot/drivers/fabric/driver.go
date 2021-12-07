@@ -165,6 +165,7 @@ func (f *FabricDriver) InitChain(ctx context.Context, _ *driver.Empty) (*driver.
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal fabric")
 	}
+	f.Fabric.UUID = data[0]
 	// TODO: check fabric param
 
 	cb, err := json.Marshal(f.Fabric.Channels)

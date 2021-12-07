@@ -33,6 +33,7 @@ type Ins struct {
 	stream    bool
 	outStream chan string
 	ctx       context.Context
+	cmdIns    *exec.Cmd
 }
 type CmdOption func(info *Ins)
 
@@ -157,16 +158,27 @@ func (i *Ins) cmd() (out string, err error) {
 	}
 
 	// 超时控制
-	ctx, cancel := context.WithTimeout(i.ctx, time.Duration(i.timeout)*time.Second)
-	defer cancel()
+	var ctx context.Context
+	if i.timeout == -1 {
+		ctx = i.ctx
+	} else {
+		ctxx, cancel := context.WithTimeout(i.ctx, time.Duration(i.timeout)*time.Second)
+		defer cancel()
+		ctx = ctxx
+	}
+
 
 	switch i.shellType {
 	case ShellTypeNone:
 		cmd = exec.Command(i.command, i.args...)
 	case ShellTypeShell:
-		cmd = exec.Command("/bin/sh", "-c", i.command)
+		argss := []string{"-c", i.command}
+		argss = append(argss, i.args...)
+		cmd = exec.Command("/bin/sh", argss...)
 	case ShellTypeBash:
-		cmd = exec.Command("/bin/bash", "-c", i.command)
+		argss := []string{"-c", i.command}
+		argss = append(argss, i.args...)
+		cmd = exec.Command("/bin/bash", argss...)
 	default:
 		return "", errors.Errorf("not support shell type [%v]", i.shellType)
 	}
@@ -210,7 +222,7 @@ func (i *Ins) cmd() (out string, err error) {
 			//fmt.Printf("normal quit job ppid:%d\n", cmd.Process.Pid)
 		}
 	}()
-
+	i.cmdIns = cmd
 	if err := cmd.Wait(); err != nil {
 		//fmt.Printf("timeout kill job ppid:%s\n%s\n", b.String(), err.Error())
 		em := err.Error()
@@ -292,9 +304,13 @@ func (i *Ins) cmdWithStream() error {
 	case ShellTypeNone:
 		cmd = exec.Command(i.command, i.args...)
 	case ShellTypeShell:
-		cmd = exec.Command("/bin/sh", "-c", i.command)
+		argss := []string{"-c", i.command}
+		argss = append(argss, i.args...)
+		cmd = exec.Command("/bin/sh", argss...)
 	case ShellTypeBash:
-		cmd = exec.Command("/bin/bash", "-c", i.command)
+		argss := []string{"-c", i.command}
+		argss = append(argss, i.args...)
+		cmd = exec.Command("/bin/bash", argss...)
 	default:
 		return errors.Errorf("not support shell type [%v]", i.shellType)
 	}
@@ -342,7 +358,7 @@ func (i *Ins) cmdWithStream() error {
 			fmt.Printf("收到结束消息")
 		}
 	}()
-
+	i.cmdIns = cmd
 	if err = cmd.Wait(); err != nil {
 		em := err.Error()
 		// 超时退出，返回调用失败
