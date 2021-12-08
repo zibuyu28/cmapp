@@ -21,6 +21,7 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/httputil"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/tmp"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
@@ -40,14 +41,18 @@ const (
 	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
 )
 
+var defaultAgentGRPCPort = 9008
+var defaultAgentHealthPort = 9009
+
 type DriverK8s struct {
 	pkg.BaseDriver
-	KubeConfig string
+	KubeConfig string `validate:"required"`
+	NodeIP     string `validate:"required,ip"`
 
-	Token       string `validate:"required"`
-	Certificate string `validate:"required"`
-	ClusterURL  string `validate:"required"`
-	Namespace   string `validate:"required"`
+	//Token       string `validate:"required"`
+	//Certificate string `validate:"required"`
+	//ClusterURL  string `validate:"required"`
+	Namespace string `validate:"required"`
 
 	StorageClassName string `validate:"required"`
 	Labels           map[string]string
@@ -68,21 +73,9 @@ func (d *DriverK8s) GetCreateFlags(ctx context.Context, empty *driver.Empty) (*d
 			Value:  []string{defaultConfig},
 		},
 		{
-			Name:   "Token",
-			Usage:  "kubernetes cluster token for connection",
-			EnvVar: "KUBE_TOKEN",
-			Value:  nil,
-		},
-		{
-			Name:   "Certificate",
-			Usage:  "kubernetes cluster certificate for connection",
-			EnvVar: "KUBE_CERTIFICATE",
-			Value:  nil,
-		},
-		{
-			Name:   "Url",
-			Usage:  "kubernetes cluster url for connection",
-			EnvVar: "KUBE_URL",
+			Name:   "NodeIP",
+			Usage:  "kubernetes cluster ip of one node, format like \"10.1.11.11\"",
+			EnvVar: "KUBE_NODEIP",
 			Value:  nil,
 		},
 		{
@@ -116,9 +109,7 @@ func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags)
 	d.ImageRepository.StorePath = m["StorePath"]
 
 	d.KubeConfig = m["KubeConfig"]
-	d.Token = m["Token"]
-	d.Certificate = m["Certificate"]
-	d.ClusterURL = m["Url"]
+	d.NodeIP = m["NodeIP"]
 	d.Namespace = m["Namespace"]
 	d.StorageClassName = m["StorageClassName"]
 	labels := m["Labels"]
@@ -131,6 +122,7 @@ func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags)
 		}
 	}
 	log.Debugf(ctx, "Currently driver get labels [%v]", d.Labels)
+
 	validate := v.New()
 	err := validate.Struct(*d)
 	if err != nil {
@@ -162,7 +154,6 @@ func (d *DriverK8s) SetConfigFromFlags(ctx context.Context, flags *driver.Flags)
 	d.DriverID = driverID
 	return nil, nil
 }
-
 
 func (d *DriverK8s) InitMachine(ctx context.Context, empty *driver.Empty) (*driver.Machine, error) {
 	log.Debug(ctx, "Currently k8s machine plugin start to init machine")
@@ -245,18 +236,43 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	if err != nil {
 		return nil, errors.Wrap(err, "create deployment")
 	}
-	// 开启 nodePort/ingress
-	machine := &driver.Machine{
-		AGGRPCAddr: "test-service:30082",
+	// 使用 node port 方式, 不用创建 service，在 deployment 中有
+	//err = c.CreateService(&corev1.Service{})
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "create service")
+	//}
+	svc, err := c.GetService("", d.Namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "get service")
 	}
-
+	machine := &driver.Machine{}
+	for _, port := range svc.Spec.Ports {
+		if port.Port == int32(defaultAgentGRPCPort) && port.NodePort != 0 {
+			machine.AGGRPCAddr = fmt.Sprintf("%s:%d", d.NodeIP, port.NodePort)
+		}
+		if port.Port == int32(defaultAgentHealthPort) && port.NodePort != 0 {
+			machine.CustomInfo["health_addr"] = fmt.Sprintf("%s:%d", d.NodeIP, port.NodePort)
+		}
+	}
 	return machine, nil
 }
 
 func (d *DriverK8s) MRoHealthCheck(ctx context.Context, m *driver.Machine) (*driver.Machine, error) {
 	// (DONE): how to check mrobot health -> deployment check ok
 	log.Info(ctx, "Currently k8s machine plugin start to check robot health")
-	return nil, nil
+	// 使用远程ssh的方式调用version接口
+	s, ok := m.CustomInfo["health_addr"]
+	if !ok {
+		return nil, errors.New("health addr is nil")
+	}
+	get, err := httputil.HTTPDoGet(fmt.Sprintf("http://%s/healthz", s))
+	if err != nil {
+		return nil, errors.Wrap(err, "request to agent healthz interface")
+	}
+	if string(get) == "ok" {
+		m.State = 2
+	}
+	return m, nil
 }
 
 func (d *DriverK8s) Exit(ctx context.Context, empty *driver.Empty) (*driver.Empty, error) {
@@ -264,11 +280,12 @@ func (d *DriverK8s) Exit(ctx context.Context, empty *driver.Empty) (*driver.Empt
 	return nil, nil
 }
 
-var defaultNamespace = ""
 var defaultConfig = `
 
 `
 
 var mRobotDep = `---
 
+`
+var mRobotSvc = `---
 `

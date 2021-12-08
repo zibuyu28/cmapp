@@ -35,6 +35,15 @@ func (c *Client) CreateService(service *corev1.Service) error {
 	return nil
 }
 
+// GetService get service
+func (c *Client) GetService(serviceName, namespace string) (*corev1.Service, error) {
+	svc, err := c.k.CoreV1().Services(namespace).Get(c.ctx, serviceName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "get service [%s]", serviceName)
+	}
+	return svc, nil
+}
+
 // DeleteService .
 func (c *Client) DeleteService(service *corev1.Service, ops metav1.DeleteOptions) error {
 	err := c.k.CoreV1().Services(service.Namespace).Delete(c.ctx, service.Name, ops)

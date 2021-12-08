@@ -42,18 +42,16 @@ type K8sWorker struct {
 	Name         string
 	Namespace    string `validate:"required"`
 	StorageClass string `validate:"required"`
-	Token        string `validate:"required"`
-	Certificate  string `validate:"required"`
-	ClusterURL   string `validate:"required"`
+	NodeIP       string `validate:"required,ip"`
+	KubeConfig   string `validate:"required"`
 	MachineID    int    `validate:"required"`
 	Domain       string
 }
 
 func NewK8sWorker() *K8sWorker {
 	w := &K8sWorker{
-		Token:        agfw.Flags["Token"].Value,
-		Certificate:  agfw.Flags["Certificate"].Value,
-		ClusterURL:   agfw.Flags["ClusterURL"].Value,
+		NodeIP:       agfw.Flags["KubeConfig"].Value,
+		KubeConfig:   agfw.Flags["NodeIP"].Value,
 		Namespace:    agfw.Flags["Namespace"].Value,
 		StorageClass: agfw.Flags["StorageClassName"].Value,
 		Domain:       agfw.Flags["Domain"].Value,
@@ -166,7 +164,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 
 	// 因为initcontainer 和 container 挂载 pvc 的路径是一致的，去除 initcontainer 容器中文件的 filemount
 	vmes = append(vmes, corev1.VolumeMount{
-		Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+		Name: fmt.Sprintf("app-%s-pvc", app.UID),
 		// 将给定的 workspace-> app.UID 映射到 image 的 workdir 下面，这样可以使用相对路径
 		MountPath: fmt.Sprintf("%s/%s", app.WorkDir, app.UID),
 		SubPath:   fmt.Sprintf("download"),
