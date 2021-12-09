@@ -29,6 +29,7 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/driver"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"strconv"
@@ -213,11 +214,11 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	log.Debugf(ctx, "Currently image info [%v]", image)
 
 	tempdata := struct {
-		Image     string
+		ImageName string
 		CoreAddr  string
 		MachineID int
 	}{
-		Image:     image,
+		ImageName: image,
 		CoreAddr:  d.CoreAddr,
 		MachineID: coreID,
 		// TODO: 将驱动中的一些参数也传到 ag 里面
@@ -236,11 +237,11 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	if err != nil {
 		return nil, errors.Wrap(err, "create deployment")
 	}
-	// 使用 node port 方式, 不用创建 service，在 deployment 中有
-	//err = c.CreateService(&corev1.Service{})
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "create service")
-	//}
+	// 使用 node port 方式
+	err = c.CreateService(&corev1.Service{})
+	if err != nil {
+		return nil, errors.Wrap(err, "create service")
+	}
 	svc, err := c.GetService("", d.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "get service")
@@ -285,7 +286,91 @@ var defaultConfig = `
 `
 
 var mRobotDep = `---
-
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Namespace}}
+  name: k8s-{{.UUID}}
+  labels:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+spec:
+  replicas: 1
+  strategy: {}
+  selector:
+    matchLabels:
+      app: k8s-{{.UUID}}
+      machine_id: {{.MachineID}}
+  template:
+    metadata:
+      labels:
+        app: k8s-{{.UUID}}
+        machine_id: {{.MachineID}}
+    spec:
+      containers:
+        - name: kw
+          image: {{.ImageName}}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "1024Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz 
+              port: 9009    
+            initialDelaySeconds: 300
+            periodSeconds: 15
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz  
+              port: 9009      
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          env:
+            - name: MachineID
+              value: "{{.MachineID}}"
+            - name: NAMESPACE
+              value: {{.Namespace}}
+            - name: KUBECONFIG
+              value: |
+{{indent 16 .KubeConfig}}
+          ports:
+            - containerPort: 9009
+              name: health
+            - containerPort: 9008
+              name: grpc
 `
 var mRobotSvc = `---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+  name: kw-{{.UUID}}-service
+  namespace: {{.Namespace}}
+spec:
+  ports:
+    - port: 9009
+      protocol: TCP
+      name: health
+      targetPort: 9009
+    - port: 9008
+      protocol: TCP
+      name: grpc
+      targetPort: 9008
+  selector:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+  type: NodePort
 `

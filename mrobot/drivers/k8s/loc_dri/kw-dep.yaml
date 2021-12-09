@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Namespace}}
+  name: k8s-{{.UUID}}
+  labels:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+spec:
+  replicas: 1
+  strategy: {}
+  selector:
+    matchLabels:
+      app: k8s-{{.UUID}}
+      machine_id: {{.MachineID}}
+  template:
+    metadata:
+      labels:
+        app: k8s-{{.UUID}}
+        machine_id: {{.MachineID}}
+    spec:
+      containers:
+        - name: kw
+          image: {{.ImageName}}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "1024Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9009
+            initialDelaySeconds: 300
+            periodSeconds: 15
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9009
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+          env:
+            - name: MachineID
+              value: "{{.MachineID}}"
+            - name: NAMESPACE
+              value: {{.Namespace}}
+            - name: KUBECONFIG
+              value: |
+{{indent 16 .KubeConfig}}
+          ports:
+            - containerPort: 9009
+              name: healthz
+            - containerPort: 9008
+              name: grpc

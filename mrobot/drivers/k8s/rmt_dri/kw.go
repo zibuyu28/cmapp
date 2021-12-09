@@ -549,6 +549,7 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 
 	// 内部service
 	service := fmt.Sprintf("app-%s-service", app.UID)
+	// TODO: 创建或者更新 service， 然后开启 nodeport
 
 	// 外部ingress
 	ingress := fmt.Sprintf("m%d-%s-%d.%s", k.MachineID, app.UID, network.PortInfo.Port, k.Domain)

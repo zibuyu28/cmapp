@@ -1,0 +1,23 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+  name: kw-{{.UUID}}-service
+  namespace: {{.Namespace}}
+spec:
+  ports:
+    - port: 9009
+      protocol: TCP
+      name: health
+      targetPort: 9009
+    - port: 9008
+      protocol: TCP
+      name: grpc
+      targetPort: 9008
+  selector:
+    app: k8s-{{.UUID}}
+    machine_id: {{.MachineID}}
+  type: NodePort
