@@ -21,6 +21,7 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/base64"
 	"github.com/zibuyu28/cmapp/common/httputil"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/tmp"
@@ -40,6 +41,11 @@ const (
 	PluginEnvDriverName    = "MACHINE_PLUGIN_DRIVER_NAME"
 	PluginEnvDriverVersion = "MACHINE_PLUGIN_DRIVER_VERSION"
 	PluginEnvDriverID      = "MACHINE_PLUGIN_DRIVER_ID"
+)
+
+const (
+	AgentPluginName    = "AGENT_PLUGIN_DRIVER_NAME"
+	AgentPluginBuildIn = "AGENT_PLUGIN_BUILD_IN"
 )
 
 var defaultAgentGRPCPort = 9008
@@ -210,18 +216,45 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 
 	// TODO: 从 core 获取 image 信息
 	repository := d.ImageRepository
-	image := fmt.Sprintf("%s/%s/mrobot:%s", repository.Repository, repository.StorePath, d.DriverVersion)
+	image := fmt.Sprintf("%s/%s/%s:%s", repository.Repository, repository.StorePath, d.DriverName, d.DriverVersion)
 	log.Debugf(ctx, "Currently image info [%v]", image)
+
+	const (
+		DriAgentNamespace    = "DRIAGENT_NAMESPACE"
+		DriAgentKubeConfig   = "DRIAGENT_KUBECONFIG"
+		DriAgentNodeIP       = "DRIAGENT_NODEIP"
+		DriAgentStorageClass = "DRIAGENT_STORAGECLASS"
+		DriAgentK8sUUID      = "DRIAGENT_K8SUUID"
+		DriAgentMachineID    = "DRIAGENT_MACHINE_ID"
+		DriCoreHttpAddr      = "DRIAGENT_CORE_HTTP_ADDR"
+		DriCoreGrpcAddr      = "DRIAGENT_CORE_GRPC_ADDR"
+	)
+
+	mrobotEnvs := map[string]string{
+		DriAgentMachineID:    fmt.Sprintf("%d", coreID),
+		DriAgentNamespace:    d.Namespace,
+		DriAgentNodeIP:       d.NodeIP,
+		DriAgentStorageClass: d.StorageClassName,
+		DriAgentKubeConfig:   base64.Encode([]byte(d.KubeConfig)),
+		DriCoreHttpAddr:      d.CoreHTTPAddr,
+		DriCoreGrpcAddr:      d.CoreGRPCAddr,
+		DriAgentK8sUUID:      datas[0],
+		AgentPluginBuildIn:   "true",
+		AgentPluginName:      "k8s",
+	}
 
 	tempdata := struct {
 		ImageName string
-		CoreAddr  string
 		MachineID int
+		Env       map[string]string
+		Namespace string
+		UUID      string
 	}{
 		ImageName: image,
-		CoreAddr:  d.CoreAddr,
 		MachineID: coreID,
-		// TODO: 将驱动中的一些参数也传到 ag 里面
+		Env:       mrobotEnvs,
+		Namespace: d.Namespace,
+		UUID:      datas[0],
 	}
 
 	mrobotDepYaml, err := tmp.AdvanceTemplate(tempdata, []byte(mRobotDep))
@@ -237,12 +270,23 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	if err != nil {
 		return nil, errors.Wrap(err, "create deployment")
 	}
+
+	mrobotSvcYaml, err := tmp.AdvanceTemplate(tempdata, []byte(mRobotSvc))
+	if err != nil {
+		return nil, errors.Wrap(err, "generate mrobot service yaml")
+	}
+	var mrobotSvcIns = corev1.Service{}
+	err = yaml.Unmarshal(mrobotSvcYaml, &mrobotSvcIns)
+	if err != nil {
+		return nil, errors.Wrap(err, "yaml unmarshal to deployment instance")
+	}
+
 	// 使用 node port 方式
-	err = c.CreateService(&corev1.Service{})
+	err = c.CreateService(&mrobotSvcIns)
 	if err != nil {
 		return nil, errors.Wrap(err, "create service")
 	}
-	svc, err := c.GetService("", d.Namespace)
+	svc, err := c.GetService(fmt.Sprintf("%s-service", datas[0]), d.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "get service")
 	}
@@ -290,21 +334,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: {{.Namespace}}
-  name: k8s-{{.UUID}}
+  name: {{.UUID}}
   labels:
-    app: k8s-{{.UUID}}
+    app: {{.UUID}}
     machine_id: {{.MachineID}}
 spec:
   replicas: 1
   strategy: {}
   selector:
     matchLabels:
-      app: k8s-{{.UUID}}
+      app: {{.UUID}}
       machine_id: {{.MachineID}}
   template:
     metadata:
       labels:
-        app: k8s-{{.UUID}}
+        app: {{.UUID}}
         machine_id: {{.MachineID}}
     spec:
       containers:
@@ -336,14 +380,9 @@ spec:
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 5
-          env:
-            - name: MachineID
-              value: "{{.MachineID}}"
-            - name: NAMESPACE
-              value: {{.Namespace}}
-            - name: KUBECONFIG
-              value: |
-{{indent 16 .KubeConfig}}
+          env:{{ range $key, $value := .Env }}
+            - name: {{ $key }}
+              value: {{ $value }}{{ end }}
           ports:
             - containerPort: 9009
               name: health
@@ -355,9 +394,9 @@ kind: Service
 apiVersion: v1
 metadata:
   labels:
-    app: k8s-{{.UUID}}
+    app: {{.UUID}}
     machine_id: {{.MachineID}}
-  name: kw-{{.UUID}}-service
+  name: {{.UUID}}-service
   namespace: {{.Namespace}}
 spec:
   ports:
@@ -370,7 +409,7 @@ spec:
       name: grpc
       targetPort: 9008
   selector:
-    app: k8s-{{.UUID}}
+    app: {{.UUID}}
     machine_id: {{.MachineID}}
   type: NodePort
 `

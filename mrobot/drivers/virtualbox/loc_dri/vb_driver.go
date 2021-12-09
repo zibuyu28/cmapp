@@ -292,7 +292,7 @@ func (d *DriverVB) InstallMRobot(ctx context.Context, m *driver.Machine) (*drive
 		return nil, errors.Wrapf(err, "parse core id [%s] to int", mids[0])
 	}
 
-	// TODO: 设置环境变量等等
+
 	const (
 		DriAgentHostIP        = "DRIAGENT_HOST_IP"
 		DriAgentHostPort      = "DRIAGENT_HOST_PORT"

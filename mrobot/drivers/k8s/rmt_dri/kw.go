@@ -21,6 +21,7 @@ import (
 	"fmt"
 	v "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/zibuyu28/cmapp/common/base64"
 	"github.com/zibuyu28/cmapp/common/log"
 	"github.com/zibuyu28/cmapp/common/md5"
 	"github.com/zibuyu28/cmapp/mrobot/drivers/k8s/kube_driver/base"
@@ -50,8 +51,8 @@ type K8sWorker struct {
 
 func NewK8sWorker() *K8sWorker {
 	w := &K8sWorker{
-		NodeIP:       agfw.Flags["KubeConfig"].Value,
-		KubeConfig:   agfw.Flags["NodeIP"].Value,
+		NodeIP:       agfw.Flags["NodeIP"].Value,
+		KubeConfig:   agfw.Flags["KubeConfig"].Value,
 		Namespace:    agfw.Flags["Namespace"].Value,
 		StorageClass: agfw.Flags["StorageClassName"].Value,
 		Domain:       agfw.Flags["Domain"].Value,
@@ -68,6 +69,11 @@ func NewK8sWorker() *K8sWorker {
 	if err != nil {
 		panic(err)
 	}
+	decode, err := base64.Decode(w.KubeConfig)
+	if err != nil {
+		panic(err)
+	}
+	w.KubeConfig = string(decode)
 	return w
 }
 
