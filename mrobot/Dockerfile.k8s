@@ -1,0 +1,8 @@
+FROM alpine:3.15.0
+RUN mkdir -p /opt/mrobot
+COPY ./mrobot-linux /opt/mrobot/
+WORKDIR /opt/mrobot
+EXPOSE 9008 9009
+USER root
+ENV AGENT_PLUGIN_BUILD_IN="true" AGENT_PLUGIN_DRIVER_NAME="k8s"
+CMD ["/opt/mrobot/mrobot-linux", "ag"]

@@ -111,8 +111,8 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 	p[BaseCoreHTTPAddr] = httpAddr
 	p[BaseCoreGRPCAddr] = grpcAddr
 	p[BaseCoreAddr] = httpAddr
-	p[BaseRepository] = "testrepo" // TODO: check need
-	p[BaseStorePath] = "testpath" // TODO: check need
+	p[BaseRepository] = "" // TODO: check need
+	p[BaseStorePath] = "" // TODO: check need
 
 	for i, flag := range flags.Flags {
 		if v, ok := p[flag.Name]; ok {

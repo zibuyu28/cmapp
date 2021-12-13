@@ -99,8 +99,8 @@ func CreateAction(ctx context.Context, driverRootPath string, drv *model.Driver,
 		MachineEngineDriverVersion: drv.Version,
 		MachineEngineDriverID:      strconv.Itoa(drv.ID),
 		"BASE_CORE_ADDR":           "",
-		"BASE_IMAGE_REPOSITORY":    "harbor.hyeprchain.cn",
-		"BASE_IMAGE_STORE_PATH":    "platform",
+		"BASE_IMAGE_REPOSITORY":    "",
+		"BASE_IMAGE_STORE_PATH":    "",
 	}), cmd.WithTimeout(600), cmd.WithStream(outCh))
 	go driverOutput(timeout, outCh)
 	_, err = newCmd.Run()

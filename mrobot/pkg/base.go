@@ -28,15 +28,15 @@ type BaseDriver struct {
 	DriverVersion string
 	DriverID      int
 
-	CoreHTTPAddr    string          `validate:"required"`
-	CoreGRPCAddr    string          `validate:"required"`
-	CoreAddr        string          `validate:"required"`
-	ImageRepository ImageRepository `validate:"required"`
+	CoreHTTPAddr    string `validate:"required"`
+	CoreGRPCAddr    string `validate:"required"`
+	CoreAddr        string `validate:"required"`
+	ImageRepository ImageRepository
 }
 
 type ImageRepository struct {
-	Repository string `validate:"required"`
-	StorePath  string `validate:"required"`
+	Repository string
+	StorePath  string
 }
 
 func (b *BaseDriver) GetFlags() []*driver.Flag {

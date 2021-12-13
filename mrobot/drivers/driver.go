@@ -31,7 +31,7 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 )
 
-var buildInDrivers = []string{"k8s"}
+var buildInDrivers = []string{"k8s","virtualbox"}
 var buildInDriversVersion = map[string]string{
 	"k8s":        "1.0.0",
 	"virtualbox": "1.0.0",
@@ -78,7 +78,12 @@ type BuildInPlugin struct {
 	GrpcPluginServer worker0.Worker0Server
 }
 
-func ParsePlugin(pluginName string) (*BuildInPlugin, error) {
+func ParsePlugin(pluginName string) (b *BuildInPlugin, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.Errorf("%v", e)
+		}
+	}()
 	switch pluginName {
 	case "k8s":
 		return &BuildInPlugin{

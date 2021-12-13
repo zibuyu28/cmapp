@@ -51,14 +51,14 @@ type K8sWorker struct {
 
 func NewK8sWorker() *K8sWorker {
 	w := &K8sWorker{
-		NodeIP:       agfw.Flags["NodeIP"].Value,
-		KubeConfig:   agfw.Flags["KubeConfig"].Value,
-		Namespace:    agfw.Flags["Namespace"].Value,
-		StorageClass: agfw.Flags["StorageClassName"].Value,
-		Domain:       agfw.Flags["Domain"].Value,
+		NodeIP:       agfw.Flags["NODEIP"].Value,
+		KubeConfig:   agfw.Flags["KUBECONFIG"].Value,
+		Namespace:    agfw.Flags["NAMESPACE"].Value,
+		StorageClass: agfw.Flags["STORAGECLASS"].Value,
+		Domain:       agfw.Flags["DOMAIN"].Value,
 	}
-	if len(agfw.Flags["MachineID"].Value) != 0 {
-		mid, err := strconv.Atoi(agfw.Flags["MachineID"].Value)
+	if len(agfw.Flags["MACHINE_ID"].Value) != 0 {
+		mid, err := strconv.Atoi(agfw.Flags["MACHINE_ID"].Value)
 		if err != nil {
 			panic(err)
 		}
