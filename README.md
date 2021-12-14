@@ -27,8 +27,8 @@ cmapp
 ### 2021.12.05
 - [x] 链入参动态化
 - [x] `vb`主机启动进程需要异步子进程化，不能让`package`里面有异步命令
-- [ ] `kubernetes`主机测试
-- [ ] `kubernetes`上部署`fabric`
+- [x] `kubernetes`主机测试
+- [x] `kubernetes`上部署`fabric`
 - [ ] 端口检测
 
 -----
