@@ -30,6 +30,8 @@ cmapp
 - [x] `kubernetes`主机测试
 - [x] `kubernetes`上部署`fabric`
 - [ ] 端口检测
+- [ ] package上传逻辑中增加镜像上传到仓库
+- [ ] k8s使用minikube调试，所以镜像拉取规则写了如果不存在，这个后期需要按需改动
 
 -----
 #### 创建链流程
