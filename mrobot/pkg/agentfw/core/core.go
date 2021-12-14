@@ -60,16 +60,16 @@ type Package struct {
 	Name    string `json:"name" validate:"required"`
 	Version string `json:"version" validate:"required"`
 	Image   struct {
-		ImageName     string   `json:"image_name" validate:"required"`
-		Tag           string   `json:"tag" validate:"required"`
-		WorkDir       string   `json:"work_dir" validate:"required"`
-		StartCommands []string `json:"start_command" validate:"required"`
+		ImageName     string   `json:"image_name"`
+		Tag           string   `json:"tag"`
+		WorkDir       string   `json:"work_dir"`
+		StartCommands []string `json:"start_command"`
 	}
 	Binary struct {
-		Download            string   `json:"download" validate:"required"`
-		CheckSum            string   `json:"check_sum" validate:"required"`
+		Download            string   `json:"download"`
+		CheckSum            string   `json:"check_sum"`
 		PackageHandleShells []string `json:"package_handle_shells"`
-		StartCommands       []string `json:"start_command" validate:"required"`
+		StartCommands       []string `json:"start_command"`
 	}
 }
 

@@ -77,35 +77,39 @@ func (p *PM) RegisterPackage(tar string) error {
 		if dbp != nil {
 			return errors.Errorf("package name [%s] and version [%s] already registered", pkg.Name, pkg.Version)
 		}
-		fileName := filepath.Join(dir, pkg.Binary.FileName)
-		_, err = os.Stat(fileName)
-		if err != nil {
-			return errors.Wrapf(err, "stat binary file [%s]", fileName)
-		}
-		fileMD5, err := md5.FileMD5(fileName)
-		if err != nil {
-			return errors.Wrapf(err, "get file [%s] md5", pkg.Binary.FileName)
-		}
-		if fileMD5 != pkg.Binary.CheckSum {
-			return errors.Errorf("file md5 [%s] not equal to checksum [%s]", fileMD5, pkg.Binary.CheckSum)
-		}
 		mp := model.Package{
-			Name:                      pkg.Name,
-			Version:                   pkg.Version,
-			BinaryName:                pkg.Binary.FileName,
-			BinaryCheckSum:            pkg.Binary.CheckSum,
-			BinaryPackageHandleShells: pkg.Binary.PackageHandleShells,
-			BinaryStartCommands:       pkg.Binary.StartCommands,
+			Name:    pkg.Name,
+			Version: pkg.Version,
 		}
+		if pkg.Binary != nil {
+			fileName := filepath.Join(dir, pkg.Binary.FileName)
+			_, err = os.Stat(fileName)
+			if err != nil {
+				return errors.Wrapf(err, "stat binary file [%s]", fileName)
+			}
+			fileMD5, err := md5.FileMD5(fileName)
+			if err != nil {
+				return errors.Wrapf(err, "get file [%s] md5", pkg.Binary.FileName)
+			}
+			if fileMD5 != pkg.Binary.CheckSum {
+				return errors.Errorf("file md5 [%s] not equal to checksum [%s]", fileMD5, pkg.Binary.CheckSum)
+			}
+
+			mp.BinaryName = pkg.Binary.FileName
+			mp.BinaryCheckSum = pkg.Binary.CheckSum
+			mp.BinaryPackageHandleShells = pkg.Binary.PackageHandleShells
+			mp.BinaryStartCommands = pkg.Binary.StartCommands
+		}
+
 		if pkg.Image != nil {
-			fileName = filepath.Join(dir, pkg.Image.FileName)
+			fileName := filepath.Join(dir, pkg.Image.FileName)
 			_, err = os.Stat(fileName)
 			if err != nil {
 				return errors.Wrapf(err, "stat image file [%s]", fileName)
 			}
 			// TODO: load image, than upload to repository, get full name
 
-			mp.ImageFullName = fmt.Sprintf("myrepository/platform/%s", pkg.Name)
+			mp.ImageFullName = fmt.Sprintf("%s", pkg.Name)
 			mp.ImageTag = pkg.Version
 			mp.ImageWorkDir = pkg.Image.WorkDir
 			mp.ImageStartCommands = pkg.Image.StartCommands
@@ -136,7 +140,7 @@ type Packages struct {
 type Package struct {
 	Name    string  `json:"name" validate:"required"`
 	Version string  `json:"version" validate:"required"`
-	Binary  *Binary `json:"binary" validate:"required"`
+	Binary  *Binary `json:"binary"`
 	Image   *Image  `json:"image"`
 }
 type Binary struct {

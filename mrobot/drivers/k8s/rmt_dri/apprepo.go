@@ -116,7 +116,8 @@ type PortInfo struct {
 	Name        string `validate:"required"`
 	Protocol    string `validate:"required"`
 	ServiceName string `validate:"required"`
-	IngressName string `validate:"required"`
+	IngressName string
+	NodePort    int
 }
 
 type MethodType string

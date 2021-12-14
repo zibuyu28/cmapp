@@ -135,7 +135,7 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 
 	log.Debugf(ctx, "Currently init machine success, info [%+v]", machine)
 
-	// get grpc connect
+	// get grpc connectUUID
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(600))
 	defer cancel()
 	// grpc.WithBlock() : use to make sure the connection is up
@@ -184,6 +184,15 @@ func CreateMachine(ctx context.Context, uuid, param string) error {
 		return errors.Wrap(err, "update machine info")
 	}
 
+	for range [5][0]int{} {
+		_, err = meIns.MRoHealthCheck(ctx, ma)
+		if err != nil {
+			log.Errorf(ctx, "check health [%v]", err)
+			time.Sleep(time.Second)
+			continue
+		}
+		break
+	}
 	ma, err = meIns.MRoHealthCheck(ctx, ma)
 	if err != nil {
 		return errors.Wrap(err, "machine robot health check")

@@ -216,6 +216,11 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	if err != nil {
 		return nil, errors.Wrapf(err, "parse core id [%s] to int", datas[0])
 	}
+	uuiddata := md.Get("UUID")
+	if len(uuiddata) != 1 {
+		return nil, errors.New("fail to find uuid from metadata")
+	}
+
 	kubeconfig, err := base64.Decode(d.KubeConfigBase64)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode kube config")
@@ -272,7 +277,7 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 		MachineID: coreID,
 		Env:       mrobotEnvs,
 		Namespace: d.Namespace,
-		UUID:      datas[0],
+		UUID:      uuiddata[0],
 	}
 
 	mrobotDepYaml, err := tmp.AdvanceTemplate(tempdata, []byte(mRobotDep))
@@ -306,11 +311,13 @@ func (d *DriverK8s) InstallMRobot(ctx context.Context, m *driver.Machine) (*driv
 	if err != nil {
 		return nil, errors.Wrap(err, "create service")
 	}
-	svc, err := c.GetService(fmt.Sprintf("%s-service", datas[0]), d.Namespace)
+	svc, err := c.GetService(fmt.Sprintf("%s-service", uuiddata[0]), d.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "get service")
 	}
-	machine := &driver.Machine{}
+	machine := &driver.Machine{
+		CustomInfo: make(map[string]string),
+	}
 	for _, port := range svc.Spec.Ports {
 		if port.Port == int32(defaultAgentGRPCPort) && port.NodePort != 0 {
 			machine.AGGRPCAddr = fmt.Sprintf("%s:%d", d.NodeIP, port.NodePort)
@@ -372,7 +379,7 @@ spec:
       containers:
         - name: kw
           image: {{.ImageName}}
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               cpu: "100m"

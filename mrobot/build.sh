@@ -27,7 +27,7 @@ if [[ $i = "Darwin" ]]; then
 else
   go build -o mrobot-linux cmd/mrobot.go
 fi
-echo "start to build image for k8s:v0.0.1"
-docker build -t k8s:0.0.1 -f Dockerfile.k8s .
+echo "start to build image for k8s:v1.0.0"
+docker build -t k8s:1.0.0 -f Dockerfile.k8s .
 
 echo "success!"

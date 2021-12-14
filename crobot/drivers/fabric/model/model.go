@@ -51,6 +51,7 @@ type Orderer struct {
 	Tag          string
 	NodeHostName string
 	RemoteCert   string
+	RemoteConfig string
 	LogLevel     string
 	APP          *ag.App
 }
@@ -73,6 +74,7 @@ type Peer struct {
 	Tag                 string
 	NodeHostName        string
 	RemoteCert          string
+	RemoteConfig        string
 	LogLevel            string
 	APP                 *ag.App
 	CouchDB             *ag.App

@@ -56,7 +56,7 @@ func (c *Client) DeleteService(service *corev1.Service, ops metav1.DeleteOptions
 	return err
 }
 
-//CreateService .
+//UpdateService .
 func (c *Client) UpdateService(service *corev1.Service) error {
 	serviceClient := c.k.CoreV1().Services(service.Namespace) //.Update(service)
 	if serviceClient == nil {

@@ -30,13 +30,13 @@ import (
 	"github.com/zibuyu28/cmapp/plugin/proto/worker0"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type K8sWorker struct {
@@ -91,11 +91,15 @@ func (k *K8sWorker) NewApp(ctx context.Context, req *worker0.NewAppReq) (*worker
 		return nil, errors.Wrapf(err, "get uid from ctx")
 	}
 	app := &App{
-		UID:     uid,
-		Image:   fmt.Sprintf("%s:%s", pkg.Image.ImageName, pkg.Image.Tag),
-		WorkDir: pkg.Image.WorkDir,
-		Command: pkg.Image.StartCommands,
-		Tags:    map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", k.MachineID)},
+		UID:          uid,
+		Image:        fmt.Sprintf("%s:%s", pkg.Image.ImageName, pkg.Image.Tag),
+		WorkDir:      pkg.Image.WorkDir,
+		Command:      pkg.Image.StartCommands,
+		FileMounts:   make(map[string]FileMount),
+		Environments: make(map[string]string),
+		Ports:        make(map[int]PortInfo),
+		FilePremises: make(map[string]FilePremise),
+		Tags:         map[string]string{"uuid": uid, "machine_id": fmt.Sprintf("%d", k.MachineID)},
 	}
 	err = repo.new(ctx, app)
 	if err != nil {
@@ -161,7 +165,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 		} else {
 			// 因为initcontainer 和 container 挂载pvc的路径是一致的
 			//vmes = append(vmes, corev1.VolumeMount{
-			//	Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+			//	Name:      fmt.Sprintf("%s-pvc", app.UID),
 			//	MountPath: mount.MountTo,
 			//	SubPath:   fmt.Sprintf("download/%s", mount.File),
 			//})
@@ -170,9 +174,9 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 
 	// 因为initcontainer 和 container 挂载 pvc 的路径是一致的，去除 initcontainer 容器中文件的 filemount
 	vmes = append(vmes, corev1.VolumeMount{
-		Name: fmt.Sprintf("app-%s-pvc", app.UID),
+		Name: fmt.Sprintf("%s-pvc", app.UID),
 		// 将给定的 workspace-> app.UID 映射到 image 的 workdir 下面，这样可以使用相对路径
-		MountPath: fmt.Sprintf("%s/%s", app.WorkDir, app.UID),
+		MountPath: fmt.Sprintf("%s", app.WorkDir),
 		SubPath:   fmt.Sprintf("download"),
 	})
 
@@ -243,27 +247,27 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 			return nil, errors.Wrapf(err, "get package info")
 		}
 		initc = append(initc, corev1.Container{
-			Name:    fmt.Sprintf("app-%s-init", app.UID),
+			Name:    fmt.Sprintf("%s-init", app.UID),
 			Image:   fmt.Sprintf("%s:%s", pkg.Image.ImageName, pkg.Image.Tag),
-			Command: []string{"/bin/sh", "\"-c\"", strings.Join(commands, "\n")},
+			Command: []string{"/bin/sh", "-c", strings.Join(commands, "\n")},
 			VolumeMounts: []corev1.VolumeMount{
 				{
-					Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+					Name:      fmt.Sprintf("%s-pvc", app.UID),
 					MountPath: fmt.Sprintf("/%s", app.UID),
 					SubPath:   "download",
 				},
 			},
-			ImagePullPolicy: "IfNotPresent",
+			ImagePullPolicy: corev1.PullIfNotPresent,
 			WorkingDir:      fmt.Sprintf("/%s", app.UID),
 		})
 	}
 
 	var vols []corev1.Volume
 	vols = append(vols, corev1.Volume{
-		Name: fmt.Sprintf("app-%s-pvc", app.UID),
+		Name: fmt.Sprintf("%s-pvc", app.UID),
 		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: fmt.Sprintf("app-%s-pvc", app.UID),
+				ClaimName: fmt.Sprintf("%s-pvc", app.UID),
 			},
 		},
 	})
@@ -282,7 +286,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("app-%s-dep", app.UID),
+			Name:      fmt.Sprintf("%s-dep", app.UID),
 			Namespace: k.Namespace,
 			Labels:    app.Tags,
 		},
@@ -298,7 +302,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 					InitContainers: initc,
 					Containers: []corev1.Container{
 						{
-							Name:            fmt.Sprintf("app-%s", app.UID),
+							Name:            fmt.Sprintf("%s", app.UID),
 							Image:           app.Image,
 							Command:         app.Command,
 							Args:            nil,
@@ -309,7 +313,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 							LivenessProbe:   liveness,
 							ReadinessProbe:  readness,
 							Resources:       resourcereq,
-							ImagePullPolicy: "Always",
+							ImagePullPolicy: corev1.PullIfNotPresent,
 						},
 					},
 				},
@@ -325,7 +329,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("app-%s-pvc", app.UID),
+			Name:      fmt.Sprintf("%s-pvc", app.UID),
 			Namespace: k.Namespace,
 			Labels:    app.Tags,
 		},
@@ -340,59 +344,64 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 		},
 	}
 
-	var srvp []corev1.ServicePort
-	var igs []v1beta1.IngressRule
-	for _, info := range app.Ports {
-		s := corev1.ServicePort{
-			Name:       info.Name,
-			Port:       int32(info.Port),
-			TargetPort: intstr.FromInt(info.Port),
-		}
-		switch corev1.Protocol(strings.ToUpper(info.Protocol)) {
-		case corev1.ProtocolTCP:
-			s.Protocol = corev1.ProtocolTCP
-		case corev1.ProtocolUDP:
-			s.Protocol = corev1.ProtocolUDP
-		case corev1.ProtocolSCTP:
-			s.Protocol = corev1.ProtocolSCTP
-		default:
-			return nil, errors.Errorf("port protocol [%s] not correct", info.Protocol)
-		}
 
-		srvp = append(srvp, s)
-
-		igs = append(igs, v1beta1.IngressRule{
-			Host: info.IngressName,
-			IngressRuleValue: v1beta1.IngressRuleValue{
-				HTTP: &v1beta1.HTTPIngressRuleValue{
-					Paths: []v1beta1.HTTPIngressPath{
-						{
-							Backend: v1beta1.IngressBackend{
-								ServiceName: info.ServiceName,
-								ServicePort: intstr.FromInt(info.Port),
-							},
-						},
-					},
-				},
-			},
-		})
-	}
-	srv := corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("app-%s-service", app.UID),
-			Namespace: k.Namespace,
-			Labels:    app.Tags,
-		},
-		Spec: corev1.ServiceSpec{
-			Ports:    srvp,
-			Selector: app.Tags,
-			Type:     corev1.ServiceTypeClusterIP,
-		},
-	}
+	//var srvp []corev1.ServicePort
+	////var igs []v1beta1.IngressRule
+	//for _, info := range app.Ports {
+	//	s := corev1.ServicePort{
+	//		Name:       info.Name,
+	//		Port:       int32(info.Port),
+	//		TargetPort: intstr.FromInt(info.Port),
+	//	}
+	//	switch corev1.Protocol(strings.ToUpper(info.Protocol)) {
+	//	case corev1.ProtocolTCP:
+	//		s.Protocol = corev1.ProtocolTCP
+	//	case corev1.ProtocolUDP:
+	//		s.Protocol = corev1.ProtocolUDP
+	//	case corev1.ProtocolSCTP:
+	//		s.Protocol = corev1.ProtocolSCTP
+	//	default:
+	//		return nil, errors.Errorf("port protocol [%s] not correct", info.Protocol)
+	//	}
+	//
+	//	srvp = append(srvp, s)
+	//
+	//	//igs = append(igs, v1beta1.IngressRule{
+	//	//	Host: info.IngressName,
+	//	//	IngressRuleValue: v1beta1.IngressRuleValue{
+	//	//		HTTP: &v1beta1.HTTPIngressRuleValue{
+	//	//			Paths: []v1beta1.HTTPIngressPath{
+	//	//				{
+	//	//					Backend: v1beta1.IngressBackend{
+	//	//						ServiceName: info.ServiceName,
+	//	//						ServicePort: intstr.FromInt(info.Port),
+	//	//					},
+	//	//				},
+	//	//			},
+	//	//		},
+	//	//	},
+	//	//})
+	//}
+	//
+	//if len(srvp) != 0 {
+	//
+	//}
+	//srv := corev1.Service{
+	//	TypeMeta: metav1.TypeMeta{
+	//		Kind:       "Service",
+	//		APIVersion: "v1",
+	//	},
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:      fmt.Sprintf("%s-service", app.UID),
+	//		Namespace: k.Namespace,
+	//		Labels:    app.Tags,
+	//	},
+	//	Spec: corev1.ServiceSpec{
+	//		Ports:    srvp,
+	//		Selector: app.Tags,
+	//		Type:     corev1.ServiceTypeClusterIP,
+	//	},
+	//}
 
 	marshal, err := yaml.Marshal(dep)
 	if err != nil {
@@ -406,56 +415,72 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 	}
 	fmt.Println(string(marshal))
 
-	marshal, err = yaml.Marshal(srv)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal srv")
-	}
-	fmt.Println(string(marshal))
+	//marshal, err = yaml.Marshal(srv)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "marshal srv")
+	//}
+	//fmt.Println(string(marshal))
 
 	log.Debug(ctx, "Currently new k8s client")
-	cli, err := base.NewClientInCluster(ctx)
+	cli, err := base.NewClientByConfig(ctx, []byte(k.KubeConfig))
 	if err != nil {
 		return nil, errors.Wrap(err, "new k8s client")
 	}
 
-	log.Debug(ctx, "Currently start to create service")
-	err = cli.CreateService(&srv)
-	if err != nil {
-		return nil, errors.Wrap(err, "apply service")
+	// service 在network的时候会创建, 这里需要添加tag
+	if len(app.Ports) != 0 {
+		service := fmt.Sprintf("%s-service", app.UID)
+		getService, err := cli.GetService(service, k.Namespace)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get service [%s]", service)
+		}
+		getService.ObjectMeta.Labels = app.Tags
+		getService.Spec.Selector = app.Tags
+		err = cli.UpdateService(getService)
+		if err != nil {
+			return nil, errors.Wrapf(err, "udpate service [%s]", service)
+		}
 	}
 
-	if len(k.Domain) != 0 {
-		igrs := v1beta1.Ingress{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Ingress",
-				APIVersion: "extensions/v1beta1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("app-%s-ingress", app.UID),
-				Namespace: k.Namespace,
-				Labels:    app.Tags,
-				Annotations: map[string]string{
-					"kubernetes.io/ingress.class":             "nginx",
-					"nginx.ingress.kubernetes.io/use-regex":   "true",
-					"nginx.ingress.kubernetes.io/enable-cors": "true",
-				},
-			},
-			Spec: v1beta1.IngressSpec{
-				Rules: igs,
-			},
-		}
-		log.Debug(ctx, "Currently start to create ingress")
-		err = cli.CreateIngress(&igrs)
-		if err != nil {
-			return nil, errors.Wrap(err, "apply ingress")
-		}
+	//log.Debug(ctx, "Currently start to create service")
+	//err = cli.CreateService(&srv)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "apply service")
+	//}
 
-		marshal, err = yaml.Marshal(igrs)
-		if err != nil {
-			return nil, errors.Wrap(err, "marshal ingress")
-		}
-		fmt.Println(string(marshal))
-	}
+	// 不实用ingress
+	//if len(k.Domain) != 0 {
+	//	igrs := v1beta1.Ingress{
+	//		TypeMeta: metav1.TypeMeta{
+	//			Kind:       "Ingress",
+	//			APIVersion: "extensions/v1beta1",
+	//		},
+	//		ObjectMeta: metav1.ObjectMeta{
+	//			Name:      fmt.Sprintf("%s-ingress", app.UID),
+	//			Namespace: k.Namespace,
+	//			Labels:    app.Tags,
+	//			Annotations: map[string]string{
+	//				"kubernetes.io/ingress.class":             "nginx",
+	//				"nginx.ingress.kubernetes.io/use-regex":   "true",
+	//				"nginx.ingress.kubernetes.io/enable-cors": "true",
+	//			},
+	//		},
+	//		Spec: v1beta1.IngressSpec{
+	//			Rules: igs,
+	//		},
+	//	}
+	//	log.Debug(ctx, "Currently start to create ingress")
+	//	err = cli.CreateIngress(&igrs)
+	//	if err != nil {
+	//		return nil, errors.Wrap(err, "apply ingress")
+	//	}
+	//
+	//	marshal, err = yaml.Marshal(igrs)
+	//	if err != nil {
+	//		return nil, errors.Wrap(err, "marshal ingress")
+	//	}
+	//	fmt.Println(string(marshal))
+	//}
 
 	log.Debug(ctx, "Currently start to create pvc")
 	err = cli.CreatePersistentVolumeClaim(&pvc)
@@ -469,7 +494,7 @@ func (k *K8sWorker) StartApp(ctx context.Context, _ *worker0.App) (*worker0.Empt
 		return nil, errors.Wrap(err, "apply deployment")
 	}
 	log.Debug(ctx, "Currently app deploy success")
-	return nil, nil
+	return &worker0.Empty{}, nil
 }
 
 func (k *K8sWorker) StopApp(ctx context.Context, app *worker0.App) (*worker0.Empty, error) {
@@ -554,19 +579,48 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	network.PortInfo.ProtocolType = worker0.App_Network_PortInf_TCP
 
 	// 内部service
-	service := fmt.Sprintf("app-%s-service", app.UID)
-	// TODO: 创建或者更新 service， 然后开启 nodeport
+	service := fmt.Sprintf("%s-service", app.UID)
 
 	// 外部ingress
-	ingress := fmt.Sprintf("m%d-%s-%d.%s", k.MachineID, app.UID, network.PortInfo.Port, k.Domain)
+	//ingress := fmt.Sprintf("m%d-%s-%d.%s", k.MachineID, app.UID, network.PortInfo.Port, k.Domain)
 	pi := PortInfo{
 		Port:        int(network.PortInfo.Port),
 		Name:        network.PortInfo.Name,
 		Protocol:    worker0.App_Network_PortInf_Protocol_name[int32(network.PortInfo.ProtocolType)],
 		ServiceName: service,
-		IngressName: ingress,
+		//IngressName: ingress,
 	}
-	app.Ports[int(network.PortInfo.Port)] = pi
+
+	log.Debug(ctx, "Currently new k8s client")
+	cli, err := base.NewClientByConfig(ctx, []byte(k.KubeConfig))
+	//cli, err := base.NewClientInCluster(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "new k8s client")
+	}
+
+	err = svcHandle(ctx, cli, service, k.Namespace, &pi)
+	if err != nil {
+		return nil, errors.Wrap(err, "svc handle")
+	}
+
+	time.Sleep(time.Second*2)
+
+	getService, err := cli.GetService(service, k.Namespace)
+	if err != nil {
+		return nil, errors.Wrapf(err, "find serive [%s]", service)
+	}
+
+	var nodeport int
+	for _, port := range getService.Spec.Ports {
+		if port.Port == int32(pi.Port) {
+			nodeport = int(port.NodePort)
+			break
+		}
+	}
+	if nodeport == 0 {
+		return nil, errors.Errorf("find port [%d] target node port is nil", pi.Port)
+	}
+	pi.NodePort = nodeport
 
 	inRoute := &worker0.App_Network_RouteInf{
 		RouteType: worker0.App_Network_RouteInf_IN,
@@ -574,12 +628,79 @@ func (k *K8sWorker) NetworkEx(ctx context.Context, network *worker0.App_Network)
 	}
 	outRoute := &worker0.App_Network_RouteInf{
 		RouteType: worker0.App_Network_RouteInf_OUT,
-		Router:    fmt.Sprintf("%s:%d", service, 80),
+		Router:    fmt.Sprintf("%s:%d", k.NodeIP, nodeport),
 	}
 
 	network.RouteInfo = []*worker0.App_Network_RouteInf{inRoute, outRoute}
+	app.Ports[int(network.PortInfo.Port)] = pi
 
 	return network, nil
+}
+
+func svcFind(ctx context.Context, cli *base.Client, serviceName, namespace string) (*corev1.Service, error) {
+	service, err := cli.GetService(serviceName, namespace)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			log.Debugf(ctx, "Currently not found svc [%s]", serviceName)
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "get svc [%s]", serviceName)
+	}
+	return service, nil
+}
+
+func svcHandle(ctx context.Context, cli *base.Client, serviceName, namespace string, port *PortInfo) error {
+	s := corev1.ServicePort{
+		Name:       port.Name,
+		Port:       int32(port.Port),
+		TargetPort: intstr.FromInt(port.Port),
+	}
+	switch corev1.Protocol(strings.ToUpper(port.Protocol)) {
+	case corev1.ProtocolTCP:
+		s.Protocol = corev1.ProtocolTCP
+	case corev1.ProtocolUDP:
+		s.Protocol = corev1.ProtocolUDP
+	case corev1.ProtocolSCTP:
+		s.Protocol = corev1.ProtocolSCTP
+	default:
+		return errors.Errorf("port protocol [%s] not correct", port.Protocol)
+	}
+
+	findSvc, err := svcFind(ctx, cli, serviceName, namespace)
+	if err != nil {
+		return errors.Wrap(err, "find svc")
+	}
+	if findSvc != nil {
+		findSvc.Spec.Ports = append(findSvc.Spec.Ports, s)
+		log.Debug(ctx, "Currently start to update service")
+		err = cli.UpdateService(findSvc)
+		if err != nil {
+			return errors.Wrap(err, "update service")
+		}
+	} else {
+		findSvc = &corev1.Service{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Service",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceName,
+				Namespace: namespace,
+				//Labels:    tags,
+			},
+			Spec: corev1.ServiceSpec{
+				Ports:    []corev1.ServicePort{s},
+				//Selector: tags,
+				Type:     corev1.ServiceTypeNodePort,
+			},
+		}
+		log.Debug(ctx, "Currently start to create service")
+		err = cli.CreateService(findSvc)
+		if err != nil {
+			return errors.Wrap(err, "apply service")
+		}
+	}
+	return nil
 }
 
 // FilePremiseEx file premise

@@ -53,7 +53,7 @@ func contextBuild(ctx context.Context, appuid string) context.Context {
 }
 
 func generateAPPUUID() string {
-	return fmt.Sprintf("APP-%s", md5.MD5(fmt.Sprintf("%d", time.Now().Unix()))[:8])
+	return fmt.Sprintf("app-%s", md5.MD5(fmt.Sprintf("%d", time.Now().Unix()))[:8])
 }
 
 func connAG(ctx context.Context, addr string) (worker0.Worker0Client, error) {
