@@ -17,26 +17,31 @@
 package model
 
 import (
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"xorm.io/xorm"
 )
 
 const DefaultDriverName = "mysql"
-const DefaultDataSource = "root:admin123@tcp(127.0.0.1:3306)/cmapp?charset=utf8"
 
 var ormEngine *xorm.Engine
 
 // InitORMEngine init ORM engine
 func InitORMEngine() error {
-	engine, err := xorm.NewEngine(DefaultDriverName, DefaultDataSource)
+	host := viper.GetString("mysql.host")
+	port := viper.GetInt("mysql.port")
+	user := viper.GetString("mysql.username")
+	password := viper.GetString("mysql.password")
+	engine, err := xorm.NewEngine(DefaultDriverName, fmt.Sprintf("%s:%s@tcp(%s:%d)/cmapp?charset=utf8", user, password, host, port))
 	if err != nil {
 		return errors.Wrap(err, "new orm engine")
 	}
 	ormEngine = engine
 	err = InitTable()
 	if err != nil {
-		return errors.Wrap(err, "init table")
+		return errors.Wrap(err, "init table, check database 'cmapp' first")
 	}
 	return nil
 }
