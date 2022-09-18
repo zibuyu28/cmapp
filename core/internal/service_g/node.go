@@ -44,9 +44,34 @@ func StoreNodeRec(ctx context.Context, node *ch_manager.TypedNode) error {
 	return nil
 }
 
+func StoreNodeRecs(ctx context.Context, tns []*ch_manager.TypedNode) error {
+	var mns []*model.Node
+	var muid = make(map[string]*ch_manager.TypedNode)
+	for i, node := range tns {
+		muid[node.UUID] = tns[i]
+		mns = append(mns, &model.Node{
+			Name:       node.Name,
+			UUID:       node.UUID,
+			Type:       node.Type,
+			State:      int(node.State),
+			ChainID:    int(node.ChainID),
+			MachineID:  int(node.MachineID),
+			Tags:       node.Tags,
+			CustomInfo: node.CustomInfo,
+		})
+	}
+	err := model.InsertNodes(mns)
+	if err != nil {
+		return errors.Wrap(err, "insert nodes")
+	}
+	for _, mn := range mns {
+		muid[mn.UUID].ID = int32(mn.ID)
+	}
+	return nil
+}
 
 // RemoveNodeRec remove node
-func RemoveNodeRec(ctx context.Context,id int) error {
+func RemoveNodeRec(ctx context.Context, id int) error {
 	node := model.Node{ID: id}
 	err := model.DeleteNode(&node)
 	if err != nil {

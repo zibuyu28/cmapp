@@ -1,7 +1,7 @@
-cmapp
+### CMAPP
 ---
 
-* chain and machine application
+* blockchain and machine application
 
 ### RoadMap
 

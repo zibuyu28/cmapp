@@ -19,6 +19,7 @@ package model
 import (
 	"github.com/pkg/errors"
 	"time"
+	"xorm.io/xorm"
 )
 
 // Node node definition in db
@@ -44,6 +45,20 @@ func InsertNode(node *Node) error {
 		return errors.Wrap(err, "node insert to db")
 	}
 	return nil
+}
+
+// InsertNodes insert nodes to db
+func InsertNodes(ns []*Node) error {
+	_, err := ormEngine.Transaction(func(session *xorm.Session) (interface{}, error) {
+		for i := range ns {
+			_, err := session.Table(&Node{}).InsertOne(ns[i])
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	return errors.Wrap(err, "insert nodes")
 }
 
 // DeleteNode delete node to db
